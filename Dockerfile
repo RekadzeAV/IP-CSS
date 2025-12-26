@@ -25,11 +25,19 @@ WORKDIR /app
 # Install curl for healthcheck
 RUN apk add --no-cache curl
 
+# ИСПРАВЛЕНО: Создаем non-root пользователь и группу
+RUN addgroup -g 1000 appuser && \
+    adduser -D -u 1000 -G appuser appuser
+
 # Create directories for data
-RUN mkdir -p /app/config /app/recordings /app/database /app/logs /app/models
+RUN mkdir -p /app/config /app/recordings /app/database /app/logs /app/models /app/tmp /var/tmp && \
+    chown -R appuser:appuser /app
 
 # Copy built JAR
 COPY --from=build /app/server/api/build/libs/*.jar /app/app.jar
+
+# ИСПРАВЛЕНО: Устанавливаем владельца файлов
+RUN chown -R appuser:appuser /app
 
 # Set environment variables
 ENV TZ=Europe/Moscow
@@ -40,7 +48,10 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -f http://localhost:8080/health || exit 1
+  CMD curl -f http://localhost:8080/api/v1/health || exit 1
+
+# ИСПРАВЛЕНО: Переключаемся на non-root пользователя
+USER appuser
 
 # Run the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

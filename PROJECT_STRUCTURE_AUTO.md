@@ -6,32 +6,32 @@
 > 
 > Для изменения структуры проекта редактируйте файлы проекта, а затем запустите скрипт генерации.
 
-**Дата генерации:** 2025-12-27 03:07:50
+**Дата генерации:** 2025-12-27 03:33:07
 
 ## Статистика проекта
 
-- **Всего файлов:** 276
+- **Всего файлов:** 282
 - **Всего директорий:** 231
 - **Модулей:** 12
 
 ### Статистика по типам файлов
 
 - `.kt`: 105 файлов
-- `.md`: 80 файлов
+- `.md`: 86 файлов
 - `.cpp`: 14 файлов
 - `.h`: 14 файлов
 - `.tsx`: 14 файлов
 - `.ts`: 12 файлов
 - `.sh`: 5 файлов
-- `.txt`: 4 файлов
 - `.yml`: 4 файлов
+- `.txt`: 4 файлов
 - `.ps1`: 3 файлов
 - `.xml`: 3 файлов
 - `.json`: 2 файлов
-- `.bat`: 1 файлов
-- `.sq`: 1 файлов
-- `.js`: 1 файлов
 - `.py`: 1 файлов
+- `.bat`: 1 файлов
+- `.js`: 1 файлов
+- `.sq`: 1 файлов
 
 ## Дерево структуры проекта
 
@@ -114,15 +114,18 @@ IP-CSS/
 ├── detekt.yml
 ├── docker-compose.yml
 ├── docs/
+│   ├── ADMINISTRATOR_GUIDE.md
 │   ├── ANALYSIS_ERRORS.md
 │   ├── ANALYSIS_SUMMARY_2025.md
 │   ├── API.md
 │   ├── ARCHITECTURE.md
+│   ├── CONFIGURATION.md
 │   ├── DEEP_ANALYSIS_2025.md
 │   ├── DEPLOYMENT_GUIDE.md
 │   ├── DEVELOPMENT.md
 │   ├── DEVELOPMENT_PLAN.md
 │   ├── DEVELOPMENT_TOOLS.md
+│   ├── DOCUMENTATION_ANALYSIS_REPORT.md
 │   ├── DOCUMENTATION_GAPS.md
 │   ├── DOCUMENTATION_UPDATE.md
 │   ├── FUNCTIONALITY_ANALYSIS.md
@@ -135,6 +138,7 @@ IP-CSS/
 │   ├── NAS_PLATFORMS_ANALYSIS.md
 │   ├── NATIVE_LIBRARIES_INTEGRATION.md
 │   ├── ONVIF_CLIENT.md
+│   ├── OPERATOR_GUIDE.md
 │   ├── PLATFORMS.md
 │   ├── PROJECT_ANALYSIS_DISCREPANCIES.md
 │   ├── PROJECT_FULL_ANALYSIS.md
@@ -147,10 +151,12 @@ IP-CSS/
 │   ├── SECURITY_AUDIT_REPORT.md
 │   ├── SECURITY_REMEDIATION_PLAN.md
 │   ├── SOLUTIONS_FOR_DISCREPANCIES.md
+│   ├── TECHNICAL_DEBT.md
 │   ├── TESTING.md
 │   ├── TESTS_SUMMARY.md
 │   ├── TIMELINE_GUIDE.md
 │   ├── TIMELINE_SETUP.md
+│   ├── USER_GUIDE.md
 │   ├── USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md
 │   ├── VSCODE_EXTENSIONS.md
 │   └── WEBSOCKET_CLIENT.md

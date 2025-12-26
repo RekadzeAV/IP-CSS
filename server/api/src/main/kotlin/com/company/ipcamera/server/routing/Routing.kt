@@ -6,8 +6,12 @@ import io.ktor.server.routing.*
 fun Application.configureRouting() {
     routing {
         route("/api/v1") {
-            cameraRoutes()
+            // Публичные маршруты (не требуют аутентификации)
+            authRoutes()
             healthRoutes()
+            
+            // Защищенные маршруты (требуют аутентификации)
+            cameraRoutes()
         }
     }
 }

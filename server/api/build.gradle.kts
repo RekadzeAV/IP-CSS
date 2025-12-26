@@ -20,6 +20,13 @@ dependencies {
     // Ktor Server
     implementation(libs.bundles.ktor.server)
     implementation(libs.ktor.server.websockets)
+    
+    // Authentication
+    implementation("io.ktor:ktor-server-auth:${libs.versions.ktor.get()}")
+    implementation("io.ktor:ktor-server-auth-jwt:${libs.versions.ktor.get()}")
+    
+    // JWT
+    implementation("com.auth0:java-jwt:4.4.0")
 
     // Serialization
     implementation(libs.kotlinx.serialization.json)

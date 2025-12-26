@@ -8,32 +8,45 @@ services:
     image: company/ip-camera-surveillance:latest
     container_name: ip-camera-surveillance
     restart: unless-stopped
+    # ИСПРАВЛЕНО: Использование non-root пользователя (должен быть создан в Dockerfile)
+    user: "1000:1000"
+    # ИСПРАВЛЕНО: Read-only файловая система с tmpfs для временных файлов
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/tmp
+      - /app/tmp
     ports:
       - "8080:8080"    # Веб-интерфейс
-      - "554:554"      # RTSP сервер
+      - "554:554"       # RTSP сервер
       - "1935:1935"    # RTMP сервер
       - "8554:8554"    # Дополнительный RTSP
     volumes:
-      - ./data/config:/app/config
-      - ./data/recordings:/app/recordings
-      - ./data/database:/app/database
-      - ./data/logs:/app/logs
-      - ./data/models:/app/models
+      - ./data/config:/app/config:rw
+      - ./data/recordings:/app/recordings:rw
+      - ./data/database:/app/database:rw
+      - ./data/logs:/app/logs:rw
+      - ./data/models:/app/models:rw
     environment:
       - TZ=Europe/Moscow
       - ADMIN_USER=admin
-      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH:-changeme}
+      # ИСПРАВЛЕНО: Требуем установку переменной окружения (без значения по умолчанию)
+      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH:?ADMIN_PASSWORD_HASH must be set}
       - LICENSE_KEY=${LICENSE_KEY:-}
       - DATABASE_URL=jdbc:sqlite:/app/database/surveillance.db
       - LOG_LEVEL=INFO
-    devices:
-      - /dev/dri:/dev/dri
-    cap_add:
-      - SYS_ADMIN
-    security_opt:
-      - seccomp:unconfined
+      # JWT секретный ключ (обязателен для продакшена)
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      # CORS разрешенные домены
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
+    # ИСПРАВЛЕНО: Удалены опасные capabilities
+    # cap_add удален - SYS_ADMIN больше не используется
+    # security_opt удален - seccomp:unconfined больше не используется
+    # devices опциональны - только если нужно аппаратное ускорение
+    # devices:
+    #   - /dev/dri:/dev/dri
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -48,7 +61,8 @@ services:
     environment:
       - POSTGRES_DB=surveillance
       - POSTGRES_USER=surveillance
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+      # ИСПРАВЛЕНО: Требуем установку переменной окружения
+      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD must be set}
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     networks:
@@ -63,7 +77,8 @@ services:
     image: redis:7-alpine
     container_name: surveillance-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    # ИСПРАВЛЕНО: Требуем установку переменной окружения
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD must be set}
     volumes:
       - ./data/redis:/data
     networks:
