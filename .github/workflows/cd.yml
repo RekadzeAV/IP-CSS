@@ -1,0 +1,97 @@
+name: CD Pipeline - Multi-platform Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'minor'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+jobs:
+  validate-release:
+    runs-on: ubuntu-latest
+    environment: release-validation
+    
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+      is-prerelease: ${{ steps.extract-version.outputs.is-prerelease }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Extract version
+      id: extract-version
+      run: |
+        if [[ ${{ github.ref }} == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          
+          if [[ $VERSION == *"-rc"* ]] || [[ $VERSION == *"-beta"* ]] || [[ $VERSION == *"-alpha"* ]]; then
+            echo "is-prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "is-prerelease=false" >> $GITHUB_OUTPUT
+          fi
+        fi
+
+  build-all-platforms:
+    needs: validate-release
+    environment: production
+    permissions:
+      contents: write
+      packages: write
+    
+    strategy:
+      matrix:
+        platform: [android, windows, linux, macos, docker]
+        include:
+          - platform: android
+            os: ubuntu-latest
+          - platform: windows
+            os: windows-latest
+          - platform: linux
+            os: ubuntu-latest
+          - platform: macos
+            os: macos-latest
+          - platform: docker
+            os: ubuntu-latest
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Build ${{ matrix.platform }}
+      run: |
+        echo "Building ${{ matrix.platform }}"
+        # Build commands will be added here
+
+  create-github-release:
+    needs: [validate-release, build-all-platforms]
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        name: Release v${{ needs.validate-release.outputs.version }}
+        draft: false
+        prerelease: ${{ needs.validate-release.outputs.is-prerelease == 'true' }}
+        generate_release_notes: true
+

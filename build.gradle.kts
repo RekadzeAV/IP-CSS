@@ -22,20 +22,17 @@ tasks.register("clean", Delete::class) {
 
 tasks.register("buildAll") {
     dependsOn(
-        ":android:assembleDebug",
-        ":desktop:build",
-        ":server:build"
+        ":shared:build",
+        ":core:license:build"
     )
     group = "build"
-    description = "Build all platforms"
+    description = "Build all available modules"
 }
 
 tasks.register("testAll") {
     dependsOn(
         ":shared:test",
-        ":android:test",
-        ":desktop:test",
-        ":server:test"
+        ":core:license:test"
     )
     group = "verification"
     description = "Run all tests"
