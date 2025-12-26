@@ -49,6 +49,7 @@
 
 - **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)** - План дальнейшей разработки по фазам
 - **[PROJECT_ROADMAP.md](PROJECT_ROADMAP.md)** - Карта выполнения проекта с метриками и приоритетами
+- **[docs/FUNCTIONALITY_ANALYSIS.md](docs/FUNCTIONALITY_ANALYSIS.md)** - Анализ функционала: что можно добавить (критически необходимые, важные, дополнительные, инновационные функции)
 
 ---
 
@@ -130,10 +131,15 @@
 
 - **[docs/DOCUMENTATION_GAPS.md](docs/DOCUMENTATION_GAPS.md)** - Анализ недостающей документации
 
+### Безопасность и аутентификация
+
+- **[docs/SECURITY_AUDIT_REPORT.md](docs/SECURITY_AUDIT_REPORT.md)** - Отчет аудита безопасности
+- **[docs/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md](docs/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md)** - Углубленный анализ управления пользователями и интеграции с SSO/Kerberos
+- **[docs/SECURITY_REMEDIATION_PLAN.md](docs/SECURITY_REMEDIATION_PLAN.md)** - План устранения уязвимостей безопасности
+
 ### Отчеты
 
 - **[SECURITY_FIXES_REPORT.md](SECURITY_FIXES_REPORT.md)** - Отчет об исправлениях безопасности
-- **[docs/SECURITY_AUDIT_REPORT.md](docs/SECURITY_AUDIT_REPORT.md)** - Отчет аудита безопасности
 - **[COMPILATION_REPORT.md](COMPILATION_REPORT.md)** - Отчет о компиляции
 - **[KOTLIN_VERSION_ANALYSIS.md](KOTLIN_VERSION_ANALYSIS.md)** - Анализ версий Kotlin
 - **[EXTENSIONS_SETUP_REPORT.md](EXTENSIONS_SETUP_REPORT.md)** - Отчет о настройке расширений
@@ -169,6 +175,8 @@
 - **Интегрировать библиотеки** → [docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md)
 - **Работать с лицензированием** → [docs/LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md)
 - **Узнать, какой документации не хватает** → [docs/DOCUMENTATION_GAPS.md](docs/DOCUMENTATION_GAPS.md)
+- **Узнать, какой функционал можно добавить** → [docs/FUNCTIONALITY_ANALYSIS.md](docs/FUNCTIONALITY_ANALYSIS.md)
+- **Изучить управление пользователями и SSO/Kerberos** → [docs/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md](docs/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md)
 
 ---
 
@@ -184,6 +192,7 @@ README.md (корневой)
       ├── ARCHITECTURE.md
       ├── IMPLEMENTATION_STATUS.md
       │   └── MISSING_FUNCTIONALITY.md
+      ├── FUNCTIONALITY_ANALYSIS.md
       ├── DEVELOPMENT_PLAN.md
       ├── DEVELOPMENT.md
       ├── API.md

@@ -35,8 +35,8 @@ IP-CSS - это комплексное решение для видеонабл�
 - **Kotlin Multiplatform** - общая бизнес-логика
 - **Нативные UI** - Jetpack Compose (Android), SwiftUI (iOS), Compose Desktop
 - **C++ библиотеки** - обработка видео, компьютерное зрение
-- **React** - веб-интерфейс
-- **Spring Boot/Ktor** - серверная часть
+- **React/Next.js** - веб-интерфейс
+- **Ktor** - серверная часть (REST API)
 
 ## Структура проекта
 
@@ -77,15 +77,22 @@ IP-CSS/
 
 ```bash
 # Клонировать репозиторий
-git clone https://github.com/company/ip-camera-surveillance-system.git
-cd ip-camera-surveillance-system
+# git clone <repository-url>
+# cd ip-camera-surveillance-system
 
-# Собрать все платформы
+# Собрать все модули
 ./gradlew build
 
-# Собрать конкретную платформу
-./gradlew :android:assembleDebug
-./gradlew :desktop:build
+# Собрать конкретный модуль
+./gradlew :shared:build
+./gradlew :android:app:assembleDebug
+./gradlew :server:api:build
+
+# Собрать нативные библиотеки
+cd native
+mkdir build && cd build
+cmake ..
+make
 ```
 
 ### Запуск
@@ -95,7 +102,8 @@ cd ip-camera-surveillance-system
 docker-compose up -d
 
 # Или локально
-./gradlew :server:run
+./gradlew :server:api:run
+cd server/web && npm run dev
 ```
 
 ## Статус проекта
@@ -141,10 +149,12 @@ docker-compose up -d
 - 📋 **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Текущее состояние проекта
 
 ### Основная документация
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Архитектура системы
+- [PROJECT_PROMPT.md](PROJECT_PROMPT.md) - Комплексный промпт проекта
 - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Структура проекта
-- **[PROJECT_STRUCTURE_ANALYSIS.md](PROJECT_STRUCTURE_ANALYSIS.md)** - Полный анализ структуры проекта
-- **[PROJECT_STRUCTURE_VISUAL.md](PROJECT_STRUCTURE_VISUAL.md)** - Визуальная схема структуры проекта
+- [PROJECT_STRUCTURE_ANALYSIS.md](PROJECT_STRUCTURE_ANALYSIS.md) - Полный анализ структуры проекта
+- [PROJECT_STRUCTURE_VISUAL.md](PROJECT_STRUCTURE_VISUAL.md) - Визуальная схема структуры проекта
+- [PLATFORM_STRUCTURE.md](PLATFORM_STRUCTURE.md) - Структура платформ и веток Git
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Архитектура системы
 - [PLATFORMS.md](docs/PLATFORMS.md) - Разделение разработки по платформам
 - [DEVELOPMENT.md](docs/DEVELOPMENT.md) - Руководство по разработке
 - [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) - План дальнейшей разработки
@@ -180,9 +190,8 @@ docker-compose up -d
 
 ## Поддержка
 
-- Email: support@company.com
-- Документация: https://docs.company.com
-- Статус: https://status.company.com
+Документация проекта находится в директории `docs/` и корневых файлах проекта.
+Для получения дополнительной информации см. `README.md` и `DOCUMENTATION_INDEX.md`.
 
 ## Версия
 

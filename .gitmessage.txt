@@ -1,0 +1,17 @@
+Реорганизация проекта по платформам
+
+- Разделение проекта на 8 платформ (серверные и клиентские)
+- Создание структуры директорий platforms/ для каждой платформы
+- Обновление документации (README, PLATFORMS, ARCHITECTURE)
+- Создание документации для каждой платформы
+- Определение структуры веток Git (develop/test для каждой платформы)
+- Обновление settings.gradle.kts с комментариями о платформах
+- Создание DEVELOPMENT_ROADMAP.md с планом развития
+- Создание RESTRUCTURING_REPORT.md с отчетом о работе
+
+Платформы:
+- Серверные: sbc-arm, server-x86_64, nas-arm, nas-x86_64
+- Клиентские: client-desktop-x86_64, client-desktop-arm, client-android, client-ios
+
+См. PLATFORM_STRUCTURE.md и DEVELOPMENT_ROADMAP.md для подробностей.
+

@@ -18,15 +18,15 @@
 1. **Микрокомпьютеры ARM** (`platforms/sbc-arm/`)
    - Raspberry Pi, Orange Pi, Rock64 и др.
    - Веб-интерфейс для управления
-   
+
 2. **Серверы x86-x64** (`platforms/server-x86_64/`)
    - Linux, Windows, macOS серверы
    - Веб-интерфейс для управления
-   
+
 3. **NAS ARM** (`platforms/nas-arm/`)
    - Synology, QNAP, Asustor (ARM модели)
    - Веб-интерфейс для управления
-   
+
 4. **NAS x86-x64** (`platforms/nas-x86_64/`)
    - Synology, QNAP, Asustor, TrueNAS (x86_64 модели)
    - Веб-интерфейс для управления
@@ -36,15 +36,15 @@
 5. **Клиенты Desktop x86-x64** (`platforms/client-desktop-x86_64/`)
    - Windows, Linux, macOS (Intel)
    - Нативное приложение (Compose Desktop)
-   
+
 6. **Клиенты Desktop ARM** (`platforms/client-desktop-arm/`)
    - Linux ARM64, macOS Apple Silicon
    - Нативное приложение (Compose Desktop)
-   
+
 7. **Клиенты Android** (`platforms/client-android/`)
    - Мобильные устройства Android
    - Нативное приложение (Jetpack Compose)
-   
+
 8. **Клиенты iOS/macOS** (`platforms/client-ios/`)
    - iOS и macOS устройства
    - Нативное приложение (SwiftUI)
@@ -146,6 +146,11 @@
 - `:core:common` - общие типы и модели (Resolution, CameraStatus)
 - `:core:network` - сетевое взаимодействие (Ktor Client)
 - `:core:license` - система лицензирования
+- `:core:auth` - аутентификация и авторизация (JVM только)
+  - LDAP клиент
+  - Kerberos клиент
+  - SSO провайдеры (SAML, OIDC)
+  - JWT управление
 - `:native:video-processing` - обработка видео на C++/OpenCV
 - `:native:analytics` - AI аналитика на C++/TensorFlow Lite
 
@@ -224,6 +229,19 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 - Протокол: HTTP/2 + Protocol Buffers
 - Сервисы: Лицензионный сервер, синхронизация настроек, удаленное управление
 - Безопасность: TLS 1.3, JWT токены, шифрование end-to-end
+
+### 4. Аутентификация и авторизация
+- **Клиентская часть (KMM):**
+  - JWT токены (access + refresh)
+  - Хранение токенов (SecureStorage на каждой платформе)
+  - Автоматическое обновление токенов
+- **Серверная часть (JVM):**
+  - JWT верификация
+  - LDAP/AD интеграция
+  - Kerberos аутентификация
+  - SSO провайдеры (SAML, OIDC)
+  - Синхронизация пользователей
+  - Авторизация на основе групп
 
 ## Система лицензирования
 
@@ -338,12 +356,120 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 - Шифрование данных в покое (AES-256)
 - Шифрование данных в движении (TLS 1.3)
 - Безопасное хранение ключей (HSM, Keychain, Keystore)
+- Certificate pinning для защиты от MITM атак
 
-### Контроль доступа:
-- Ролевая модель (RBAC)
-- Многофакторная аутентификация
-- Сессионное управление
-- Аудит доступа
+### Аутентификация и авторизация
+
+#### Архитектура аутентификации
+
+Система поддерживает множественные методы аутентификации:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Корпоративная сеть                       │
+│                                                              │
+│  ┌──────────────┐      ┌──────────────┐                    │
+│  │ Active       │      │ Key          │                    │
+│  │ Directory    │◄────►│ Distribution │                    │
+│  │ (Domain      │      │ Center (KDC)  │                    │
+│  │ Controller)  │      │              │                    │
+│  └──────┬───────┘      └──────┬───────┘                    │
+│         │                      │                            │
+│         │ LDAP/              │ Kerberos                    │
+│         │ Kerberos            │ Protocol                   │
+│         │                      │                            │
+│         ▼                      ▼                            │
+│  ┌──────────────────────────────────────────┐               │
+│  │     IP-CSS Server                       │               │
+│  │                                          │               │
+│  │  ┌────────────────────────────────────┐ │               │
+│  │  │ Authentication Layer               │ │               │
+│  │  │  - LDAP Client                     │ │               │
+│  │  │  - Kerberos Client                 │ │               │
+│  │  │  - SSO Provider (SAML/OIDC)        │ │               │
+│  │  │  - JWT Token Manager              │ │               │
+│  │  └────────────────────────────────────┘ │               │
+│  │                                          │               │
+│  │  ┌────────────────────────────────────┐ │               │
+│  │  │ Authorization Layer                │ │               │
+│  │  │  - Role Mapping                    │ │               │
+│  │  │  - Permission Engine               │ │               │
+│  │  │  - Group Membership Check          │ │               │
+│  │  └────────────────────────────────────┘ │               │
+│  │                                          │               │
+│  │  ┌────────────────────────────────────┐ │               │
+│  │  │ User Sync Service                  │ │               │
+│  │  │  - Periodic Sync                   │ │               │
+│  │  │  - Event-driven Updates            │ │               │
+│  │  │  - Conflict Resolution             │ │               │
+│  │  └────────────────────────────────────┘ │               │
+│  └──────────────────────────────────────────┘               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### Методы аутентификации
+
+1. **JWT токены (базовая)**
+   - Access tokens (15-30 минут)
+   - Refresh tokens (7-30 дней)
+   - Token rotation
+   - HttpOnly cookies для refresh tokens
+
+2. **LDAP / Active Directory**
+   - Прямая аутентификация через LDAP
+   - Синхронизация пользователей
+   - Маппинг групп AD на роли системы
+   - Поддержка вложенных и универсальных групп
+
+3. **SSO (Single Sign-On)**
+   - SAML 2.0
+   - OAuth 2.0 / OpenID Connect
+   - WS-Federation (опционально)
+   - Интеграция с Azure AD, Okta, Keycloak
+
+4. **Kerberos**
+   - SPNEGO токены
+   - Интеграция с KDC
+   - Автоматический вход для пользователей домена Windows
+   - Поддержка делегирования билетов (опционально)
+
+#### Контроль доступа:
+- **Ролевая модель (RBAC):**
+  - Роли: ADMIN, OPERATOR, VIEWER, GUEST
+  - Гранулярные разрешения (permissions)
+  - Проверка прав на уровне операций
+  - Маппинг групп AD на роли системы
+- **Многофакторная аутентификация (2FA):**
+  - TOTP (Time-based One-Time Password)
+  - SMS коды
+  - Email коды
+- **Сессионное управление:**
+  - Короткоживущие access tokens
+  - Refresh token rotation
+  - Отзыв токенов
+  - Блокировка после неудачных попыток
+- **Аудит доступа:**
+  - Логирование всех попыток входа
+  - Логирование операций с пользователями
+  - Логирование изменений прав доступа
+  - Логирование доступа к защищенным ресурсам
+  - Централизованный сбор логов (ELK, Splunk)
+
+#### Синхронизация пользователей
+
+- **Периодическая синхронизация:**
+  - Фоновая задача по расписанию (каждые 5 минут)
+  - Полная синхронизация (раз в 24 часа)
+  - Синхронизация при входе пользователя
+- **Обработка изменений:**
+  - Создание новых пользователей
+  - Обновление существующих пользователей
+  - Деактивация удаленных пользователей
+  - Обновление ролей на основе групп
+- **Разрешение конфликтов:**
+  - Локальный vs доменный пользователь
+  - Приоритет доменных данных
+  - Ручное разрешение конфликтов
 
 ### Соответствие стандартам:
 - GDPR - защита персональных данных
@@ -357,6 +483,7 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 - [PROJECT_STRUCTURE.md](../../PROJECT_STRUCTURE.md) - Структура проекта
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Руководство по разработке
 - [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) - Статус реализации
+- [USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md](USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md) - Углубленный анализ управления пользователями и интеграции с SSO/Kerberos
 
 ---
 

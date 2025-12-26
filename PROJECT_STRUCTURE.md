@@ -108,12 +108,40 @@ IP-CSS/
 │   │   └── CMakeLists.txt
 │   └── CMakeLists.txt         # Корневой CMake файл
 ├── scripts/                    # Скрипты сборки и развертывания
-│   └── build-all-platforms.sh # Скрипт сборки для всех платформ
+│   ├── build-all-platforms.sh  # Скрипт сборки для всех платформ
+│   ├── create-platform-branches.sh/ps1  # Скрипты создания веток для платформ
+│   └── cleanup-old-branches.ps1 # Скрипт очистки старых веток
+├── android/                    # Android приложение
+│   └── app/                    # Android app модуль
+│       ├── src/main/
+│       │   ├── kotlin/         # Android код
+│       │   └── res/            # Ресурсы
+│       └── build.gradle.kts
 ├── server/                     # Серверная часть
+│   ├── api/                    # REST API сервер (Ktor)
+│   │   ├── src/main/kotlin/
+│   │   │   ├── Application.kt  # Ktor приложение
+│   │   │   ├── routes/         # API маршруты
+│   │   │   └── di/             # Dependency Injection (Koin)
+│   │   └── build.gradle.kts
 │   └── web/                    # Веб-приложение (Next.js)
 │       ├── package.json
 │       ├── tsconfig.json
-│       └── next.config.js
+│       ├── next.config.js
+│       └── src/
+│           ├── app/            # Next.js App Router страницы
+│           ├── components/     # React компоненты
+│           ├── store/          # Redux store
+│           └── services/       # API сервисы
+├── platforms/                  # Платформо-специфичные реализации
+│   ├── sbc-arm/               # Микрокомпьютеры ARM (Raspberry Pi и др.)
+│   ├── server-x86_64/         # Серверы x86-x64
+│   ├── nas-arm/               # NAS ARM (Synology, QNAP, Asustor)
+│   ├── nas-x86_64/            # NAS x86-x64
+│   ├── client-desktop-x86_64/ # Клиенты Desktop x86-x64
+│   ├── client-desktop-arm/    # Клиенты Desktop ARM
+│   ├── client-android/        # Клиенты Android (может использовать android/)
+│   └── client-ios/            # Клиенты iOS/macOS
 ├── shared/                     # Kotlin Multiplatform модуль
 │   ├── src/
 │   │   ├── commonMain/        # Общий код для всех платформ
@@ -223,7 +251,18 @@ IP-CSS/
 - `desktopMain` - Desktop-специфичные реализации (JVM для Windows, Linux, macOS)
 - `commonTest` - тесты
 
-Подробная информация о разделении разработки по платформам: [docs/PLATFORMS.md](docs/PLATFORMS.md)
+Подробная информация о разделении разработки по платформам: [docs/PLATFORMS.md](docs/PLATFORMS.md) и [PLATFORM_STRUCTURE.md](PLATFORM_STRUCTURE.md)
+
+### core/common/ - Модуль общих типов
+
+Базовый модуль с общими типами данных, используемыми во всем проекте.
+
+**Содержимое:**
+- Базовые типы (Resolution, CameraStatus и другие)
+- Общие утилиты и константы
+
+**Технологии:**
+- Kotlin Multiplatform
 
 ### core/license/ - Модуль лицензирования
 
@@ -253,19 +292,59 @@ IP-CSS/
 - **analytics/** - AI-аналитика: детекция объектов, лиц, движения, трекинг, распознавание номеров (ANPR)
 - **codecs/** - поддержка кодеков H.264, H.265, MJPEG
 
+### server/api/ - REST API сервер
+
+REST API сервер на базе Ktor для управления системой видеонаблюдения.
+
+**Технологии:**
+- Ktor Server
+- Kotlin
+- Koin (Dependency Injection)
+
+**Endpoints:**
+- Камеры (GET, POST, PUT, DELETE, test, discover)
+- Health check
+
 ### server/web/ - Веб-приложение
 
 Next.js приложение для веб-интерфейса системы видеонаблюдения.
 
 **Технологии:**
-- Next.js
+- Next.js 15
 - TypeScript
-- React
+- React 18
+- Material-UI
+- Redux Toolkit
+
+### android/app/ - Android приложение
+
+Android приложение модуль (используется платформой client-android).
+
+**Технологии:**
+- Kotlin
+- Jetpack Compose (планируется)
+- Android SDK
+
+### platforms/ - Платформо-специфичные реализации
+
+Директория для платформо-специфичных реализаций. Каждая платформа имеет свою директорию с README.md.
+
+**Структура:**
+- `sbc-arm/` - Микрокомпьютеры ARM (использует :server:api)
+- `server-x86_64/` - Серверы x86-x64 (использует :server:api)
+- `nas-arm/` - NAS ARM (использует :server:api)
+- `nas-x86_64/` - NAS x86-x64 (использует :server:api)
+- `client-desktop-x86_64/` - Клиенты Desktop x86-x64
+- `client-desktop-arm/` - Клиенты Desktop ARM
+- `client-android/` - Клиенты Android (использует :android:app)
+- `client-ios/` - Клиенты iOS/macOS
+
+Подробнее: [PLATFORM_STRUCTURE.md](PLATFORM_STRUCTURE.md)
 
 ## Зависимости между модулями
 
 ```
-android/ios/desktop приложения (планируются)
+android/ios/desktop приложения (platforms/)
     ↓
 shared (KMM)
     ↓     ↓
@@ -275,18 +354,20 @@ shared (KMM)
     ↓
 core:license
     ↓
-native (C++ библиотеки через FFI)
+native (C++ библиотеки через FFI, не Gradle модули)
 ```
 
 **Важно:** Модуль `:core:network` зависит только от `:core:common`, а не от `:shared`, что устраняет циклическую зависимость. `:shared` зависит от обоих модулей `:core:network` и `:core:common`.
 
 **Текущая структура модулей Gradle:**
-- `:shared` - основной KMM модуль
+- `:shared` - основной KMM модуль (общая бизнес-логика)
 - `:core:common` - модуль общих типов (Resolution, CameraStatus)
 - `:core:license` - модуль лицензирования
-- `:core:network` - модуль сетевого взаимодействия
+- `:core:network` - модуль сетевого взаимодействия (Ktor Client, ONVIF, WebSocket, RTSP)
+- `:android:app` - Android приложение
+- `:server:api` - REST API сервер (Ktor)
 
-Native модули собираются отдельно через CMake и не включены в Gradle.
+Native модули (`native/`) собираются отдельно через CMake и не включены в Gradle как модули.
 
 ## Конфигурационные файлы
 
@@ -350,7 +431,9 @@ Native модули собираются отдельно через CMake и н
 
 ## Примечания
 
-1. **Платформенные приложения**: Модули `android/`, `ios/`, `desktop/` на данный момент отсутствуют в структуре проекта и должны быть добавлены в будущем.
+1. **Платформенные приложения**:
+   - Модуль `android/app/` существует и используется платформой `platforms/client-android/`
+   - iOS и Desktop приложения находятся в стадии планирования и будут размещены в соответствующих директориях `platforms/`
 
 2. **База данных**: Используется SQLDelight для работы с локальной базой данных SQLite. Схемы определены в `shared/src/commonMain/sqldelight/`.
 

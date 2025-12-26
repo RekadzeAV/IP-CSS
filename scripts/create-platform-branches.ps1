@@ -29,7 +29,7 @@ $platforms = @(
 foreach ($platform in $platforms) {
     $developBranch = "develop/$platform"
     $testBranch = "test/$platform"
-    
+
     # Создаем develop ветку
     if (git show-ref --verify --quiet refs/heads/$developBranch) {
         Write-Host "Branch $developBranch already exists, skipping..." -ForegroundColor Yellow
@@ -38,7 +38,7 @@ foreach ($platform in $platforms) {
         git checkout -b $developBranch
         git checkout $mainBranch
     }
-    
+
     # Создаем test ветку от develop
     if (git show-ref --verify --quiet refs/heads/$testBranch) {
         Write-Host "Branch $testBranch already exists, skipping..." -ForegroundColor Yellow

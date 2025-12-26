@@ -30,7 +30,7 @@ PLATFORMS=(
 for PLATFORM in "${PLATFORMS[@]}"; do
     DEVELOP_BRANCH="develop/$PLATFORM"
     TEST_BRANCH="test/$PLATFORM"
-    
+
     # Создаем develop ветку
     if git show-ref --verify --quiet refs/heads/$DEVELOP_BRANCH; then
         echo "Branch $DEVELOP_BRANCH already exists, skipping..."
@@ -39,7 +39,7 @@ for PLATFORM in "${PLATFORMS[@]}"; do
         git checkout -b $DEVELOP_BRANCH
         git checkout $MAIN_BRANCH
     fi
-    
+
     # Создаем test ветку от develop
     if git show-ref --verify --quiet refs/heads/$TEST_BRANCH; then
         echo "Branch $TEST_BRANCH already exists, skipping..."
