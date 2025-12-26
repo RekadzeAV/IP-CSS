@@ -12,16 +12,16 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
     private val taskRegistry = mutableMapOf<String, BackgroundTask>()
     private val taskJobs = mutableMapOf<String, Job>()
     private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    
+
     private val _taskEvents = MutableStateFlow<TaskEvent?>(null)
     private val taskEventsFlow = _taskEvents.asStateFlow()
         .filterNotNull()
-    
+
     actual fun initialize() {
         // Регистрируем задачи для фонового выполнения
         registerBackgroundTasks()
     }
-    
+
     actual suspend fun schedulePeriodicTask(
         taskId: String,
         task: BackgroundTask,
@@ -31,7 +31,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
     ): Boolean {
         return try {
             taskRegistry[taskId] = task
-            
+
             val job = scope.launch {
                 while (isActive) {
                     try {
@@ -46,15 +46,15 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
                     delay(interval)
                 }
             }
-            
+
             taskJobs[taskId] = job
-            
+
             true
         } catch (e: Exception) {
             false
         }
     }
-    
+
     actual suspend fun scheduleOneTimeTask(
         taskId: String,
         task: BackgroundTask,
@@ -63,7 +63,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
     ): Boolean {
         return try {
             taskRegistry[taskId] = task
-            
+
             val job = scope.launch {
                 delay(delay)
                 try {
@@ -81,15 +81,15 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
                     taskJobs.remove(taskId)
                 }
             }
-            
+
             taskJobs[taskId] = job
-            
+
             true
         } catch (e: Exception) {
             false
         }
     }
-    
+
     actual suspend fun cancelTask(taskId: String): Boolean {
         return try {
             taskJobs[taskId]?.cancel()
@@ -101,7 +101,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
             false
         }
     }
-    
+
     actual suspend fun cancelAllTasks(): Boolean {
         return try {
             taskJobs.values.forEach { it.cancel() }
@@ -112,7 +112,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
             false
         }
     }
-    
+
     actual suspend fun getTaskStatus(taskId: String): TaskStatus? {
         return when {
             !taskRegistry.containsKey(taskId) -> null
@@ -122,18 +122,18 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
             else -> TaskStatus.PENDING
         }
     }
-    
+
     actual fun getTaskEvents(): Flow<TaskEvent> {
         return taskEventsFlow
     }
-    
+
     private suspend fun checkConstraints(constraints: TaskConstraints): Boolean {
         // Проверка ограничений для iOS
         // Большинство ограничений должны проверяться системой iOS
         // TODO: Реализовать проверку ограничений через системные API
         return true
     }
-    
+
     private fun registerBackgroundTasks() {
         // Регистрация задач для BGTaskScheduler
         // Это должно быть вызвано из AppDelegate в iOS приложении

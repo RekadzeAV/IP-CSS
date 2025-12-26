@@ -13,7 +13,7 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Реализация NotificationRepository
- * 
+ *
  * Note: API сервис для уведомлений еще не реализован
  * Эта реализация является заглушкой и должна быть доработана
  * когда будет готов API сервис для уведомлений
@@ -22,10 +22,10 @@ class NotificationRepositoryImpl(
     // TODO: Add NotificationApiService when it's available
     // private val notificationApiService: NotificationApiService
 ) : NotificationRepository {
-    
+
     // Временное хранилище в памяти
     private val notifications = mutableListOf<Notification>()
-    
+
     override suspend fun getNotifications(
         userId: String?,
         type: NotificationType?,
@@ -36,18 +36,18 @@ class NotificationRepositoryImpl(
     ): PaginatedResult<Notification> = withContext(Dispatchers.Default) {
         try {
             var filtered = notifications.asSequence()
-            
+
             userId?.let { filtered = filtered.filter { it.userId == it } }
             type?.let { filtered = filtered.filter { it.type == it } }
             severity?.let { filtered = filtered.filter { it.severity == it } }
             read?.let { filtered = filtered.filter { it.read == it } }
-            
+
             val sorted = filtered.sortedByDescending { it.timestamp }.toList()
             val total = sorted.size
             val startIndex = (page - 1) * limit
             val endIndex = minOf(startIndex + limit, sorted.size)
             val items = sorted.subList(startIndex, endIndex)
-            
+
             PaginatedResult(
                 items = items,
                 total = total,
@@ -60,7 +60,7 @@ class NotificationRepositoryImpl(
             PaginatedResult(emptyList(), 0, page, limit, false)
         }
     }
-    
+
     override suspend fun getNotificationById(id: String): Notification? = withContext(Dispatchers.Default) {
         try {
             notifications.find { it.id == id }
@@ -69,7 +69,7 @@ class NotificationRepositoryImpl(
             null
         }
     }
-    
+
     override suspend fun addNotification(notification: Notification): Result<Notification> = withContext(Dispatchers.Default) {
         try {
             notifications.add(notification)
@@ -79,7 +79,7 @@ class NotificationRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun markAsRead(id: String): Result<Notification> = withContext(Dispatchers.Default) {
         try {
             val index = notifications.indexOfFirst { it.id == id }
@@ -98,7 +98,7 @@ class NotificationRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun markAsRead(ids: List<String>): Result<List<Notification>> = withContext(Dispatchers.Default) {
         try {
             val updated = mutableListOf<Notification>()
@@ -119,7 +119,7 @@ class NotificationRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun markAllAsRead(userId: String?): Result<Int> = withContext(Dispatchers.Default) {
         try {
             var count = 0
@@ -138,7 +138,7 @@ class NotificationRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun deleteNotification(id: String): Result<Unit> = withContext(Dispatchers.Default) {
         try {
             val removed = notifications.removeAll { it.id == id }
@@ -152,11 +152,11 @@ class NotificationRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun getUnreadCount(userId: String?): Int = withContext(Dispatchers.Default) {
         try {
-            notifications.count { 
-                (userId == null || it.userId == userId) && !it.read 
+            notifications.count {
+                (userId == null || it.userId == userId) && !it.read
             }
         } catch (e: Exception) {
             logger.error(e) { "Error getting unread count" }

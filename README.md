@@ -109,15 +109,34 @@ docker-compose up -d
 ## Документация
 
 Полная документация доступна в директории [docs/](docs/):
+
+### Основная документация
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Архитектура системы
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Структура проекта
+- [PLATFORMS.md](docs/PLATFORMS.md) - Разделение разработки по платформам
+- [DEVELOPMENT.md](docs/DEVELOPMENT.md) - Руководство по разработке
+- [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) - План дальнейшей разработки
+
+### Статус и планирование
 - [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) - Статус реализации компонентов
 - [MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md) - Детальный анализ нереализованного функционала
-- [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) - План дальнейшей разработки
 - [PROJECT_ROADMAP.md](PROJECT_ROADMAP.md) - Карта выполнения проекта
-- [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) - Руководство по развертыванию
+- [CURRENT_STATUS.md](CURRENT_STATUS.md) - Текущее состояние проекта
+
+### Техническая документация
 - [API.md](docs/API.md) - API документация
-- [LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md) - Система лицензирования
+- [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) - Руководство по развертыванию
 - [INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md) - Руководство по интеграции библиотек
+- [LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md) - Система лицензирования
+
+### Клиенты и протоколы
+- [ONVIF_CLIENT.md](docs/ONVIF_CLIENT.md) - Документация ONVIF клиента
+- [RTSP_CLIENT.md](docs/RTSP_CLIENT.md) - Документация RTSP клиента
+- [WEBSOCKET_CLIENT.md](docs/WEBSOCKET_CLIENT.md) - Документация WebSocket клиента
+
+### Инструменты и тестирование
+- [DEVELOPMENT_TOOLS.md](docs/DEVELOPMENT_TOOLS.md) - Инструменты разработки
+- [TESTING.md](docs/TESTING.md) - Руководство по тестированию
 
 ## Лицензия
 

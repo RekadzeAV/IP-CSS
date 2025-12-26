@@ -8,10 +8,10 @@ extern "C" {
 
 bool codec_get_info(CodecType type, CodecInfo* info) {
     if (!info) return false;
-    
+
 #ifdef ENABLE_FFMPEG
     const AVCodec* codec = nullptr;
-    
+
     switch (type) {
         case CODEC_TYPE_H264:
             codec = avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -23,7 +23,7 @@ bool codec_get_info(CodecType type, CodecInfo* info) {
                 info->maxHeight = 4320;
             }
             break;
-            
+
         case CODEC_TYPE_H265:
             codec = avcodec_find_encoder(AV_CODEC_ID_HEVC);
             if (codec) {
@@ -34,7 +34,7 @@ bool codec_get_info(CodecType type, CodecInfo* info) {
                 info->maxHeight = 4320;
             }
             break;
-            
+
         case CODEC_TYPE_MJPEG:
             codec = avcodec_find_encoder(AV_CODEC_ID_MJPEG);
             if (codec) {
@@ -45,11 +45,11 @@ bool codec_get_info(CodecType type, CodecInfo* info) {
                 info->maxHeight = 8192;
             }
             break;
-            
+
         default:
             return false;
     }
-    
+
     return codec != nullptr;
 #else
     // Заглушка без FFmpeg
@@ -61,7 +61,7 @@ bool codec_get_info(CodecType type, CodecInfo* info) {
             info->maxWidth = 1920;
             info->maxHeight = 1080;
             return true;
-            
+
         case CODEC_TYPE_H265:
             info->type = CODEC_TYPE_H265;
             info->name = "H.265/HEVC";
@@ -69,7 +69,7 @@ bool codec_get_info(CodecType type, CodecInfo* info) {
             info->maxWidth = 1920;
             info->maxHeight = 1080;
             return true;
-            
+
         case CODEC_TYPE_MJPEG:
             info->type = CODEC_TYPE_MJPEG;
             info->name = "MJPEG";
@@ -77,7 +77,7 @@ bool codec_get_info(CodecType type, CodecInfo* info) {
             info->maxWidth = 1920;
             info->maxHeight = 1080;
             return true;
-            
+
         default:
             return false;
     }
@@ -87,7 +87,7 @@ bool codec_get_info(CodecType type, CodecInfo* info) {
 bool codec_is_supported(CodecType type) {
 #ifdef ENABLE_FFMPEG
     const AVCodec* codec = nullptr;
-    
+
     switch (type) {
         case CODEC_TYPE_H264:
             codec = avcodec_find_encoder(AV_CODEC_ID_H264);
@@ -101,7 +101,7 @@ bool codec_is_supported(CodecType type) {
         default:
             return false;
     }
-    
+
     return codec != nullptr;
 #else
     return true; // Заглушка

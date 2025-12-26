@@ -245,4 +245,5 @@ wsClient.getConnectionState().collect { state ->
 - ❌ Метрики и мониторинг (latency, reconnect count)
 
 **Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#websocketclient)
+**Разделение разработки по платформам:** [PLATFORMS.md](PLATFORMS.md)
 

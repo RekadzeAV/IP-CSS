@@ -219,9 +219,11 @@ IP-CSS/
 **Source Sets:**
 - `commonMain` - код, общий для всех платформ
 - `androidMain` - Android-специфичные реализации
-- `iosMain` - iOS-специфичные реализации (iosX64, iosArm64, iosSimulatorArm64)
-- `desktopMain` - Desktop-специфичные реализации (JVM)
+- `iosMain` - iOS-специфичные реализации (arm64, x86_64 для симулятора)
+- `desktopMain` - Desktop-специфичные реализации (JVM для Windows, Linux, macOS)
 - `commonTest` - тесты
+
+Подробная информация о разделении разработки по платформам: [docs/PLATFORMS.md](docs/PLATFORMS.md)
 
 ### core/license/ - Модуль лицензирования
 
@@ -314,16 +316,32 @@ Native модули собираются отдельно через CMake и н
 ## Документация
 
 Вся документация находится в папке `docs/`:
+
+### Основная документация
 - `ARCHITECTURE.md` - подробная архитектура системы
-- `DEPLOYMENT_GUIDE.md` - руководство по развертыванию
-- `API.md` - API документация
-- `LICENSE_SYSTEM.md` - система лицензирования
+- `PLATFORMS.md` - разделение разработки по платформам
+- `PROJECT_STRUCTURE.md` - этот файл
 - `DEVELOPMENT.md` - руководство по разработке
+- `DEVELOPMENT_PLAN.md` - план дальнейшей разработки
+
+### Статус и планирование
+- `IMPLEMENTATION_STATUS.md` - статус реализации компонентов
+- `MISSING_FUNCTIONALITY.md` - детальный анализ нереализованного функционала
+
+### Техническая документация
+- `API.md` - API документация
+- `DEPLOYMENT_GUIDE.md` - руководство по развертыванию
+- `INTEGRATION_GUIDE.md` - руководство по интеграции библиотек
+- `LICENSE_SYSTEM.md` - система лицензирования
+
+### Клиенты и протоколы
 - `ONVIF_CLIENT.md` - документация ONVIF клиента
 - `RTSP_CLIENT.md` - документация RTSP клиента
 - `WEBSOCKET_CLIENT.md` - документация WebSocket клиента
+
+### Инструменты и тестирование
+- `DEVELOPMENT_TOOLS.md` - инструменты разработки
 - `TESTING.md` - документация по тестированию
-- `INTEGRATION_GUIDE.md` - руководство по интеграции
 
 ## Скрипты
 

@@ -360,4 +360,5 @@ class PtzController(private val camera: Camera) {
 
 **Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#onvifclient)
 **Руководство по интеграции:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#1-xml-парсинг-для-onvif)
+**Разделение разработки по платформам:** [PLATFORMS.md](PLATFORMS.md)
 

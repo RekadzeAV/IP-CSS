@@ -15,7 +15,7 @@ actual class PlatformCrypto {
         // В продакшене можно комбинировать с другими параметрами устройства
         return UIDevice.currentDevice().identifierForVendor?.UUIDString ?: "unknown"
     }
-    
+
     actual fun decryptOfflineCode(code: String): OfflineActivationData {
         // Реализация расшифровки офлайн кода через Security framework
         return try {
@@ -26,7 +26,7 @@ actual class PlatformCrypto {
             throw LicenseException(LicenseError.INVALID_ACTIVATION_CODE)
         }
     }
-    
+
     actual fun schedulePeriodicCheck(checkCallback: (ActivatedLicense) -> Unit) {
         // TODO: Реализовать периодическую проверку через iOS Background Tasks
         // Использовать BGTaskScheduler для фоновых задач
@@ -36,12 +36,12 @@ actual class PlatformCrypto {
 actual class LicenseRepository(context: Any?) {
     private val keychainService = "com.company.ipcamera.license"
     private val keychainKey = "license_data"
-    
+
     actual fun saveLicense(license: ActivatedLicense) {
         try {
             val json = Json.encodeToString(license)
             val data = json.encodeToNSData()
-            
+
             // Сохраняем в Keychain для безопасности
             val query = mapOf(
                 kSecClass to kSecClassGenericPassword,
@@ -49,10 +49,10 @@ actual class LicenseRepository(context: Any?) {
                 kSecAttrAccount to keychainKey,
                 kSecValueData to data
             )
-            
+
             // Удаляем старую запись если существует
             SecItemDelete(query.toCFDictionary())
-            
+
             // Добавляем новую запись
             val status = SecItemAdd(query.toCFDictionary(), null)
             if (status != errSecSuccess.toInt()) {
@@ -65,7 +65,7 @@ actual class LicenseRepository(context: Any?) {
             NSUserDefaults.standardUserDefaults.setObject(json, "license")
         }
     }
-    
+
     actual fun loadLicense(): ActivatedLicense? {
         return try {
             // Пытаемся загрузить из Keychain
@@ -76,10 +76,10 @@ actual class LicenseRepository(context: Any?) {
                 kSecReturnData to kCFBooleanTrue,
                 kSecMatchLimit to kSecMatchLimitOne
             )
-            
+
             val result = alloc<CFTypeRefVar>()
             val status = SecItemCopyMatching(query.toCFDictionary(), result.ptr)
-            
+
             if (status == errSecSuccess.toInt()) {
                 val data = result.value as? NSData
                 val json = data?.let { NSString.create(stringEncoding = NSUTF8StringEncoding, data = it)?.toString() }
@@ -95,7 +95,7 @@ actual class LicenseRepository(context: Any?) {
             json?.let { Json.decodeFromString<ActivatedLicense>(it) }
         }
     }
-    
+
     actual fun deleteLicense() {
         try {
             // Удаляем из Keychain
@@ -108,15 +108,15 @@ actual class LicenseRepository(context: Any?) {
         } catch (e: Exception) {
             // Игнорируем ошибки
         }
-        
+
         // Также удаляем из UserDefaults
         NSUserDefaults.standardUserDefaults.removeObjectForKey("license")
     }
-    
+
     private fun String.encodeToNSData(): NSData {
         return NSString.create(string = this).dataUsingEncoding(NSUTF8StringEncoding) ?: NSData.create()
     }
-    
+
     private fun Map<*, *>.toCFDictionary(): CFDictionary {
         // Преобразование Map в CFDictionary для Keychain API
         // В реальной реализации использовать правильное преобразование

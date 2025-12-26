@@ -34,15 +34,24 @@ cd server/web && npm install
 ```
 IP-CSS/
 ├── shared/          # Kotlin Multiplatform модуль
+│   ├── commonMain/  # Общий код для всех платформ
+│   ├── androidMain/ # Android-специфичные реализации
+│   ├── iosMain/     # iOS-специфичные реализации
+│   └── desktopMain/ # Desktop-специфичные реализации
 ├── android/         # Android приложение
 ├── ios/             # iOS приложение
 ├── desktop/         # Desktop приложения
 ├── server/          # Серверная часть
 ├── native/          # C++ библиотеки
 ├── core/            # Общие модули
+│   ├── common/      # Базовые типы
+│   ├── network/     # Сетевые клиенты
+│   └── license/     # Система лицензирования
 ├── docs/            # Документация
 └── scripts/         # Скрипты
 ```
+
+Подробная информация о разделении разработки по платформам: [PLATFORMS.md](PLATFORMS.md)
 
 ## Запуск в режиме разработки
 

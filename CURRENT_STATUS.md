@@ -190,6 +190,7 @@
 Полный план разработки: [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)
 Статус реализации: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 Детальный анализ нереализованного функционала: [docs/MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md)
+Разделение разработки по платформам: [docs/PLATFORMS.md](docs/PLATFORMS.md)
 Дорожная карта: [PROJECT_ROADMAP.md](PROJECT_ROADMAP.md)
 
 ---

@@ -210,6 +210,7 @@ sudo apt upgrade ip-camera-surveillance
 
 Для более подробной информации см.:
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Архитектура системы
+- [PLATFORMS.md](PLATFORMS.md) - Разделение разработки по платформам
 - [API.md](API.md) - API документация
 - [LICENSE_SYSTEM.md](LICENSE_SYSTEM.md) - Система лицензирования
 

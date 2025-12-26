@@ -28,6 +28,9 @@ include(":core:common")
 include(":core:license")
 include(":core:network")
 
+// Android app
+include(":android:app")
+
 // Native C++ libraries
 // Note: Native modules are built with CMake, not Gradle
 // They are included here for reference but won't be built by Gradle
@@ -36,6 +39,7 @@ include(":core:network")
 // include(":native:analytics")
 
 // Server modules
+include(":server:api")
 // Note: server:web is a Node.js project, not a Gradle module
 // It should be built separately using npm/yarn
 

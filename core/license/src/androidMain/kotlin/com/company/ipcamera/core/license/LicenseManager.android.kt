@@ -25,7 +25,7 @@ actual class PlatformCrypto {
             "android_device_id_fallback"
         }
     }
-    
+
     actual fun decryptOfflineCode(code: String): OfflineActivationData {
         // Реализация расшифровки офлайн кода
         // В продакшене использовать Android Keystore для хранения ключей
@@ -34,7 +34,7 @@ actual class PlatformCrypto {
             if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
                 Security.addProvider(BouncyCastleProvider())
             }
-            
+
             // TODO: Реализовать полную расшифровку с использованием Keystore
             // Временная реализация
             Json.decodeFromString<OfflineActivationData>(code)
@@ -42,7 +42,7 @@ actual class PlatformCrypto {
             throw LicenseException(LicenseError.INVALID_ACTIVATION_CODE)
         }
     }
-    
+
     actual fun schedulePeriodicCheck(checkCallback: (ActivatedLicense) -> Unit) {
         // TODO: Реализовать периодическую проверку через WorkManager
         // WorkManager должен быть добавлен в зависимости
@@ -50,15 +50,15 @@ actual class PlatformCrypto {
 }
 
 actual class LicenseRepository(context: Any?) {
-    private val androidContext: Context = context as? Context 
+    private val androidContext: Context = context as? Context
         ?: throw IllegalArgumentException("Context is required for Android LicenseRepository")
-    
+
     private val masterKey: MasterKey by lazy {
         MasterKey.Builder(androidContext)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
     }
-    
+
     private val encryptedPrefs: SharedPreferences by lazy {
         EncryptedSharedPreferences.create(
             androidContext,
@@ -68,7 +68,7 @@ actual class LicenseRepository(context: Any?) {
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     }
-    
+
     actual fun saveLicense(license: ActivatedLicense) {
         try {
             val json = Json.encodeToString(license)
@@ -79,7 +79,7 @@ actual class LicenseRepository(context: Any?) {
             throw LicenseException(LicenseError.SERVER_ERROR)
         }
     }
-    
+
     actual fun loadLicense(): ActivatedLicense? {
         return try {
             val json = encryptedPrefs.getString("license", null) ?: return null
@@ -88,13 +88,13 @@ actual class LicenseRepository(context: Any?) {
             null
         }
     }
-    
+
     actual fun deleteLicense() {
         encryptedPrefs.edit()
             .remove("license")
             .apply()
     }
-    
+
     private fun encryptLicenseData(data: String): String {
         // Дополнительное шифрование данных лицензии
         // В продакшене использовать Android Keystore

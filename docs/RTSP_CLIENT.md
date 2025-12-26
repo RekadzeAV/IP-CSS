@@ -317,4 +317,5 @@ make
 
 **Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#rtspclient)
 **Руководство по интеграции:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#2-rtsp-клиент---интеграция-live555)
+**Разделение разработки по платформам:** [PLATFORMS.md](PLATFORMS.md)
 

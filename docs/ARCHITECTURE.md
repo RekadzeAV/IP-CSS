@@ -258,6 +258,23 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 - Ansible для конфигурации
 - GitOps для непрерывного развертывания
 
+## Разделение по платформам
+
+Проект использует Kotlin Multiplatform для кроссплатформенной разработки. Подробная информация о разделении разработки по платформам доступна в [PLATFORMS.md](PLATFORMS.md).
+
+### Основные принципы:
+- **Общий код** (`commonMain`) - бизнес-логика, модели, use cases
+- **Платформо-специфичный код** (`androidMain`, `iosMain`, `desktopMain`) - UI, системные API, платформенные сервисы
+- **Нативные библиотеки** (C++) - обработка видео, AI аналитика
+
+### Source Sets:
+- `commonMain` - код, общий для всех платформ
+- `androidMain` - Android-специфичные реализации
+- `iosMain` - iOS-специфичные реализации (arm64, x86_64 для симулятора)
+- `desktopMain` - Desktop-специфичные реализации (JVM для Windows, Linux, macOS)
+
+Подробнее см. [PLATFORMS.md](PLATFORMS.md).
+
 ## Безопасность
 
 ### Защита данных:

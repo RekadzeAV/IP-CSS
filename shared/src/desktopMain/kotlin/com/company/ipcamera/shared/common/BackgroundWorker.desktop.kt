@@ -12,13 +12,13 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
     private val taskRegistry = mutableMapOf<String, BackgroundTask>()
     private val scheduledTasks = mutableMapOf<String, ScheduledFuture<*>>()
     private val executorService: ScheduledExecutorService = Executors.newScheduledThreadPool(4)
-    
+
     private val _taskEvents = MutableStateFlow<TaskEvent?>(null)
     private val taskEventsFlow = _taskEvents.asStateFlow()
         .filterNotNull()
-    
+
     private val isShutdown = AtomicBoolean(false)
-    
+
     actual fun initialize() {
         // Инициализация executor service
         // Добавляем shutdown hook для корректного завершения
@@ -26,7 +26,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
             shutdown()
         })
     }
-    
+
     actual suspend fun schedulePeriodicTask(
         taskId: String,
         task: BackgroundTask,
@@ -36,7 +36,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
     ): Boolean {
         return try {
             taskRegistry[taskId] = task
-            
+
             val runnable = Runnable {
                 CoroutineScope(Dispatchers.Default).launch {
                     try {
@@ -52,22 +52,22 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
                     }
                 }
             }
-            
+
             val scheduledFuture = executorService.scheduleAtFixedRate(
                 runnable,
                 interval,
                 interval,
                 TimeUnit.MILLISECONDS
             )
-            
+
             scheduledTasks[taskId] = scheduledFuture
-            
+
             true
         } catch (e: Exception) {
             false
         }
     }
-    
+
     actual suspend fun scheduleOneTimeTask(
         taskId: String,
         task: BackgroundTask,
@@ -76,7 +76,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
     ): Boolean {
         return try {
             taskRegistry[taskId] = task
-            
+
             val runnable = Runnable {
                 CoroutineScope(Dispatchers.Default).launch {
                     try {
@@ -96,21 +96,21 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
                     }
                 }
             }
-            
+
             val scheduledFuture = executorService.schedule(
                 runnable,
                 delay,
                 TimeUnit.MILLISECONDS
             )
-            
+
             scheduledTasks[taskId] = scheduledFuture
-            
+
             true
         } catch (e: Exception) {
             false
         }
     }
-    
+
     actual suspend fun cancelTask(taskId: String): Boolean {
         return try {
             scheduledTasks[taskId]?.cancel(true)
@@ -122,7 +122,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
             false
         }
     }
-    
+
     actual suspend fun cancelAllTasks(): Boolean {
         return try {
             scheduledTasks.values.forEach { it.cancel(true) }
@@ -133,7 +133,7 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
             false
         }
     }
-    
+
     actual suspend fun getTaskStatus(taskId: String): TaskStatus? {
         return when {
             !taskRegistry.containsKey(taskId) -> null
@@ -142,29 +142,29 @@ actual class BackgroundWorker actual constructor(private val context: Any?) {
             else -> TaskStatus.PENDING
         }
     }
-    
+
     actual fun getTaskEvents(): Flow<TaskEvent> {
         return taskEventsFlow
     }
-    
+
     private fun checkConstraints(constraints: TaskConstraints): Boolean {
         // Проверка ограничений для Desktop
         // Большинство ограничений не применимы к Desktop, но можно проверить сеть и хранилище
-        
+
         if (constraints.requiresNetwork) {
             // TODO: Реализовать проверку сетевого подключения
             // Пока возвращаем true
         }
-        
+
         if (constraints.requiresStorageNotLow) {
             // TODO: Реализовать проверку свободного места на диске
             // Пока возвращаем true
         }
-        
+
         // Остальные ограничения (зарядка, батарея, idle) не применимы к Desktop
         return true
     }
-    
+
     private fun shutdown() {
         if (isShutdown.compareAndSet(false, true)) {
             cancelAllTasks()

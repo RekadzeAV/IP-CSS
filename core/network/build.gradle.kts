@@ -72,8 +72,12 @@ kotlin {
             dependsOn(iosMain)
         }
 
-        val desktopMain by getting {
+        val jvmMain by creating {
             dependsOn(commonMain)
+        }
+
+        val desktopMain by getting {
+            dependsOn(jvmMain)
             dependencies {
                 implementation(libs.ktor.client.java)
             }

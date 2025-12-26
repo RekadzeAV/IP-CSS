@@ -1,0 +1,14 @@
+package com.company.ipcamera.server.routing
+
+import io.ktor.server.application.*
+import io.ktor.server.routing.*
+
+fun Application.configureRouting() {
+    routing {
+        route("/api/v1") {
+            cameraRoutes()
+            healthRoutes()
+        }
+    }
+}
+

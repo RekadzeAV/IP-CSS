@@ -531,10 +531,11 @@
 1. **[IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)** - общий статус реализации
 2. **[DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md)** - план разработки
 3. **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** - руководство по интеграции библиотек
-4. **[ONVIF_CLIENT.md](ONVIF_CLIENT.md)** - документация ONVIF клиента
-5. **[RTSP_CLIENT.md](RTSP_CLIENT.md)** - документация RTSP клиента
-6. **[WEBSOCKET_CLIENT.md](WEBSOCKET_CLIENT.md)** - документация WebSocket клиента
-7. **[LICENSE_SYSTEM.md](LICENSE_SYSTEM.md)** - документация системы лицензирования
+4. **[PLATFORMS.md](PLATFORMS.md)** - разделение разработки по платформам
+5. **[ONVIF_CLIENT.md](ONVIF_CLIENT.md)** - документация ONVIF клиента
+6. **[RTSP_CLIENT.md](RTSP_CLIENT.md)** - документация RTSP клиента
+7. **[WEBSOCKET_CLIENT.md](WEBSOCKET_CLIENT.md)** - документация WebSocket клиента
+8. **[LICENSE_SYSTEM.md](LICENSE_SYSTEM.md)** - документация системы лицензирования
 
 ### Приоритеты реализации:
 

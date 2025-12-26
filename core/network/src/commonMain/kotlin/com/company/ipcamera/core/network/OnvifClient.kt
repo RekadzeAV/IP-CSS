@@ -41,30 +41,58 @@ class OnvifClient(
      * Обнаружить камеры в сети через WS-Discovery
      */
     suspend fun discoverCameras(timeoutMillis: Long = 5000): List<DiscoveredCamera> = withContext(Dispatchers.IO) {
+        val wsDiscovery = WSDiscovery()
         try {
-            logger.info { "Starting ONVIF camera discovery..." }
+            logger.info { "Starting ONVIF camera discovery via WS-Discovery..." }
 
-            // WS-Discovery multicast запрос
-            val discovered = mutableListOf<DiscoveredCamera>()
+            // Использование WS-Discovery для обнаружения устройств
+            val discoveredDevices = wsDiscovery.discover(timeoutMillis)
+            logger.info { "WS-Discovery found ${discoveredDevices.size} devices" }
 
-            // Простой подход: попробуем подключиться к известным IP адресам
-            // В реальной реализации здесь должен быть WS-Discovery протокол через UDP multicast
-            // Для упрощения, мы пытаемся подключиться к камерам через ONVIF Device Management
+            val discoveredCameras = mutableListOf<DiscoveredCamera>()
 
-            // В продакшене здесь должен быть:
-            // 1. UDP multicast на 239.255.255.250:3702
-            // 2. SOAP запрос Probe с типами устройств
-            // 3. Обработка ProbeMatches ответов
+            // Преобразование обнаруженных устройств в камеры
+            for (device in discoveredDevices) {
+                for (xAddr in device.xAddrs) {
+                    try {
+                        // Нормализация URL
+                        val normalizedUrl = normalizeUrl(xAddr)
 
-            logger.warn { "WS-Discovery not fully implemented, using fallback discovery" }
+                        // Попытка получить информацию о камере
+                        val deviceInfo = getDeviceInformation(normalizedUrl)
+                        val capabilities = getCapabilities(normalizedUrl)
 
-            // Fallback: попробуем получить информацию о камере по URL
-            // Это заглушка для демонстрации структуры
-            emptyList()
+                        val camera = DiscoveredCamera(
+                            url = normalizedUrl,
+                            name = deviceInfo?.model ?: "Unknown Camera",
+                            manufacturer = deviceInfo?.manufacturer,
+                            model = deviceInfo?.model,
+                            capabilities = capabilities
+                        )
+                        discoveredCameras.add(camera)
+                        logger.info { "Discovered camera: ${camera.name} at ${camera.url}" }
+                    } catch (e: Exception) {
+                        logger.warn(e) { "Error getting information for device at $xAddr" }
+                        // Добавляем камеру даже без полной информации
+                        discoveredCameras.add(
+                            DiscoveredCamera(
+                                url = normalizeUrl(xAddr),
+                                name = "ONVIF Device",
+                                capabilities = null
+                            )
+                        )
+                    }
+                }
+            }
+
+            logger.info { "Camera discovery completed. Found ${discoveredCameras.size} cameras" }
+            discoveredCameras
 
         } catch (e: Exception) {
             logger.error(e) { "Error during camera discovery" }
             emptyList()
+        } finally {
+            wsDiscovery.close()
         }
     }
 
@@ -239,13 +267,43 @@ class OnvifClient(
         password: String? = null
     ): ConnectionTestResult = withContext(Dispatchers.IO) {
         try {
-            val capabilities = getCapabilities(url, username, password)
+            logger.info { "Testing connection to: $url" }
+            val normalizedUrl = normalizeUrl(url)
+
+            // Попытка получить capabilities через ONVIF
+            val capabilities = getCapabilities(normalizedUrl, username, password)
 
             if (capabilities != null) {
-                val profiles = getProfiles(url, username, password)
-                val streamInfo = if (profiles.isNotEmpty()) {
-                    val streamUri = getStreamUri(url, profiles.first().token, username, password)
-                    listOf(
+                logger.debug { "ONVIF capabilities retrieved successfully" }
+
+                // Получение профилей для определения потоков
+                val profiles = getProfiles(normalizedUrl, username, password)
+                logger.debug { "Found ${profiles.size} profiles" }
+
+                val streamInfo = mutableListOf<StreamInfo>()
+
+                // Получение информации о потоках для каждого профиля
+                for (profile in profiles.take(3)) { // Ограничиваем до 3 профилей
+                    try {
+                        val streamUri = getStreamUri(normalizedUrl, profile.token, username, password)
+                        if (streamUri != null) {
+                            streamInfo.add(
+                                StreamInfo(
+                                    type = "RTSP",
+                                    resolution = profile.videoResolution?.toString() ?: "unknown",
+                                    fps = profile.fps ?: 25,
+                                    codec = profile.codec ?: "H.264"
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        logger.warn(e) { "Error getting stream URI for profile ${profile.token}" }
+                    }
+                }
+
+                // Если не удалось получить потоки, создаем базовую информацию
+                if (streamInfo.isEmpty() && profiles.isNotEmpty()) {
+                    streamInfo.add(
                         StreamInfo(
                             type = "RTSP",
                             resolution = profiles.first().videoResolution?.toString() ?: "unknown",
@@ -253,11 +311,9 @@ class OnvifClient(
                             codec = profiles.first().codec ?: "H.264"
                         )
                     )
-                } else {
-                    emptyList()
                 }
 
-                ConnectionTestResult.Success(
+                val result = ConnectionTestResult.Success(
                     streams = streamInfo,
                     capabilities = CameraCapabilities(
                         ptz = capabilities.ptzServiceUrl != null,
@@ -266,18 +322,56 @@ class OnvifClient(
                         analytics = false
                     )
                 )
+
+                logger.info { "Connection test successful. Found ${streamInfo.size} streams" }
+                result
             } else {
+                logger.warn { "Could not retrieve ONVIF capabilities. Camera may not support ONVIF or connection failed." }
                 ConnectionTestResult.Failure(
-                    error = "Could not connect to camera",
+                    error = "Could not connect to camera or camera does not support ONVIF",
                     code = ErrorCode.CONNECTION_FAILED
                 )
             }
 
+        } catch (e: java.net.SocketTimeoutException) {
+            logger.error(e) { "Connection test timeout: ${e.message}" }
+            ConnectionTestResult.Failure(
+                error = "Connection timeout: ${e.message}",
+                code = ErrorCode.TIMEOUT
+            )
+        } catch (e: java.net.UnknownHostException) {
+            logger.error(e) { "Unknown host: ${e.message}" }
+            ConnectionTestResult.Failure(
+                error = "Unknown host: ${e.message}",
+                code = ErrorCode.CONNECTION_FAILED
+            )
+        } catch (e: java.net.ConnectException) {
+            logger.error(e) { "Connection refused: ${e.message}" }
+            ConnectionTestResult.Failure(
+                error = "Connection refused: ${e.message}",
+                code = ErrorCode.CONNECTION_FAILED
+            )
         } catch (e: Exception) {
             logger.error(e) { "Connection test failed: ${e.message}" }
+            // Определяем тип ошибки по сообщению
+            val errorCode = when {
+                e.message?.contains("401", ignoreCase = true) == true ||
+                e.message?.contains("unauthorized", ignoreCase = true) == true ||
+                e.message?.contains("authentication", ignoreCase = true) == true -> {
+                    ErrorCode.AUTHENTICATION_FAILED
+                }
+                e.message?.contains("timeout", ignoreCase = true) == true -> {
+                    ErrorCode.TIMEOUT
+                }
+                e.message?.contains("invalid", ignoreCase = true) == true -> {
+                    ErrorCode.INVALID_RESPONSE
+                }
+                else -> ErrorCode.CONNECTION_FAILED
+            }
+
             ConnectionTestResult.Failure(
-                error = e.message ?: "Unknown error",
-                code = ErrorCode.CONNECTION_FAILED
+                error = e.message ?: "Unknown error during connection test",
+                code = errorCode
             )
         }
     }
