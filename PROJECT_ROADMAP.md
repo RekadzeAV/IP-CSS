@@ -1,7 +1,7 @@
 # Карта выполнения проекта IP-CSS
 
-**Версия проекта:** 3.0.0  
-**Дата обновления:** Декабрь 2024  
+**Версия проекта:** 3.0.0
+**Дата обновления:** Декабрь 2024
 **Общий прогресс:** ~14.5%
 
 ---
@@ -28,8 +28,8 @@
 ### 1.2 Модульная структура
 - ✅ Создан модуль `:shared` (Kotlin Multiplatform)
 - ✅ Создан модуль `:core:license`
-- ⚠️ Модуль `:core:network` - не создан
-- ⚠️ Модуль `:core:database` - не создан
+- ✅ Модуль `:core:network` - создан и частично реализован (~40%)
+- ⚠️ Модуль `:core:database` - не создан (используется SQLDelight в shared)
 - ⚠️ Модуль `:core:utils` - не создан
 - ❌ Модуль `:android` - не создан
 - ❌ Модуль `:ios` - не создан
@@ -165,7 +165,7 @@
   - ✅ Индексы (status, created_at)
   - ✅ Запросы (selectAll, selectById, insertCamera, deleteCamera, updateCameraStatus, updateCameraTimestamp)
 - ✅ Конфигурация SQLDelight в build.gradle.kts - полностью настроена
-- ✅ DatabaseFactory (expect/actual) - реализован для Android и iOS
+- ✅ DatabaseFactory (expect/actual) - реализован для Android, iOS и Desktop
 - ✅ Функция createDatabase() - инициализация базы данных
 - ✅ CameraEntityMapper - маппер между DB entity и domain model
 - ❌ Схема для записей (Recording)
@@ -174,7 +174,6 @@
 - ❌ Схема для настроек (Settings)
 - ❌ Схема для уведомлений (Notification)
 - ❌ Миграции базы данных
-- ❌ Desktop реализация DatabaseFactory
 
 ### 3.2 Реализации репозиториев
 - ✅ `CameraRepositoryImpl` - реализация репозитория камер
@@ -218,8 +217,8 @@
 ## 4. Сетевой слой (Network Layer)
 
 ### 4.1 REST API клиент
-- ✅ Модуль `:core:network`
-- ✅ `ApiClient` - базовый HTTP клиент (Ktor)
+- ✅ Модуль `:core:network` - создан и частично реализован (~40%)
+- ✅ `ApiClient` - базовый HTTP клиент (Ktor) - полностью реализован
 - ✅ Конфигурация (baseUrl, timeouts, interceptors)
 - ✅ Сериализация (Kotlinx Serialization)
 - ✅ Обработка ошибок
@@ -261,7 +260,7 @@
 - ✅ `Platform.kt` (expect) - базовый интерфейс
 - ✅ `Platform.android.kt` (actual) - Android реализация
 - ✅ `Platform.ios.kt` (actual) - iOS реализация
-- ❌ `Platform.desktop.kt` - Desktop реализация
+- ✅ `Platform.desktop.kt` - Desktop реализация (создана)
 
 ### 5.2 Лицензирование (Platform-specific)
 - ✅ `PlatformCrypto` (expect) - интерфейс криптографии
@@ -855,6 +854,6 @@
 
 ---
 
-**Последнее обновление:** Декабрь 2024  
+**Последнее обновление:** Декабрь 2024
 **Следующий пересмотр:** После реализации UI или REST API
 

@@ -13,52 +13,52 @@ kotlin {
     androidTarget {
         compilations.all {
             kotlinOptions {
-                jvmTarget = "1.8"
+                jvmTarget = "11"
             }
         }
     }
-    
+
     jvm("desktop") {
         compilations.all {
             kotlinOptions {
-                jvmTarget = "1.8"
+                jvmTarget = "11"
             }
         }
     }
-    
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
                 // Coroutines
                 implementation(libs.kotlinx.coroutines.core)
-                
+
                 // Serialization
                 implementation(libs.kotlinx.serialization.json)
-                
+
                 // Ktor Client
                 implementation(libs.bundles.ktor)
-                
+
                 // SQLDelight
                 implementation(libs.sqldelight.runtime)
-                
+
                 // Logging
                 implementation(libs.kotlin.logging)
-                
+
                 // Date/Time
                 implementation(libs.kotlinx.datetime)
-                
+
                 // Dependency Injection
                 implementation(libs.bundles.koin)
-                
+
                 // Core network module
                 implementation(project(":core:network"))
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test-common"))
@@ -72,7 +72,7 @@ kotlin {
                 implementation(libs.koin.test)
             }
         }
-        
+
         val androidMain by getting {
             dependencies {
                 implementation(libs.ktor.client.android)
@@ -87,14 +87,14 @@ kotlin {
                 // implementation(libs.tensorflow.lite.support)
             }
         }
-        
+
         val androidUnitTest by getting {
             dependencies {
                 implementation("junit:junit:4.13.2")
                 implementation("app.cash.sqldelight:sqlite-driver:2.0.0")
             }
         }
-        
+
         val iosMain by creating {
             dependsOn(commonMain)
             dependencies {
@@ -103,19 +103,19 @@ kotlin {
                 implementation(project(":core:network"))
             }
         }
-        
+
         val iosX64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val iosArm64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val iosSimulatorArm64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val desktopMain by getting {
             dependsOn(commonMain)
             dependencies {
@@ -129,15 +129,15 @@ kotlin {
 android {
     namespace = "com.company.ipcamera.shared"
     compileSdk = 34
-    
+
     defaultConfig {
         minSdk = 26
         targetSdk = 34
     }
-    
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 }
 

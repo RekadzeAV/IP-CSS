@@ -1,6 +1,6 @@
 # Статус реализации компонентов проекта IP-CSS
 
-**Дата анализа:** Декабрь 2024  
+**Дата анализа:** Декабрь 2024
 **Версия проекта:** 3.0.0
 
 ## Общая информация
@@ -134,6 +134,7 @@
 - ✅ `DatabaseFactory` (expect class) в `shared/src/commonMain/kotlin/com/company/ipcamera/shared/data/local/DatabaseFactory.kt`
 - ✅ Android реализация `DatabaseFactory` в `shared/src/androidMain/kotlin/com/company/ipcamera/shared/data/local/DatabaseFactory.android.kt`
 - ✅ iOS реализация `DatabaseFactory` в `shared/src/iosMain/kotlin/com/company/ipcamera/shared/data/local/DatabaseFactory.ios.kt`
+- ✅ Desktop реализация `DatabaseFactory` в `shared/src/desktopMain/kotlin/com/company/ipcamera/shared/data/local/DatabaseFactory.desktop.kt`
 - ✅ `CameraEntityMapper` - маппер между DB entity и domain model
 - ✅ Функция `createDatabase()` для инициализации базы данных
 
@@ -144,12 +145,10 @@
 - ❌ Схемы для настроек (Settings)
 - ❌ Схемы для уведомлений (Notification)
 - ❌ Миграции базы данных
-- ❌ Desktop реализация DatabaseFactory
 
 **Рекомендации:**
 - Определить схемы для остальных сущностей (записи, события, настройки)
 - Реализовать миграции при добавлении новых таблиц
-- Добавить Desktop реализацию DatabaseFactory
 
 ---
 
@@ -174,7 +173,7 @@
 - ⚠️ iOS `PlatformCrypto.decryptOfflineCode()` - не реализован (NotImplementedError)
 - ⚠️ iOS `PlatformCrypto.schedulePeriodicCheck()` - не реализован (TODO)
 - ⚠️ iOS `LicenseRepository.saveLicense()` - использует NSUserDefaults, нужен Keychain
-- ❌ Desktop реализации для Windows, Linux, macOS (полностью отсутствуют)
+- ⚠️ Desktop реализации для Windows, Linux, macOS (частично - Platform и DatabaseFactory реализованы, но LicenseRepository и PlatformCrypto отсутствуют)
 - ❌ Платформо-специфичные реализации для работы с файловой системой
 - ❌ Полная реализация криптографии для лицензий
 
@@ -414,7 +413,7 @@
 
 ## Заключение
 
-Проект находится на начальной стадии разработки. Создана базовая структура, конфигурационные файлы и документация, но большинство функциональных компонентов требуют реализации. 
+Проект находится на начальной стадии разработки. Создана базовая структура, конфигурационные файлы и документация, но большинство функциональных компонентов требуют реализации.
 
 **Ключевые достижения:**
 - ✅ Архитектура спроектирована

@@ -6,10 +6,19 @@ plugins {
 
 kotlin {
     android()
+
+    jvm("desktop") {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "11"
+            }
+        }
+    }
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -19,7 +28,7 @@ kotlin {
                 implementation(libs.kotlin.logging)
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test-common"))
@@ -28,7 +37,7 @@ kotlin {
                 implementation(libs.bundles.testing)
             }
         }
-        
+
         val androidMain by getting {
             dependencies {
                 implementation(libs.androidx.security.crypto)
@@ -36,21 +45,25 @@ kotlin {
                 implementation(libs.bouncycastle.pkix)
             }
         }
-        
+
         val iosMain by creating {
             dependsOn(commonMain)
         }
-        
+
         val iosX64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val iosArm64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val iosSimulatorArm64Main by getting {
             dependsOn(iosMain)
+        }
+
+        val desktopMain by creating {
+            dependsOn(commonMain)
         }
     }
 }
@@ -58,7 +71,7 @@ kotlin {
 android {
     namespace = "com.company.ipcamera.core.license"
     compileSdk = 34
-    
+
     defaultConfig {
         minSdk = 26
     }

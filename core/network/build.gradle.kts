@@ -6,19 +6,19 @@ plugins {
 
 kotlin {
     android()
-    
+
     jvm("desktop") {
         compilations.all {
             kotlinOptions {
-                jvmTarget = "1.8"
+                jvmTarget = "11"
             }
         }
     }
-    
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -36,7 +36,7 @@ kotlin {
                 implementation(libs.kotlinx.datetime)
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test-common"))
@@ -45,36 +45,36 @@ kotlin {
                 implementation(libs.bundles.testing)
             }
         }
-        
+
         val androidMain by getting {
             dependencies {
                 implementation(libs.ktor.client.android)
             }
         }
-        
+
         val iosMain by creating {
             dependsOn(commonMain)
             dependencies {
                 implementation(libs.ktor.client.darwin)
             }
         }
-        
+
         val iosX64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val iosArm64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val iosSimulatorArm64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val desktopMain by getting {
             dependsOn(commonMain)
             dependencies {
-                implementation("io.ktor:ktor-client-java:2.3.5")
+                implementation(libs.ktor.client.java)
             }
         }
     }
@@ -83,7 +83,7 @@ kotlin {
 android {
     namespace = "com.company.ipcamera.core.network"
     compileSdk = 34
-    
+
     defaultConfig {
         minSdk = 26
     }
