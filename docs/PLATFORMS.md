@@ -1,11 +1,68 @@
 # Разделение разработки по платформам
 
-**Дата создания:** Январь 2025
+**Дата обновления:** Январь 2025
 **Версия проекта:** 3.0.0
 
 ## Обзор
 
 Проект IP-CSS использует Kotlin Multiplatform (KMP) для кроссплатформенной разработки. Бизнес-логика реализована в общем модуле `:shared`, а платформо-специфичный код разделен по source sets для каждой платформы.
+
+**Важное изменение:** Проект реорганизован по платформам. Каждая платформа имеет свою директорию в `platforms/` с подробной документацией. См. [PLATFORM_STRUCTURE.md](../../PLATFORM_STRUCTURE.md) для подробностей.
+
+## Структура платформ
+
+Проект разделен на следующие платформы:
+
+### 1. Серверные платформы с веб-интерфейсом
+
+#### Микрокомпьютеры ARM (SBC ARM)
+- **Директория:** `platforms/sbc-arm/`
+- **Модули:** `:server:api`, `server/web`
+- **Архитектура:** ARM (ARMv7, ARMv8/aarch64)
+- **Документация:** [platforms/sbc-arm/README.md](../../platforms/sbc-arm/README.md)
+
+#### Серверы x86-x64
+- **Директория:** `platforms/server-x86_64/`
+- **Модули:** `:server:api`, `server/web`
+- **Архитектура:** x86-64 (Intel/AMD)
+- **Документация:** [platforms/server-x86_64/README.md](../../platforms/server-x86_64/README.md)
+
+#### NAS ARM
+- **Директория:** `platforms/nas-arm/`
+- **Модули:** `:server:api`, `server/web`
+- **Архитектура:** ARM (ARMv8/aarch64)
+- **Документация:** [platforms/nas-arm/README.md](../../platforms/nas-arm/README.md)
+
+#### NAS x86-x64
+- **Директория:** `platforms/nas-x86_64/`
+- **Модули:** `:server:api`, `server/web`
+- **Архитектура:** x86-64
+- **Документация:** [platforms/nas-x86_64/README.md](../../platforms/nas-x86_64/README.md)
+
+### 2. Клиентские платформы
+
+#### Клиенты Desktop x86-x64
+- **Директория:** `platforms/client-desktop-x86_64/`
+- **ОС:** Windows, Linux, macOS (Intel)
+- **UI:** Compose Desktop
+- **Документация:** [platforms/client-desktop-x86_64/README.md](../../platforms/client-desktop-x86_64/README.md)
+
+#### Клиенты Desktop ARM
+- **Директория:** `platforms/client-desktop-arm/`
+- **ОС:** Linux ARM64, macOS Apple Silicon
+- **UI:** Compose Desktop
+- **Документация:** [platforms/client-desktop-arm/README.md](../../platforms/client-desktop-arm/README.md)
+
+#### Клиенты Android
+- **Директория:** `platforms/client-android/`
+- **Модуль:** `:android:app`
+- **UI:** Jetpack Compose
+- **Документация:** [platforms/client-android/README.md](../../platforms/client-android/README.md)
+
+#### Клиенты iOS/macOS
+- **Директория:** `platforms/client-ios/`
+- **UI:** SwiftUI
+- **Документация:** [platforms/client-ios/README.md](../../platforms/client-ios/README.md)
 
 ## Архитектура платформ
 
@@ -130,115 +187,16 @@
 - Linux (x64, ARM64)
 - macOS (x64, ARM64)
 
-## Платформо-специфичные модули
-
-### Android приложение
-
-**Модуль:** `:android:app`
-
-**Структура:**
-```
-android/app/
-├── src/
-│   ├── main/
-│   │   ├── AndroidManifest.xml
-│   │   ├── java/com/company/ipcamera/
-│   │   │   ├── MainActivity.kt
-│   │   │   ├── Application.kt
-│   │   │   ├── di/              # Hilt модули
-│   │   │   ├── ui/              # Jetpack Compose экраны
-│   │   │   │   ├── cameras/
-│   │   │   │   ├── recordings/
-│   │   │   │   └── settings/
-│   │   │   └── viewmodel/       # ViewModels
-│   │   └── res/                 # Ресурсы
-│   └── test/                    # Unit тесты
-└── build.gradle.kts
-```
-
-**Зависимости:**
-- `:shared` - общая бизнес-логика
-- Jetpack Compose
-- Hilt
-- Navigation Compose
-- ExoPlayer (для видео)
-
-### iOS приложение
-
-**Проект:** `ios/IPCameraSurveillance.xcodeproj`
-
-**Структура:**
-```
-ios/
-├── IPCameraSurveillance/
-│   ├── App.swift
-│   ├── ContentView.swift
-│   ├── Views/                   # SwiftUI экраны
-│   │   ├── CameraListView.swift
-│   │   ├── CameraDetailView.swift
-│   │   └── SettingsView.swift
-│   ├── ViewModels/             # ViewModels (обертка над KMP)
-│   ├── Services/                # Сервисы
-│   └── Resources/              # Ресурсы
-├── IPCameraSurveillance.xcodeproj
-└── Podfile                      # CocoaPods зависимости
-```
-
-**Интеграция с KMP:**
-- Framework из `:shared` модуля
-- Swift/Kotlin interop через `@objc` и `@objcMembers`
-
-### Desktop приложение
-
-**Модуль:** `:desktop` (планируется)
-
-**Структура:**
-```
-desktop/
-├── src/
-│   └── main/kotlin/
-│       └── com/company/ipcamera/desktop/
-│           ├── Main.kt
-│           ├── App.kt           # Compose Desktop приложение
-│           ├── ui/               # UI компоненты
-│           └── di/               # Koin модули
-└── build.gradle.kts
-```
-
-**Технологии:**
-- Compose Desktop
-- Koin для DI
-- jpackage для упаковки
-
-## Нативные библиотеки (C++)
-
-**Расположение:** `native/`
-
-**Модули:**
-- `native/video-processing/` - обработка видео, RTSP клиент
-- `native/analytics/` - AI аналитика (детекция объектов, ANPR, лица)
-- `native/codecs/` - кодеки (H.264, H.265, MJPEG)
-
-**Интеграция с KMP:**
-- FFI (Foreign Function Interface) через cinterop
-- `.def` файлы для генерации Kotlin биндингов
-- Платформо-специфичная компиляция через CMake
-
-**Поддерживаемые платформы:**
-- Android (armeabi-v7a, arm64-v8a, x86, x86_64)
-- iOS (arm64, x86_64 для симулятора)
-- Desktop (Windows x64, Linux x64/ARM64, macOS x64/ARM64)
-
-## Серверная часть
+## Серверные модули
 
 ### REST API сервер
 
 **Модуль:** `:server:api`
 
 **Технологии:**
-- Ktor или Spring Boot (на выбор)
-- PostgreSQL или SQLite
-- JWT для аутентификации
+- Ktor Server
+- SQLDelight (SQLite)
+- JWT для аутентификации (планируется)
 
 **Платформы:**
 - JVM (Windows, Linux, macOS)
@@ -258,287 +216,51 @@ desktop/
 - Node.js (все платформы)
 - Docker контейнеры
 
-## NAS устройства
+## Нативные библиотеки (C++)
 
-### Обзор
+**Расположение:** `native/`
 
-**Модуль:** `:server:nas` (планируется)
+**Модули:**
+- `native/video-processing/` - обработка видео, RTSP клиент
+- `native/analytics/` - AI аналитика (детекция объектов, ANPR, лица)
+- `native/codecs/` - кодеки (H.264, H.265, MJPEG)
+
+**Интеграция с KMP:**
+- FFI (Foreign Function Interface) через cinterop
+- `.def` файлы для генерации Kotlin биндингов
+- Платформо-специфичная компиляция через CMake
 
 **Поддерживаемые платформы:**
-- ✅ Synology DSM (Linux-based)
-- ✅ QNAP QTS (Linux-based)
-- ✅ Asustor ADM (Linux-based)
-- ✅ TrueNAS CORE (FreeBSD-based)
-- ✅ TrueNAS SCALE (Linux + Kubernetes)
-- ⚠️ Terramaster TOS (Linux-based)
+- Android (armeabi-v7a, arm64-v8a, x86, x86_64)
+- iOS (arm64, x86_64 для симулятора)
+- Desktop (Windows x64, Linux x64/ARM64, macOS x64/ARM64)
+- Linux Server/NAS (x86_64, ARM64)
 
-**Архитектуры:**
-- x86_64 (Intel/AMD) - все платформы
-- ARMv8 / aarch64 - Synology, QNAP, Asustor, Terramaster
-- ARMv7 (устаревшие модели) - ограниченная поддержка
+## Структура веток Git
 
-### Synology DSM
+Для каждой платформы созданы отдельные ветки разработки и тестирования:
 
-**Формат пакета:** `.spk`
+### Ветки для серверных платформ:
+- `develop/platform-sbc-arm` → `test/platform-sbc-arm`
+- `develop/platform-server-x86_64` → `test/platform-server-x86_64`
+- `develop/platform-nas-arm` → `test/platform-nas-arm`
+- `develop/platform-nas-x86_64` → `test/platform-nas-x86_64`
 
-**Особенности:**
-- Основан на Debian Linux
-- Пакетный менеджер: Synology Package Center
-- Поддержка Docker: ✅
-- API: Synology API, RESTful API
+### Ветки для клиентских платформ:
+- `develop/platform-client-desktop-x86_64` → `test/platform-client-desktop-x86_64`
+- `develop/platform-client-desktop-arm` → `test/platform-client-desktop-arm`
+- `develop/platform-client-android` → `test/platform-client-android`
+- `develop/platform-client-ios` → `test/platform-client-ios`
 
-**Разработка:**
-- Synology Developer SDK
-- Python 3.x, Node.js, Bash
-- SPK Builder Tool
-
-**Требования:**
-- Архитектура: x86_64 (bromolow, apollolake, geminilake, denverton, v1000, broadwell, broadwellnk), aarch64 (rtd1296), armv7 (alpine)
-- Минимум: 4 ГБ RAM, 50 ГБ свободного места
-
-### QNAP QTS
-
-**Формат пакета:** `.qpkg`
-
-**Особенности:**
-- Основан на CentOS/RHEL Linux
-- Пакетный менеджер: QNAP App Center
-- Поддержка Docker: ✅
-- Поддержка Kubernetes: ✅ (QKVS)
-- API: QNAP API, RESTful API
-
-**Разработка:**
-- QNAP Developer SDK
-- Python 3.x, Node.js, PHP, Bash
-- QPKG Tool
-
-**Требования:**
-- Архитектура: x86_64, arm_64, arm_x31
-- Минимум: 4 ГБ RAM, 50 ГБ свободного места
-
-### Asustor ADM
-
-**Формат пакета:** `.apk` (не Android!)
-
-**Особенности:**
-- Основан на Debian Linux
-- Пакетный менеджер: Asustor App Central
-- Поддержка Docker: ✅
-- API: Asustor API, RESTful API
-
-**Разработка:**
-- Asustor Developer SDK
-- Python 3.x, Node.js, Bash
-- ADM Toolkit
-
-**Требования:**
-- Архитектура: x86_64, aarch64, Realtek RTD1296
-- Минимум: 2 ГБ RAM, 50 ГБ свободного места
-
-### TrueNAS CORE
-
-**Формат:** FreeBSD Jails, `.pbi`
-
-**Особенности:**
-- Основан на FreeBSD 13.x
-- Файловая система: ZFS
-- Поддержка Docker: ❌ (только через Jails)
-- API: FreeNAS API v2.0, RESTful API
-
-**Разработка:**
-- FreeBSD SDK
-- Jail упаковка
-- FreeBSD пакеты
-
-**Требования:**
-- Архитектура: x86_64
-- Минимум: 8 ГБ RAM, 50 ГБ свободного места
-
-### TrueNAS SCALE
-
-**Формат:** Docker, Helm charts, Kubernetes манифесты
-
-**Особенности:**
-- Основан на Debian Linux + Kubernetes
-- Файловая система: ZFS
-- Поддержка Docker: ✅
-- Поддержка Kubernetes: ✅ (встроенный)
-- API: RESTful API, Kubernetes API
-
-**Разработка:**
-- Docker образы
-- Helm charts
-- Kubernetes манифесты
-
-**Требования:**
-- Архитектура: x86_64
-- Минимум: 16 ГБ RAM, 100 ГБ свободного места
-
-### Универсальное решение: Docker
-
-**Преимущества:**
-- ✅ Работает на всех платформах с Docker (Synology, QNAP, Asustor, TrueNAS SCALE)
-- ✅ Единая сборка для всех архитектур (multi-arch)
-- ✅ Изоляция зависимостей
-- ✅ Легкое обновление
-
-**Недостатки:**
-- ❌ Требует Docker на целевой системе
-- ❌ Меньше интеграции с системой NAS
-
-**Multi-arch Docker образ:**
-```dockerfile
-FROM --platform=$BUILDPLATFORM company/base:latest AS builder
-# ... сборка ...
-
-FROM --platform=$TARGETPLATFORM company/runtime:latest
-COPY --from=builder /app /app
-```
-
-**Платформы Docker:**
-- `linux/amd64` - x86_64
-- `linux/arm64` - ARMv8 / aarch64
-
-### Архитектура для NAS
-
-```
-┌─────────────────────────────────────────┐
-│         NAS Operating System            │
-│  (DSM/QTS/ADM/TrueNAS/TOS)             │
-├─────────────────────────────────────────┤
-│                                         │
-│  ┌───────────────────────────────────┐ │
-│  │   IP-CSS Package/Container        │ │
-│  │                                   │ │
-│  │  ┌─────────────────────────────┐  │ │
-│  │  │   Web UI (Next.js)          │  │ │
-│  │  │   Port: 8080                │  │ │
-│  │  └─────────────────────────────┘  │ │
-│  │                                   │ │
-│  │  ┌─────────────────────────────┐  │ │
-│  │  │   API Server (Ktor)         │  │ │
-│  │  │   Port: 8081                │  │ │
-│  │  └─────────────────────────────┘  │ │
-│  │                                   │ │
-│  │  ┌─────────────────────────────┐  │ │
-│  │  │   Shared Module (KMP)       │  │ │
-│  │  │   - Business Logic          │  │ │
-│  │  │   - Repositories            │  │ │
-│  │  └─────────────────────────────┘  │ │
-│  │                                   │ │
-│  │  ┌─────────────────────────────┐  │ │
-│  │  │   Native Libraries (C++)   │  │ │
-│  │  │   - Video Processing       │  │ │
-│  │  │   - Analytics              │  │ │
-│  │  └─────────────────────────────┘  │ │
-│  │                                   │ │
-│  │  ┌─────────────────────────────┐  │ │
-│  │  │   Database (SQLite)         │  │ │
-│  │  │   Location: /data/db/       │  │ │
-│  │  └─────────────────────────────┘  │ │
-│  │                                   │ │
-│  │  ┌─────────────────────────────┐  │ │
-│  │  │   Storage (Recordings)      │  │ │
-│  │  │   Location: /recordings/    │  │ │
-│  │  └─────────────────────────────┘  │ │
-│  └───────────────────────────────────┘ │
-│                                         │
-└─────────────────────────────────────────┘
-```
-
-**Пути данных для каждой платформы:**
-- **Synology**: `/volume1/ip-css/`
-- **QNAP**: `/share/CACHEDEV1_DATA/ip-css/`
-- **Asustor**: `/volume1/ip-css/`
-- **TrueNAS**: `/mnt/tank/ip-css/`
-
-**Аппаратное ускорение:**
-- **Intel Quick Sync** (x86_64 с Intel процессорами) - H.264/H.265 декодирование
-- **AMD VCE/VCN** (x86_64 с AMD процессорами) - H.264/H.265 декодирование
-- **ARM Mali/VideoCore** (ARM64 на некоторых платформах) - ограниченная поддержка
-
-Подробная информация: [NAS_PLATFORMS_ANALYSIS.md](NAS_PLATFORMS_ANALYSIS.md)
-
-## Разделение ответственности
-
-### Что общее (commonMain)
-
-✅ **Должно быть в commonMain:**
-- Бизнес-логика (Use Cases)
-- Доменные модели
-- Интерфейсы репозиториев
-- Реализации репозиториев (с использованием expect/actual для платформо-специфичных частей)
-- Общие утилиты
-- Сетевые клиенты (Ktor Client)
-
-### Что платформо-специфичное
-
-✅ **Android (androidMain):**
-- Работа с Android SDK
-- SQLDelight Android Driver
-- WorkManager
-- Android NotificationManager
-- Android Keystore для лицензий
-
-✅ **iOS (iosMain):**
-- Работа с iOS frameworks
-- SQLDelight Native Driver
-- BGTaskScheduler
-- UNUserNotificationCenter
-- iOS Keychain для лицензий
-
-✅ **Desktop (desktopMain):**
-- Работа с файловой системой
-- SQLDelight JVM Driver
-- Системные службы
-- Системные уведомления
-- Криптография через BouncyCastle
-
-### Что в нативных модулях
-
-✅ **C++ библиотеки:**
-- Обработка видео (FFmpeg)
-- AI аналитика (OpenCV, TensorFlow Lite)
-- RTSP протокол (Live555 или собственная реализация)
-- Декодирование/кодирование видео
-
-## Механизм expect/actual
-
-Kotlin Multiplatform использует механизм `expect/actual` для платформо-специфичных реализаций:
-
-```kotlin
-// commonMain
-expect class Platform {
-    val name: String
-    val version: String
-}
-
-// androidMain
-actual class Platform {
-    actual val name = "Android"
-    actual val version = android.os.Build.VERSION.RELEASE
-}
-
-// iosMain
-actual class Platform {
-    actual val name = "iOS"
-    actual val version = UIDevice.currentDevice.systemVersion
-}
-
-// desktopMain
-actual class Platform {
-    actual val name = System.getProperty("os.name")
-    actual val version = System.getProperty("os.version")
-}
-```
+Подробнее см. [PLATFORM_STRUCTURE.md](../../PLATFORM_STRUCTURE.md).
 
 ## Сборка для разных платформ
 
 ### Android
 
 ```bash
-./gradlew :android:assembleDebug
-./gradlew :android:assembleRelease
+./gradlew :android:app:assembleDebug
+./gradlew :android:app:assembleRelease
 ```
 
 ### iOS
@@ -557,13 +279,23 @@ xcodebuild -workspace IPCameraSurveillance.xcworkspace \
 
 ```bash
 # Windows
-./gradlew :desktop:packageMsi
+./gradlew :platforms:client-desktop-x86_64:app:packageMsi
 
 # Linux
-./gradlew :desktop:packageDeb
+./gradlew :platforms:client-desktop-x86_64:app:packageDeb
 
 # macOS
-./gradlew :desktop:packageDmg
+./gradlew :platforms:client-desktop-x86_64:app:packageDmg
+```
+
+### Сервер
+
+```bash
+# x86_64
+./gradlew :server:api:build
+
+# ARM
+./gradlew :server:api:build -PtargetArch=arm64
 ```
 
 ### Все платформы
@@ -575,30 +307,20 @@ xcodebuild -workspace IPCameraSurveillance.xcworkspace \
 ## Зависимости между модулями
 
 ```
-android:app
+android/ios/desktop приложения
     ↓
-shared (androidMain)
+shared (KMM)
+    ↓     ↓
+    ↓  core:network
+    ↓     ↓
+    ↓  core:common (базовые типы: Resolution, CameraStatus)
     ↓
-core:network, core:license, core:common
+core:license
     ↓
-native (C++ через FFI)
-
-ios (Xcode)
-    ↓
-shared (iosMain) → framework
-    ↓
-core:network, core:license, core:common
-    ↓
-native (C++ через FFI)
-
-desktop
-    ↓
-shared (desktopMain)
-    ↓
-core:network, core:license, core:common
-    ↓
-native (C++ через FFI)
+native (C++ библиотеки через FFI)
 ```
+
+**Важно:** Модуль `:core:network` зависит только от `:core:common`, а не от `:shared`, что устраняет циклическую зависимость. `:shared` зависит от обоих модулей `:core:network` и `:core:common`.
 
 ## Рекомендации по разработке
 
@@ -622,12 +344,12 @@ native (C++ через FFI)
 
 ## Связанные документы
 
+- [PLATFORM_STRUCTURE.md](../../PLATFORM_STRUCTURE.md) - Структура платформ и веток
 - [ARCHITECTURE.md](ARCHITECTURE.md) - Архитектура системы
-- [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md) - Структура проекта
+- [PROJECT_STRUCTURE.md](../../PROJECT_STRUCTURE.md) - Структура проекта
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Руководство по разработке
 - [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) - Статус реализации
 
 ---
 
 **Последнее обновление:** Январь 2025
-

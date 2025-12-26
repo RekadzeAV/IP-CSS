@@ -1,8 +1,62 @@
 # Архитектура кроссплатформенной системы видеонаблюдения
 
+**Дата обновления:** Январь 2025
+**Версия проекта:** 3.0.0
+
 ## Обзор архитектуры
 
 Система построена по принципу многослойной Clean Architecture с использованием Kotlin Multiplatform для кроссплатформенной бизнес-логики и нативных UI фреймворков для каждой платформы.
+
+**Важное изменение:** Проект реорганизован по платформам. Каждая платформа имеет свою директорию в `platforms/` с подробной документацией. См. [PLATFORM_STRUCTURE.md](../../PLATFORM_STRUCTURE.md) и [PLATFORMS.md](PLATFORMS.md) для подробностей.
+
+## Структура платформ
+
+Проект разделен на следующие платформы:
+
+### Серверные платформы с веб-интерфейсом
+
+1. **Микрокомпьютеры ARM** (`platforms/sbc-arm/`)
+   - Raspberry Pi, Orange Pi, Rock64 и др.
+   - Веб-интерфейс для управления
+   
+2. **Серверы x86-x64** (`platforms/server-x86_64/`)
+   - Linux, Windows, macOS серверы
+   - Веб-интерфейс для управления
+   
+3. **NAS ARM** (`platforms/nas-arm/`)
+   - Synology, QNAP, Asustor (ARM модели)
+   - Веб-интерфейс для управления
+   
+4. **NAS x86-x64** (`platforms/nas-x86_64/`)
+   - Synology, QNAP, Asustor, TrueNAS (x86_64 модели)
+   - Веб-интерфейс для управления
+
+### Клиентские платформы
+
+5. **Клиенты Desktop x86-x64** (`platforms/client-desktop-x86_64/`)
+   - Windows, Linux, macOS (Intel)
+   - Нативное приложение (Compose Desktop)
+   
+6. **Клиенты Desktop ARM** (`platforms/client-desktop-arm/`)
+   - Linux ARM64, macOS Apple Silicon
+   - Нативное приложение (Compose Desktop)
+   
+7. **Клиенты Android** (`platforms/client-android/`)
+   - Мобильные устройства Android
+   - Нативное приложение (Jetpack Compose)
+   
+8. **Клиенты iOS/macOS** (`platforms/client-ios/`)
+   - iOS и macOS устройства
+   - Нативное приложение (SwiftUI)
+
+Все серверные платформы используют общие модули:
+- `:server:api` - REST API сервер (Ktor)
+- `server/web` - Веб-интерфейс (Next.js)
+
+Все платформы используют общие модули:
+- `:shared` - Kotlin Multiplatform модуль с общей бизнес-логикой
+- `:core:common`, `:core:network`, `:core:license` - общие модули
+- `native/` - нативные C++ библиотеки
 
 ## Архитектурные принципы
 
@@ -21,7 +75,7 @@
 **Компоненты**:
 - **Репозитории** - абстракции для доступа к данным
 - **Data Sources** - конкретные реализации источников данных
-  - Локальная БД (SQLite с SQLCipher)
+  - Локальная БД (SQLite с SQLDelight)
   - Файловая система (видеоархивы, конфигурации)
   - Сетевые API (лицензионный сервер, облачные сервисы)
   - IP-камеры (RTSP, ONVIF)
@@ -30,7 +84,6 @@
 - Kotlin Multiplatform для общей логики
 - SQLDelight для кроссплатформенной работы с SQLite
 - Ktor Client для сетевых запросов
-- Room (Android) и Core Data (iOS) для платформенно-специфичных оптимизаций
 
 ### 2. Доменный слой (Domain Layer)
 
@@ -54,12 +107,18 @@
 **Архитектурный паттерн**: MVI (Model-View-Intent) или MVVM
 
 **Компоненты**:
-- **View** - UI компоненты (Activity/Fragment, Composable, SwiftUI View)
+- **View** - UI компоненты
 - **ViewModel/Presenter** - управление состоянием UI
 - **State** - иммутабельное состояние экрана
 - **Intent/Action** - пользовательские действия
 
 **Платформенно-специфичные реализации**:
+
+#### Серверные платформы (Веб-интерфейс):
+- **Frontend**: React + TypeScript
+- **UI Framework**: Material-UI / Next.js
+- **Состояние**: Redux Toolkit
+- **API клиент**: Axios
 
 #### Android:
 - **UI Framework**: Jetpack Compose
@@ -68,7 +127,7 @@
 - **Фоновая работа**: WorkManager, ForegroundService
 
 #### iOS:
-- **UI Framework**: SwiftUI (новые экраны) + UIKit (унаследованные)
+- **UI Framework**: SwiftUI
 - **DI**: Swinject
 - **Навигация**: SwiftUI Navigation
 - **Фоновая работа**: BackgroundTasks, BGTaskScheduler
@@ -79,12 +138,6 @@
 - **Навигация**: собственный роутер на Compose
 - **Фоновая работа**: системные службы/демоны
 
-#### Веб-интерфейс (NAS/Сервер):
-- **Frontend**: React + TypeScript
-- **UI Framework**: Material-UI
-- **Состояние**: Redux Toolkit
-- **API клиент**: Axios
-
 ### 4. Слой инфраструктуры (Infrastructure Layer)
 
 **Ответственность**: Кроссплатформенные сервисы и утилиты
@@ -92,8 +145,6 @@
 **Модули**:
 - `:core:common` - общие типы и модели (Resolution, CameraStatus)
 - `:core:network` - сетевое взаимодействие (Ktor Client)
-- `:core:database` - работа с БД (SQLDelight)
-- `:core:utils` - общие утилиты
 - `:core:license` - система лицензирования
 - `:native:video-processing` - обработка видео на C++/OpenCV
 - `:native:analytics` - AI аналитика на C++/TensorFlow Lite
@@ -103,51 +154,50 @@
 ### Корневая структура проекта:
 ```
 ip-camera-surveillance-system/
-├── shared/ # Kotlin Multiplatform модуль
+├── shared/          # Kotlin Multiplatform модуль
 │ ├── src/
 │ │ ├── commonMain/ # Общий код для всех платформ
 │ │ ├── androidMain/ # Android-специфичные реализации
-│ │ ├── iosMain/ # iOS-специфичные реализации
+│ │ ├── iosMain/    # iOS-специфичные реализации
 │ │ └── desktopMain/ # Desktop-специфичные реализации
 │ └── build.gradle.kts
-├── android/ # Android приложение
-│ ├── src/main/
-│ └── build.gradle.kts
-├── ios/ # iOS приложение
-│ ├── IPCameraSurveillance/
-│ └── IPCameraSurveillance.xcodeproj
-├── desktop/ # Desktop приложения
-│ ├── src/
-│ └── build.gradle.kts
-├── server/ # Серверная часть
-│ ├── src/main/kotlin/
-│ └── build.gradle.kts
-├── native/ # Нативные C++ библиотеки
+├── platforms/      # Платформо-специфичные реализации
+│ ├── sbc-arm/
+│ ├── server-x86_64/
+│ ├── nas-arm/
+│ ├── nas-x86_64/
+│ ├── client-desktop-x86_64/
+│ ├── client-desktop-arm/
+│ ├── client-android/
+│ └── client-ios/
+├── android/        # Android приложение
+├── server/         # Серверная часть
+│ ├── api/         # REST API (Ktor)
+│ └── web/         # Веб-интерфейс (Next.js)
+├── native/        # Нативные C++ библиотеки
 │ ├── video-processing/
 │ ├── analytics/
-│ └── CMakeLists.txt
-├── core/ # Общие кроссплатформенные модули
-│ ├── common/ # Общие типы (Resolution, CameraStatus)
-│ ├── network/
-│ ├── database/
-│ ├── license/
-│ └── utils/
-└── docs/ # Документация
+│ └── codecs/
+├── core/          # Общие кроссплатформенные модули
+│ ├── common/      # Общие типы
+│ ├── network/     # Сетевые клиенты
+│ └── license/     # Система лицензирования
+└── docs/          # Документация
 ```
 
 ### Зависимости между модулями:
 ```
-android/ios/desktop → shared → core:network → native
-     ↓                ↓    ↓
-  UI Layer      Domain Layer  core:common (базовые типы)
-                      ↑
-                  Data Layer
-
-Где:
-- :core:common - базовые типы (Resolution, CameraStatus)
-- :shared зависит от :core:common и :core:network
-- :core:network зависит только от :core:common (не зависит от :shared)
-- Это устраняет циклическую зависимость
+Платформы (серверные и клиентские)
+    ↓
+shared (KMM)
+    ↓     ↓
+    ↓  core:network
+    ↓     ↓
+    ↓  core:common (базовые типы: Resolution, CameraStatus)
+    ↓
+core:license
+    ↓
+native (C++ библиотеки через FFI)
 ```
 
 ## Кроссплатформенная коммуникация
@@ -190,7 +240,7 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 
 Компоненты:
 1. Клиентская библиотека (KMM) - проверка лицензии, офлайн-работа
-2. Сервер лицензий (Spring Boot/Ktor) - управление лицензиями, генерация кодов
+2. Сервер лицензий (Ktor) - управление лицензиями, генерация кодов
 3. Административный портал (веб-интерфейс) - управление клиентами, лицензиями
 4. Система уведомлений - напоминания об истечении, обновления
 
@@ -260,7 +310,7 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 
 ## Разделение по платформам
 
-Проект использует Kotlin Multiplatform для кроссплатформенной разработки. Подробная информация о разделении разработки по платформам доступна в [PLATFORMS.md](PLATFORMS.md).
+Проект использует Kotlin Multiplatform для кроссплатформенной разработки. Подробная информация о разделении разработки по платформам доступна в [PLATFORMS.md](PLATFORMS.md) и [PLATFORM_STRUCTURE.md](../../PLATFORM_STRUCTURE.md).
 
 ### Основные принципы:
 - **Общий код** (`commonMain`) - бизнес-логика, модели, use cases
@@ -273,7 +323,14 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 - `iosMain` - iOS-специфичные реализации (arm64, x86_64 для симулятора)
 - `desktopMain` - Desktop-специфичные реализации (JVM для Windows, Linux, macOS)
 
-Подробнее см. [PLATFORMS.md](PLATFORMS.md).
+## Структура веток Git
+
+Проект использует структуру веток, где каждая платформа имеет свои ветки разработки и тестирования:
+
+- `develop/platform-*` - ветки разработки для каждой платформы
+- `test/platform-*` - ветки тестирования для каждой платформы
+
+Подробнее см. [PLATFORM_STRUCTURE.md](../../PLATFORM_STRUCTURE.md).
 
 ## Безопасность
 
@@ -293,3 +350,14 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 - ISO 27001 - управление информационной безопасностью
 - SOC 2 - безопасность, доступность, конфиденциальность
 
+## Связанные документы
+
+- [PLATFORM_STRUCTURE.md](../../PLATFORM_STRUCTURE.md) - Структура платформ и веток
+- [PLATFORMS.md](PLATFORMS.md) - Разделение разработки по платформам
+- [PROJECT_STRUCTURE.md](../../PROJECT_STRUCTURE.md) - Структура проекта
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Руководство по разработке
+- [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) - Статус реализации
+
+---
+
+**Последнее обновление:** Январь 2025
