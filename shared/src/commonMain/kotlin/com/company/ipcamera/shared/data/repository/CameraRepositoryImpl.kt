@@ -1,11 +1,13 @@
 package com.company.ipcamera.shared.data.repository
 
+import com.company.ipcamera.shared.common.createHttpClientEngine
 import com.company.ipcamera.shared.data.local.CameraEntityMapper
 import com.company.ipcamera.shared.data.local.DatabaseFactory
 import com.company.ipcamera.shared.data.local.createDatabase
 import com.company.ipcamera.shared.domain.model.Camera
 import com.company.ipcamera.shared.domain.model.CameraStatus
 import com.company.ipcamera.shared.domain.repository.*
+import com.company.ipcamera.core.network.OnvifClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
@@ -75,8 +77,9 @@ class CameraRepositoryImpl(
     override suspend fun updateCamera(camera: Camera): Result<Camera> = withContext(Dispatchers.Default) {
         try {
             val dbCamera = mapper.toDatabase(camera.copy(updatedAt = System.currentTimeMillis()))
-            database.cameraDatabaseQueries.insertCamera(
-                id = dbCamera.id,
+            // Используем правильный UPDATE запрос вместо INSERT OR REPLACE
+            // Это сохраняет created_at и правильно обновляет только измененные поля
+            database.cameraDatabaseQueries.updateCamera(
                 name = dbCamera.name,
                 url = dbCamera.url,
                 username = dbCamera.username,
@@ -93,9 +96,9 @@ class CameraRepositoryImpl(
                 streams = dbCamera.streams,
                 settings = dbCamera.settings,
                 statistics = dbCamera.statistics,
-                created_at = dbCamera.created_at,
                 updated_at = dbCamera.updated_at,
-                last_seen = dbCamera.last_seen
+                last_seen = dbCamera.last_seen,
+                id = dbCamera.id
             )
             Result.success(camera.copy(updatedAt = System.currentTimeMillis()))
         } catch (e: Exception) {
@@ -114,17 +117,106 @@ class CameraRepositoryImpl(
         }
     }
     
-    override suspend fun discoverCameras(): List<DiscoveredCamera> = withContext(Dispatchers.Default) {
-        // TODO: Реализовать обнаружение камер через ONVIF или UPnP
-        emptyList()
+    override suspend fun discoverCameras(): List<DiscoveredCamera> = withContext(Dispatchers.IO) {
+        try {
+            logger.info { "Starting camera discovery via ONVIF..." }
+            val engine = createHttpClientEngine()
+            val onvifClient = OnvifClient(engine)
+            
+            try {
+                // OnvifClient.discoverCameras() использует WS-Discovery для обнаружения камер
+                // В текущей реализации WS-Discovery не полностью реализован,
+                // поэтому метод возвращает пустой список
+                // В будущем, когда WS-Discovery будет реализован, метод вернет список обнаруженных камер
+                val discovered = onvifClient.discoverCameras(timeoutMillis = 5000)
+                
+                logger.info { "Discovered ${discovered.size} cameras via ONVIF" }
+                discovered
+            } finally {
+                onvifClient.close()
+                engine.close()
+            }
+        } catch (e: Exception) {
+            logger.error(e) { "Error during camera discovery: ${e.message}" }
+            emptyList()
+        }
     }
     
-    override suspend fun testConnection(camera: Camera): ConnectionTestResult = withContext(Dispatchers.Default) {
-        // TODO: Реализовать проверку подключения к камере
-        ConnectionTestResult.Failure(
-            error = "Not implemented",
-            code = ErrorCode.UNKNOWN
-        )
+    override suspend fun testConnection(camera: Camera): ConnectionTestResult = withContext(Dispatchers.IO) {
+        try {
+            logger.info { "Testing connection to camera: ${camera.name} (${camera.url})" }
+            val engine = createHttpClientEngine()
+            val onvifClient = OnvifClient(engine)
+            
+            try {
+                // OnvifClient.testConnection() проверяет подключение через ONVIF GetCapabilities
+                // и возвращает информацию о потоках и возможностях камеры
+                val result = onvifClient.testConnection(
+                    url = camera.url,
+                    username = camera.username,
+                    password = camera.password
+                )
+                
+                when (result) {
+                    is ConnectionTestResult.Success -> {
+                        logger.info { "Camera connection test successful: ${camera.name}" }
+                    }
+                    is ConnectionTestResult.Failure -> {
+                        logger.warn { "Camera connection test failed: ${camera.name} - ${result.error}" }
+                    }
+                }
+                
+                result
+            } finally {
+                onvifClient.close()
+                engine.close()
+            }
+        } catch (e: Exception) {
+            logger.error(e) { "Error testing camera connection: ${e.message}" }
+            ConnectionTestResult.Failure(
+                error = e.message ?: "Unknown error during connection test",
+                code = ErrorCode.CONNECTION_FAILED
+            )
+        }
+    }
+    
+    /**
+     * Извлекает IP адрес из URL
+     */
+    private fun extractIpFromUrl(url: String): String {
+        return try {
+            val cleanUrl = url
+                .removePrefix("rtsp://")
+                .removePrefix("http://")
+                .removePrefix("https://")
+                .substringBefore("/")
+                .substringBefore(":")
+            cleanUrl
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to extract IP from URL: $url" }
+            url
+        }
+    }
+    
+    /**
+     * Извлекает порт из URL
+     */
+    private fun extractPortFromUrl(url: String): Int? {
+        return try {
+            val cleanUrl = url
+                .removePrefix("rtsp://")
+                .removePrefix("http://")
+                .removePrefix("https://")
+                .substringBefore("/")
+            
+            if (cleanUrl.contains(":")) {
+                cleanUrl.substringAfter(":").toIntOrNull()
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            null
+        }
     }
     
     override suspend fun getCameraStatus(id: String): CameraStatus = withContext(Dispatchers.Default) {

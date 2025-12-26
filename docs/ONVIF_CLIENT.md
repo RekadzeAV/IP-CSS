@@ -343,3 +343,21 @@ class PtzController(private val camera: Camera) {
 - Поддержка различных версий ONVIF (1.0, 2.0, 2.5) зависит от конкретной камеры
 - Некоторые камеры могут требовать Digest Authentication вместо Basic
 
+## Статус реализации
+
+**Текущий прогресс:** ~40%
+
+**Реализовано:**
+- ✅ Базовые методы (getCapabilities, getDeviceInformation, getProfiles, getStreamUri)
+- ✅ PTZ управление (movePtz, stopPtz)
+- ✅ testConnection() - реализован
+
+**Не реализовано:**
+- ❌ WS-Discovery (discoverCameras возвращает пустой список)
+- ❌ Полноценный XML парсинг (используется упрощенный через regex)
+- ❌ Digest Authentication (только Basic)
+- ❌ Дополнительные ONVIF функции (AbsoluteMove, GetPresets, Imaging, Events)
+
+**Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#onvifclient)  
+**Руководство по интеграции:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#1-xml-парсинг-для-onvif)
+

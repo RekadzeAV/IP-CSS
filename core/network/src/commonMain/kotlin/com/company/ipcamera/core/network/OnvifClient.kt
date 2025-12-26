@@ -7,14 +7,15 @@ import com.company.ipcamera.shared.domain.repository.*
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
+import io.ktor.serialization.kotlinx.xml.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.xml.*
 import mu.KotlinLogging
-// ONVIF клиент использует HTTP и XML парсинг
-// Для полноценной реализации требуется библиотека для работы с SOAP
-// В текущей версии используется упрощенный подход через HTTP запросы
 
 private val logger = KotlinLogging.logger {}
 
@@ -26,6 +27,9 @@ class OnvifClient(
 ) {
     private val client: HttpClient by lazy {
         HttpClient(engine) {
+            install(ContentNegotiation) {
+                xml()
+            }
             engine {
                 config {
                     requestTimeoutMillis = 5000
@@ -391,17 +395,48 @@ class OnvifClient(
     
     private fun parseCapabilities(xml: String): OnvifCapabilities? {
         return try {
-            // Упрощенный XML парсинг через регулярные выражения или простой поиск
-            // В продакшене следует использовать полноценный XML парсер
-            val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
-            val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
-            val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
+            // Используем XML парсер для более надежного парсинга
+            val xmlParser = Xml {
+                ignoreUnknownChildren = true
+                coerceInputValues = true
+            }
             
-            OnvifCapabilities(
-                deviceServiceUrl = deviceUrl,
-                mediaServiceUrl = mediaUrl,
-                ptzServiceUrl = ptzUrl
-            )
+            // Пытаемся распарсить как SOAP Envelope
+            try {
+                val envelope = xmlParser.decodeFromString<SoapEnvelope>(xml)
+                val capabilities = envelope.body.capabilities
+                
+                if (capabilities != null) {
+                    OnvifCapabilities(
+                        deviceServiceUrl = capabilities.device?.xAddr,
+                        mediaServiceUrl = capabilities.media?.xAddr,
+                        ptzServiceUrl = capabilities.ptz?.xAddr
+                    )
+                } else {
+                    // Fallback на упрощенный парсинг
+                    val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
+                    val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
+                    val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
+                    
+                    OnvifCapabilities(
+                        deviceServiceUrl = deviceUrl,
+                        mediaServiceUrl = mediaUrl,
+                        ptzServiceUrl = ptzUrl
+                    )
+                }
+            } catch (e: Exception) {
+                // Fallback на упрощенный парсинг если XML парсинг не удался
+                logger.debug(e) { "XML parsing failed, using fallback" }
+                val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
+                val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
+                val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
+                
+                OnvifCapabilities(
+                    deviceServiceUrl = deviceUrl,
+                    mediaServiceUrl = mediaUrl,
+                    ptzServiceUrl = ptzUrl
+                )
+            }
         } catch (e: Exception) {
             logger.error(e) { "Error parsing capabilities" }
             null
@@ -563,3 +598,110 @@ enum class PtzDirection {
         }
     }
 }
+
+// === SOAP XML Serialization Classes ===
+
+@Serializable
+@XmlSerialName("Envelope", namespace = "http://www.w3.org/2003/05/soap-envelope", prefix = "s")
+data class SoapEnvelope(
+    @XmlElement(true) val body: SoapBody
+)
+
+@Serializable
+@XmlSerialName("Body", namespace = "http://www.w3.org/2003/05/soap-envelope", prefix = "s")
+data class SoapBody(
+    @XmlElement(true) val capabilities: CapabilitiesResponse? = null,
+    @XmlElement(true) val deviceInformation: DeviceInformationResponse? = null,
+    @XmlElement(true) val profiles: ProfilesResponse? = null,
+    @XmlElement(true) val streamUri: StreamUriResponse? = null
+)
+
+@Serializable
+@XmlSerialName("GetCapabilitiesResponse", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
+data class CapabilitiesResponse(
+    @XmlElement(true) val capabilities: Capabilities? = null
+)
+
+@Serializable
+@XmlSerialName("Capabilities", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
+data class Capabilities(
+    @XmlElement(true) val device: DeviceCapabilities? = null,
+    @XmlElement(true) val media: MediaCapabilities? = null,
+    @XmlElement(true) val ptz: PtzCapabilities? = null
+)
+
+@Serializable
+@XmlSerialName("Device", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
+data class DeviceCapabilities(
+    @XmlElement(true) val xAddr: String? = null
+)
+
+@Serializable
+@XmlSerialName("Media", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
+data class MediaCapabilities(
+    @XmlElement(true) val xAddr: String? = null
+)
+
+@Serializable
+@XmlSerialName("PTZ", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
+data class PtzCapabilities(
+    @XmlElement(true) val xAddr: String? = null
+)
+
+@Serializable
+@XmlSerialName("GetDeviceInformationResponse", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
+data class DeviceInformationResponse(
+    @XmlElement(true) val manufacturer: String? = null,
+    @XmlElement(true) val model: String? = null,
+    @XmlElement(true) val firmwareVersion: String? = null,
+    @XmlElement(true) val serialNumber: String? = null,
+    @XmlElement(true) val hardwareId: String? = null
+)
+
+@Serializable
+@XmlSerialName("GetProfilesResponse", namespace = "http://www.onvif.org/ver10/media/wsdl", prefix = "trt")
+data class ProfilesResponse(
+    @XmlElement(true) val profiles: List<OnvifProfileXml>? = null
+)
+
+@Serializable
+@XmlSerialName("Profile", namespace = "http://www.onvif.org/ver10/media/wsdl", prefix = "trt")
+data class OnvifProfileXml(
+    @XmlAttribute(true) val token: String,
+    @XmlElement(true) val name: String? = null,
+    @XmlElement(true) val videoSourceConfiguration: VideoSourceConfiguration? = null,
+    @XmlElement(true) val videoEncoderConfiguration: VideoEncoderConfiguration? = null
+)
+
+@Serializable
+@XmlSerialName("VideoSourceConfiguration", namespace = "http://www.onvif.org/ver10/schema", prefix = "tt")
+data class VideoSourceConfiguration(
+    @XmlAttribute(true) val token: String? = null
+)
+
+@Serializable
+@XmlSerialName("VideoEncoderConfiguration", namespace = "http://www.onvif.org/ver10/schema", prefix = "tt")
+data class VideoEncoderConfiguration(
+    @XmlElement(true) val resolution: ResolutionXml? = null,
+    @XmlElement(true) val rateControl: RateControl? = null,
+    @XmlElement(true) val encoding: String? = null
+)
+
+@Serializable
+@XmlSerialName("Resolution", namespace = "http://www.onvif.org/ver10/schema", prefix = "tt")
+data class ResolutionXml(
+    @XmlElement(true) val width: Int? = null,
+    @XmlElement(true) val height: Int? = null
+)
+
+@Serializable
+@XmlSerialName("RateControl", namespace = "http://www.onvif.org/ver10/schema", prefix = "tt")
+data class RateControl(
+    @XmlElement(true) val frameRateLimit: Int? = null
+)
+
+@Serializable
+@XmlSerialName("GetStreamUriResponse", namespace = "http://www.onvif.org/ver10/media/wsdl", prefix = "trt")
+data class StreamUriResponse(
+    @XmlElement(true) val uri: String? = null
+)

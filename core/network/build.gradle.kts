@@ -6,6 +6,15 @@ plugins {
 
 kotlin {
     android()
+    
+    jvm("desktop") {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+    
     iosX64()
     iosArm64()
     iosSimulatorArm64()
@@ -15,19 +24,16 @@ kotlin {
             dependencies {
                 implementation(project(":shared"))
                 // Ktor Client
-                implementation("io.ktor:ktor-client-core:2.3.5")
-                implementation("io.ktor:ktor-client-content-negotiation:2.3.5")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.5")
-                implementation("io.ktor:ktor-client-logging:2.3.5")
-                implementation("io.ktor:ktor-client-websockets:2.3.5")
+                implementation(libs.bundles.ktor)
+                implementation(libs.ktor.serialization.kotlinx.xml)
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+                implementation(libs.kotlinx.serialization.json)
                 // Coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation(libs.kotlinx.coroutines.core)
                 // Logging
-                implementation("io.github.microutils:kotlin-logging:3.0.5")
+                implementation(libs.kotlin.logging)
                 // DateTime
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                implementation(libs.kotlinx.datetime)
             }
         }
         
@@ -35,20 +41,21 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.bundles.testing)
             }
         }
         
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-android:2.3.5")
+                implementation(libs.ktor.client.android)
             }
         }
         
         val iosMain by creating {
             dependsOn(commonMain)
             dependencies {
-                implementation("io.ktor:ktor-client-darwin:2.3.5")
+                implementation(libs.ktor.client.darwin)
             }
         }
         
@@ -62,6 +69,13 @@ kotlin {
         
         val iosSimulatorArm64Main by getting {
             dependsOn(iosMain)
+        }
+        
+        val desktopMain by getting {
+            dependsOn(commonMain)
+            dependencies {
+                implementation("io.ktor:ktor-client-java:2.3.5")
+            }
         }
     }
 }

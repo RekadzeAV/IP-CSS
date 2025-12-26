@@ -2,69 +2,201 @@
 
 ## Обзор
 
-Проект организован по модульному принципу с четким разделением ответственности между компонентами.
+Проект организован по модульному принципу с четким разделением ответственности между компонентами. Используется Kotlin Multiplatform для кроссплатформенной бизнес-логики и нативные библиотеки C++ для обработки видео и AI-аналитики.
 
 ## Корневая структура
 
 ```
 IP-CSS/
-├── .github/                    # GitHub Actions workflows
+├── .github/                    # GitHub Actions workflows (планируется)
 │   └── workflows/
 │       ├── ci.yml             # CI pipeline
 │       └── cd.yml             # CD pipeline
 ├── .gradle/                   # Gradle cache (не коммитится)
-├── android/                    # Android приложение
-│   ├── app/                   # Основное приложение
-│   ├── ui/                    # UI компоненты
-│   └── platform/              # Android-специфичные реализации
 ├── core/                      # Общие кроссплатформенные модули
 │   ├── license/               # Система лицензирования
-│   ├── network/               # Сетевое взаимодействие
-│   │   ├── ApiClient.kt       # REST API клиент
-│   │   ├── WebSocketClient.kt # WebSocket клиент
-│   │   ├── RtspClient.kt      # RTSP клиент (обертка)
-│   │   └── OnvifClient.kt     # ONVIF клиент
-│   ├── database/              # База данных
-│   └── utils/                 # Утилиты
-├── desktop/                    # Desktop приложения
-│   ├── common/                # Общий UI и логика
-│   ├── windows/              # Windows специфичные настройки
-│   ├── linux/                 # Linux специфичные настройки
-│   └── macos/                 # macOS специфичные настройки
+│   │   ├── src/
+│   │   │   ├── commonMain/    # Общий код для всех платформ
+│   │   │   ├── androidMain/   # Android-специфичные реализации
+│   │   │   └── iosMain/       # iOS-специфичные реализации
+│   │   └── build.gradle.kts
+│   └── network/               # Сетевое взаимодействие
+│       ├── src/
+│       │   ├── commonMain/
+│       │   │   └── kotlin/com/company/ipcamera/core/network/
+│       │   │       ├── ApiClient.kt          # REST API клиент
+│       │   │       ├── WebSocketClient.kt    # WebSocket клиент
+│       │   │       ├── RtspClient.kt         # RTSP клиент (обертка)
+│       │   │       ├── OnvifClient.kt        # ONVIF клиент
+│       │   │       ├── OnvifTypes.kt         # ONVIF типы
+│       │   │       ├── api/                  # API сервисы
+│       │   │       │   ├── CameraApiService.kt
+│       │   │       │   ├── EventApiService.kt
+│       │   │       │   ├── LicenseApiService.kt
+│       │   │       │   ├── RecordingApiService.kt
+│       │   │       │   ├── SettingsApiService.kt
+│       │   │       │   └── UserApiService.kt
+│       │   │       └── dto/                  # Data Transfer Objects
+│       │   │           ├── ApiResponse.kt
+│       │   │           ├── CameraDto.kt
+│       │   │           ├── EventDto.kt
+│       │   │           ├── LicenseDto.kt
+│       │   │           ├── RecordingDto.kt
+│       │   │           ├── SettingsDto.kt
+│       │   │           └── UserDto.kt
+│       │   ├── androidMain/   # Android-специфичные реализации
+│       │   └── iosMain/       # iOS-специфичные реализации
+│       ├── build.gradle.kts
+│       └── README.md
 ├── docs/                       # Документация
 │   ├── ARCHITECTURE.md        # Архитектура системы
 │   ├── DEPLOYMENT_GUIDE.md    # Руководство по развертыванию
+│   ├── DEVELOPMENT_PLAN.md    # План разработки
+│   ├── DEVELOPMENT.md         # Руководство по разработке
 │   ├── API.md                 # API документация
 │   ├── LICENSE_SYSTEM.md      # Система лицензирования
-│   ├── DEVELOPMENT.md         # Руководство по разработке
+│   ├── ONVIF_CLIENT.md        # Документация ONVIF клиента
+│   ├── RTSP_CLIENT.md         # Документация RTSP клиента
+│   ├── WEBSOCKET_CLIENT.md    # Документация WebSocket клиента
+│   ├── TESTING.md             # Документация по тестированию
+│   ├── TESTS_SUMMARY.md       # Сводка тестов
+│   ├── INTEGRATION_GUIDE.md   # Руководство по интеграции
+│   ├── IMPLEMENTATION_STATUS.md # Статус реализации
+│   ├── MISSING_FUNCTIONALITY.md # Отсутствующая функциональность
+│   ├── REQUIRED_LIBRARIES.md  # Необходимые библиотеки
 │   └── PROMPT_ANALYSIS.md     # Анализ промта
-├── ios/                        # iOS приложение
-│   ├── IPCameraSurveillance/  # Основное приложение
-│   ├── ui/                    # SwiftUI компоненты
-│   └── platform/              # iOS-специфичные реализации
 ├── native/                     # Нативные C++ библиотеки
 │   ├── video-processing/      # Обработка видео
+│   │   ├── src/
+│   │   │   ├── frame_processor.cpp
+│   │   │   ├── rtsp_client.cpp
+│   │   │   ├── stream_manager.cpp
+│   │   │   ├── video_decoder.cpp
+│   │   │   └── video_encoder.cpp
+│   │   ├── include/
+│   │   │   ├── frame_processor.h
+│   │   │   ├── rtsp_client.h
+│   │   │   ├── stream_manager.h
+│   │   │   ├── video_decoder.h
+│   │   │   └── video_encoder.h
+│   │   └── CMakeLists.txt
 │   ├── analytics/             # AI аналитика
+│   │   ├── src/
+│   │   │   ├── anpr_engine.cpp          # Распознавание номеров
+│   │   │   ├── face_detector.cpp        # Детекция лиц
+│   │   │   ├── motion_detector.cpp      # Детекция движения
+│   │   │   ├── object_detector.cpp      # Детекция объектов
+│   │   │   └── object_tracker.cpp       # Трекинг объектов
+│   │   ├── include/
+│   │   │   ├── anpr_engine.h
+│   │   │   ├── face_detector.h
+│   │   │   ├── motion_detector.h
+│   │   │   ├── object_detector.h
+│   │   │   └── object_tracker.h
+│   │   └── CMakeLists.txt
 │   ├── codecs/                # Кодеки
-│   └── CMakeLists.txt         # CMake конфигурация
+│   │   ├── src/
+│   │   │   ├── codec_manager.cpp
+│   │   │   ├── h264_codec.cpp
+│   │   │   ├── h265_codec.cpp
+│   │   │   └── mjpeg_codec.cpp
+│   │   ├── include/
+│   │   │   ├── codec_manager.h
+│   │   │   ├── h264_codec.h
+│   │   │   ├── h265_codec.h
+│   │   │   └── mjpeg_codec.h
+│   │   └── CMakeLists.txt
+│   └── CMakeLists.txt         # Корневой CMake файл
 ├── scripts/                    # Скрипты сборки и развертывания
-│   └── build-all-platforms.sh # Скрипт сборки всех платформ
+│   └── build-all-platforms.sh # Скрипт сборки для всех платформ
 ├── server/                     # Серверная часть
-│   ├── api/                   # REST API сервер
-│   ├── nas/                   # Версия для NAS устройств
-│   └── web/                   # Веб-интерфейс (React)
+│   └── web/                    # Веб-приложение (Next.js)
+│       ├── package.json
+│       ├── tsconfig.json
+│       └── next.config.js
 ├── shared/                     # Kotlin Multiplatform модуль
-│   ├── common/                # Общие модели и интерфейсы
-│   ├── domain/                # Use cases и бизнес-правила
-│   └── data/                  # Источники данных и репозитории
-├── .gitignore                 # Git ignore правила
-├── .env.example               # Пример переменных окружения
+│   ├── src/
+│   │   ├── commonMain/        # Общий код для всех платформ
+│   │   │   ├── kotlin/com/company/ipcamera/shared/
+│   │   │   │   ├── common/    # Общие утилиты и платформо-независимые сервисы
+│   │   │   │   │   ├── BackgroundWorker.kt   # Абстракция фоновой работы
+│   │   │   │   │   ├── FileSystem.kt        # Абстракция файловой системы
+│   │   │   │   │   ├── NotificationManager.kt # Абстракция уведомлений
+│   │   │   │   │   └── Platform.kt          # Информация о платформе
+│   │   │   │   ├── domain/    # Доменный слой
+│   │   │   │   │   ├── model/ # Доменные модели
+│   │   │   │   │   │   ├── Camera.kt
+│   │   │   │   │   │   ├── Event.kt
+│   │   │   │   │   │   ├── License.kt
+│   │   │   │   │   │   ├── Notification.kt
+│   │   │   │   │   │   ├── Recording.kt
+│   │   │   │   │   │   ├── Settings.kt
+│   │   │   │   │   │   └── User.kt
+│   │   │   │   │   ├── repository/ # Интерфейсы репозиториев
+│   │   │   │   │   │   ├── CameraRepository.kt
+│   │   │   │   │   │   ├── EventRepository.kt
+│   │   │   │   │   │   ├── LicenseRepository.kt
+│   │   │   │   │   │   ├── NotificationRepository.kt
+│   │   │   │   │   │   ├── RecordingRepository.kt
+│   │   │   │   │   │   ├── SettingsRepository.kt
+│   │   │   │   │   │   └── UserRepository.kt
+│   │   │   │   │   └── usecase/ # Use Cases (бизнес-логика)
+│   │   │   │   │       ├── AddCameraUseCase.kt
+│   │   │   │   │       ├── DeleteCameraUseCase.kt
+│   │   │   │   │       ├── GetCameraByIdUseCase.kt
+│   │   │   │   │       ├── GetCamerasUseCase.kt
+│   │   │   │   │       └── UpdateCameraUseCase.kt
+│   │   │   │   └── data/      # Слой данных
+│   │   │   │       ├── local/ # Локальные источники данных
+│   │   │   │       │   ├── CameraEntityMapper.kt
+│   │   │   │       │   └── DatabaseFactory.kt
+│   │   │   │       └── repository/ # Реализации репозиториев
+│   │   │   │           ├── CameraRepositoryImpl.kt
+│   │   │   │           ├── EventRepositoryImpl.kt
+│   │   │   │           ├── LicenseRepositoryImpl.kt
+│   │   │   │           ├── NotificationRepositoryImpl.kt
+│   │   │   │           ├── RecordingRepositoryImpl.kt
+│   │   │   │           ├── SettingsRepositoryImpl.kt
+│   │   │   │           └── UserRepositoryImpl.kt
+│   │   │   └── sqldelight/    # SQLDelight схемы
+│   │   │       └── com/company/ipcamera/shared/database/
+│   │   │           └── CameraDatabase.sq
+│   │   ├── androidMain/       # Android-специфичные реализации
+│   │   │   └── kotlin/com/company/ipcamera/shared/common/
+│   │   │       ├── BackgroundWorker.android.kt
+│   │   │       ├── FileSystem.android.kt
+│   │   │       ├── NotificationManager.android.kt
+│   │   │       └── Platform.android.kt
+│   │   ├── iosMain/           # iOS-специфичные реализации
+│   │   │   └── kotlin/com/company/ipcamera/shared/common/
+│   │   │       ├── BackgroundWorker.ios.kt
+│   │   │       ├── FileSystem.ios.kt
+│   │   │       ├── NotificationManager.ios.kt
+│   │   │       └── Platform.ios.kt
+│   │   ├── desktopMain/       # Desktop-специфичные реализации
+│   │   │   └── kotlin/com/company/ipcamera/shared/common/
+│   │   │       ├── BackgroundWorker.desktop.kt
+│   │   │       ├── FileSystem.desktop.kt
+│   │   │       ├── NotificationManager.desktop.kt
+│   │   │       └── Platform.desktop.kt
+│   │   └── commonTest/        # Тесты
+│   │       ├── kotlin/com/company/ipcamera/shared/
+│   │       │   ├── domain/usecase/     # Тесты Use Cases
+│   │       │   ├── data/repository/    # Тесты репозиториев
+│   │       │   └── data/local/         # Тесты мапперов
+│   │       └── test/                   # Тестовые утилиты
+│   │           ├── TestDatabaseFactory.kt
+│   │           └── TestDataFactory.kt
+│   └── build.gradle.kts
+├── .gitignore                 # Git ignore файл
 ├── build.gradle.kts          # Корневой build файл
 ├── CHANGELOG.md               # История изменений
-├── CONTRIBUTING.md            # Руководство по внесению вклада
+├── CONTRIBUTING.md            # Руководство по участию в разработке
+├── CURRENT_STATUS.md          # Текущий статус проекта
 ├── docker-compose.yml         # Docker Compose конфигурация
-├── gradle.properties          # Gradle свойства
+├── gradle.properties          # Настройки Gradle
 ├── LICENSE                    # Лицензия проекта
+├── PROJECT_ROADMAP.md         # Дорожная карта проекта
 ├── PROJECT_STRUCTURE.md       # Этот файл
 ├── README.md                  # Основной README
 └── settings.gradle.kts        # Настройки Gradle проекта
@@ -72,163 +204,131 @@ IP-CSS/
 
 ## Детальная структура модулей
 
-### shared/ - Kotlin Multiplatform
+### shared/ - Kotlin Multiplatform модуль
 
-```
-shared/
-├── src/
-│   ├── commonMain/
-│   │   └── kotlin/com/company/ipcamera/shared/
-│   │       ├── common/        # Общие утилиты и платформо-специфичные интерфейсы
-│   │       ├── domain/        # Доменный слой
-│   │       │   ├── model/     # Бизнес-модели
-│   │       │   ├── repository/# Интерфейсы репозиториев
-│   │       │   └── usecase/   # Use cases
-│   │       └── data/          # Слой данных
-│   │           ├── local/     # Локальные источники данных
-│   │           ├── remote/    # Удаленные источники данных
-│   │           └── repository/# Реализации репозиториев
-│   ├── androidMain/           # Android-специфичные реализации
-│   ├── iosMain/               # iOS-специфичные реализации
-│   └── desktopMain/           # Desktop-специфичные реализации
-└── build.gradle.kts
-```
+Основной модуль, содержащий всю кроссплатформенную бизнес-логику. Использует Clean Architecture с разделением на слои: domain (доменные модели и use cases), data (реализации репозиториев), common (платформо-независимые утилиты).
 
-### android/ - Android приложение
+**Технологии:**
+- Kotlin Multiplatform
+- SQLDelight для работы с БД
+- Ktor Client для сетевых запросов
+- Kotlinx Serialization для сериализации
+- Kotlinx Coroutines для асинхронности
+- Koin для dependency injection
 
-```
-android/
-├── app/
-│   ├── src/main/
-│   │   ├── java/com/company/ipcamera/android/
-│   │   │   ├── MainActivity.kt
-│   │   │   └── Application.kt
-│   │   └── res/               # Ресурсы
-│   └── build.gradle.kts
-├── ui/
-│   └── src/main/java/com/company/ipcamera/android/ui/
-│       └── screens/           # Compose экраны
-└── platform/
-    └── src/main/java/com/company/ipcamera/android/platform/
-        └── implementations/  # Платформо-специфичные реализации
-```
+**Source Sets:**
+- `commonMain` - код, общий для всех платформ
+- `androidMain` - Android-специфичные реализации
+- `iosMain` - iOS-специфичные реализации (iosX64, iosArm64, iosSimulatorArm64)
+- `desktopMain` - Desktop-специфичные реализации (JVM)
+- `commonTest` - тесты
 
-### ios/ - iOS приложение
+### core/license/ - Модуль лицензирования
 
-```
-ios/
-├── IPCameraSurveillance/
-│   ├── AppDelegate.swift
-│   ├── ContentView.swift
-│   └── Screens/              # SwiftUI экраны
-├── IPCameraSurveillance.xcodeproj
-└── IPCameraSurveillance.xcworkspace
-```
+Модуль для управления лицензиями приложения. Поддерживает Android и iOS.
 
-### server/ - Серверная часть
+**Технологии:**
+- Kotlin Multiplatform
+- Android Security Crypto (для Android)
+- BouncyCastle (для криптографии)
 
-```
-server/
-├── api/
-│   ├── src/main/kotlin/com/company/ipcamera/server/
-│   │   ├── api/              # REST API endpoints
-│   │   ├── websocket/         # WebSocket сервер
-│   │   ├── service/           # Бизнес-логика сервера
-│   │   └── config/            # Конфигурация
-│   └── build.gradle.kts
-├── web/
-│   ├── src/
-│   │   ├── components/       # React компоненты
-│   │   ├── pages/            # Next.js страницы
-│   │   ├── store/             # Redux store
-│   │   └── utils/             # Утилиты
-│   ├── package.json
-│   └── next.config.js
-└── nas/
-    └── packages/              # Пакеты для различных NAS
-```
+### core/network/ - Модуль сетевого взаимодействия
 
-### native/ - C++ библиотеки
+Модуль предоставляет клиенты для различных сетевых протоколов:
+- **ApiClient** - REST API клиент на основе Ktor с поддержкой retry, кэширования, логирования
+- **WebSocketClient** - WebSocket клиент с автоматическим переподключением
+- **RtspClient** - RTSP клиент (обертка для нативной реализации)
+- **OnvifClient** - ONVIF клиент для работы с IP-камерами
 
-```
-native/
-├── video-processing/
-│   ├── src/                  # Исходные файлы C++
-│   │   ├── rtsp_client.cpp   # RTSP клиент (нативный)
-│   │   └── ...
-│   ├── include/               # Заголовочные файлы
-│   │   ├── rtsp_client.h     # RTSP клиент (заголовок)
-│   │   └── ...
-│   └── CMakeLists.txt
-├── analytics/
-│   ├── src/
-│   ├── include/
-│   └── CMakeLists.txt
-├── codecs/
-│   ├── src/
-│   ├── include/
-│   └── CMakeLists.txt
-└── CMakeLists.txt
-```
+Также содержит API сервисы и DTO для различных сущностей (Camera, Event, License, Recording, Settings, User).
+
+### native/ - Нативные C++ библиотеки
+
+Нативные библиотеки для обработки видео и AI-аналитики, собранные с помощью CMake.
+
+**Модули:**
+- **video-processing/** - обработка видеопотоков, декодирование/кодирование, управление потоками
+- **analytics/** - AI-аналитика: детекция объектов, лиц, движения, трекинг, распознавание номеров (ANPR)
+- **codecs/** - поддержка кодеков H.264, H.265, MJPEG
+
+### server/web/ - Веб-приложение
+
+Next.js приложение для веб-интерфейса системы видеонаблюдения.
+
+**Технологии:**
+- Next.js
+- TypeScript
+- React
 
 ## Зависимости между модулями
 
 ```
-android/ios/desktop
+android/ios/desktop приложения (планируются)
     ↓
 shared (KMM)
     ↓
-core (license, network, database, utils)
+core (license, network)
     ↓
-native (C++ библиотеки)
+native (C++ библиотеки через FFI)
 ```
+
+**Текущая структура модулей Gradle:**
+- `:shared` - основной KMM модуль
+- `:core:license` - модуль лицензирования
+- `:core:network` - модуль сетевого взаимодействия
+
+Native модули собираются отдельно через CMake и не включены в Gradle.
 
 ## Конфигурационные файлы
 
 ### Gradle
 - `build.gradle.kts` - корневой build файл
-- `settings.gradle.kts` - настройки проекта
+- `settings.gradle.kts` - настройки проекта, определение модулей
 - `gradle.properties` - свойства Gradle
+- `gradle/libs.versions.toml` - версии зависимостей
 - `gradle/wrapper/` - Gradle wrapper
 
 ### CMake
 - `native/CMakeLists.txt` - корневой CMake файл
-- `native/*/CMakeLists.txt` - CMake файлы для каждого модуля
+- `native/*/CMakeLists.txt` - CMake файлы для каждого нативного модуля
 
 ### Node.js
 - `server/web/package.json` - зависимости и скрипты
-- `server/web/tsconfig.json` - TypeScript конфигурация
-- `server/web/next.config.js` - Next.js конфигурация
+- `server/web/tsconfig.json` - конфигурация TypeScript
+- `server/web/next.config.js` - конфигурация Next.js
 
 ### Docker
 - `docker-compose.yml` - Docker Compose конфигурация
-- `.env.example` - пример переменных окружения
 
 ### CI/CD
-- `.github/workflows/ci.yml` - CI pipeline
-- `.github/workflows/cd.yml` - CD pipeline
+- `.github/workflows/ci.yml` - CI pipeline (планируется)
+- `.github/workflows/cd.yml` - CD pipeline (планируется)
 
 ## Документация
 
-Все документы находятся в `docs/`:
-- `ARCHITECTURE.md` - детальное описание архитектуры
+Вся документация находится в папке `docs/`:
+- `ARCHITECTURE.md` - подробная архитектура системы
 - `DEPLOYMENT_GUIDE.md` - руководство по развертыванию
 - `API.md` - API документация
 - `LICENSE_SYSTEM.md` - система лицензирования
 - `DEVELOPMENT.md` - руководство по разработке
-- `PROMPT_ANALYSIS.md` - анализ промта и недостающих компонентов
+- `ONVIF_CLIENT.md` - документация ONVIF клиента
+- `RTSP_CLIENT.md` - документация RTSP клиента
+- `WEBSOCKET_CLIENT.md` - документация WebSocket клиента
+- `TESTING.md` - документация по тестированию
+- `INTEGRATION_GUIDE.md` - руководство по интеграции
 
 ## Скрипты
 
 Скрипты для автоматизации находятся в `scripts/`:
-- `build-all-platforms.sh` - сборка всех платформ
-- Другие скрипты для развертывания и обслуживания
+- `build-all-platforms.sh` - сборка для всех платформ
 
-## Следующие шаги
+## Примечания
 
-1. Реализовать базовые репозитории и Use Cases
-2. Создать UI компоненты для всех платформ
-3. Разработать серверную часть (API, WebSocket)
-4. Интегрировать нативные библиотеки
-5. Написать тесты и документацию
+1. **Платформенные приложения**: Модули `android/`, `ios/`, `desktop/` на данный момент отсутствуют в структуре проекта и должны быть добавлены в будущем.
 
+2. **База данных**: Используется SQLDelight для работы с локальной базой данных SQLite. Схемы определены в `shared/src/commonMain/sqldelight/`.
+
+3. **Тестирование**: Тесты находятся в `shared/src/commonTest/`. Поддерживаются unit-тесты для use cases, репозиториев и мапперов.
+
+4. **Платформо-специфичный код**: Реализации платформо-специфичных функций находятся в соответствующих source sets (`androidMain`, `iosMain`, `desktopMain`) и реализуют expect/actual механизм Kotlin Multiplatform.

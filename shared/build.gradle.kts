@@ -3,10 +3,22 @@ plugins {
     kotlin("plugin.serialization")
     id("com.android.library")
     id("app.cash.sqldelight")
+    // Development tools (optional, can be applied at root level)
+    // id("io.gitlab.arturbosch.detekt")
+    // id("org.jlleitschuh.gradle.ktlint")
+    // id("org.jetbrains.dokka")
 }
 
 kotlin {
     androidTarget {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "1.8"
+            }
+        }
+    }
+    
+    jvm("desktop") {
         compilations.all {
             kotlinOptions {
                 jvmTarget = "1.8"
@@ -22,24 +34,28 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // Coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+                implementation(libs.kotlinx.coroutines.core)
                 
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+                implementation(libs.kotlinx.serialization.json)
                 
                 // Ktor Client
-                implementation("io.ktor:ktor-client-core:2.3.5")
-                implementation("io.ktor:ktor-client-content-negotiation:2.3.5")
-                implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.5")
+                implementation(libs.bundles.ktor)
                 
                 // SQLDelight
-                implementation("app.cash.sqldelight:runtime:2.0.0")
+                implementation(libs.sqldelight.runtime)
                 
                 // Logging
-                implementation("io.github.microutils:kotlin-logging:3.0.5")
+                implementation(libs.kotlin.logging)
                 
                 // Date/Time
-                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
+                implementation(libs.kotlinx.datetime)
+                
+                // Dependency Injection
+                implementation(libs.bundles.koin)
+                
+                // Core network module
+                implementation(project(":core:network"))
             }
         }
         
@@ -47,16 +63,28 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+                implementation(libs.kotlinx.coroutines.test)
                 // SQLDelight driver for testing
-                implementation("app.cash.sqldelight:sqlite-driver:2.0.0")
+                implementation(libs.sqldelight.sqlite.driver)
+                // Testing libraries
+                implementation(libs.bundles.testing)
+                // Koin testing
+                implementation(libs.koin.test)
             }
         }
         
         val androidMain by getting {
             dependencies {
-                implementation("io.ktor:ktor-client-android:2.3.5")
-                implementation("app.cash.sqldelight:android-driver:2.0.0")
+                implementation(libs.ktor.client.android)
+                implementation(libs.sqldelight.android.driver)
+                implementation(project(":core:network"))
+                implementation(libs.androidx.work.runtime.ktx)
+                // Optional: OpenCV for Android (uncomment if needed)
+                // implementation(libs.opencv.android)
+                // Optional: TensorFlow Lite for Android (uncomment if needed)
+                // implementation(libs.tensorflow.lite)
+                // implementation(libs.tensorflow.lite.gpu)
+                // implementation(libs.tensorflow.lite.support)
             }
         }
         
@@ -70,8 +98,9 @@ kotlin {
         val iosMain by creating {
             dependsOn(commonMain)
             dependencies {
-                implementation("io.ktor:ktor-client-darwin:2.3.5")
-                implementation("app.cash.sqldelight:native-driver:2.0.0")
+                implementation(libs.ktor.client.darwin)
+                implementation(libs.sqldelight.native.driver)
+                implementation(project(":core:network"))
             }
         }
         
@@ -85,6 +114,14 @@ kotlin {
         
         val iosSimulatorArm64Main by getting {
             dependsOn(iosMain)
+        }
+        
+        val desktopMain by getting {
+            dependsOn(commonMain)
+            dependencies {
+                implementation(libs.ktor.client.java)
+                implementation(libs.sqldelight.sqlite.driver)
+            }
         }
     }
 }

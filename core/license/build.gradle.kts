@@ -14,9 +14,9 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":shared"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("io.github.microutils:kotlin-logging:3.0.5")
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlin.logging)
             }
         }
         
@@ -24,13 +24,16 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.bundles.testing)
             }
         }
         
         val androidMain by getting {
             dependencies {
-                // Android-specific crypto
+                implementation(libs.androidx.security.crypto)
+                implementation(libs.bouncycastle.provider)
+                implementation(libs.bouncycastle.pkix)
             }
         }
         

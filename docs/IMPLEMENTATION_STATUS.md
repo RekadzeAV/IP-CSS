@@ -64,29 +64,57 @@
 
 ---
 
-### 3. ❌ Сетевые клиенты
+### 3. ⚠️ Сетевые клиенты
 
-**Статус:** ❌ **Не реализовано** (только зависимости)
+**Статус:** ⚠️ **Частично реализовано** (~40%)
 
 **Что есть:**
-- ✅ Зависимости Ktor Client в `shared/build.gradle.kts`:
-  - `ktor-client-core:2.3.5`
-  - `ktor-client-content-negotiation:2.3.5`
-  - `ktor-serialization-kotlinx-json:2.3.5`
-  - Платформо-специфичные драйверы (Android, Darwin)
-
-**Что отсутствует:**
-- ❌ Ktor клиент для REST API (`ApiClient`, `ApiService`)
-- ❌ WebSocket клиент для real-time коммуникации
-- ❌ RTSP клиент (нативный C++ или Kotlin)
-- ❌ ONVIF клиент для обнаружения и управления камерами
-- ❌ Конфигурация базового URL, таймаутов, interceptors
+- ✅ Зависимости Ktor Client в `core/network/build.gradle.kts`
+- ✅ **ApiClient** - полностью реализован (`core/network/src/.../ApiClient.kt`)
+  - HTTP клиент с retry логикой
+  - Кэширование ответов
+  - Обработка ошибок
+  - Поддержка всех HTTP методов (GET, POST, PUT, PATCH, DELETE)
+  - Загрузка файлов (upload, uploadMultipart)
+- ✅ **API сервисы** - интерфейсы реализованы:
+  - `CameraApiService` - endpoints для камер
+  - `RecordingApiService` - endpoints для записей
+  - `EventApiService` - endpoints для событий
+  - `UserApiService` - endpoints для пользователей
+  - `LicenseApiService` - endpoints для лицензий
+  - `SettingsApiService` - endpoints для настроек
+- ✅ **DTO модели** - все модели для API реализованы
+- ⚠️ **OnvifClient** - частично реализован (~40%)
+  - ✅ Базовые методы (getCapabilities, getDeviceInformation, getProfiles, getStreamUri)
+  - ✅ PTZ управление (movePtz, stopPtz)
+  - ✅ testConnection() - реализован
+  - ❌ WS-Discovery (discoverCameras возвращает пустой список)
+  - ❌ Полноценный XML парсинг (используется упрощенный через regex)
+  - ❌ Digest Authentication (только Basic)
+  - См. детали: [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#onvifclient)
+- ⚠️ **WebSocketClient** - частично реализован (~80%)
+  - ✅ Подключение/отключение
+  - ✅ Автоматическое переподключение
+  - ✅ Подписки на каналы
+  - ✅ Обработка текстовых сообщений
+  - ❌ Обработка бинарных сообщений (игнорируются)
+  - ❌ Очередь сообщений при отключении
+  - ❌ Rate limiting
+  - См. детали: [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#websocketclient)
+- ⚠️ **RtspClient** - частично реализован (~10%)
+  - ✅ Kotlin обертка с базовой структурой
+  - ✅ Нативная C++ библиотека с заголовками
+  - ❌ Интеграция Kotlin ↔ C++ (FFI биндинги)
+  - ❌ Реальная реализация RTSP протокола (все функции - заглушки)
+  - ❌ RTP/RTCP обработка
+  - ❌ Декодирование видео/аудио
+  - См. детали: [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#rtspclient)
 
 **Рекомендации:**
-- Создать модуль `core/network/` с реализацией API клиента
-- Реализовать WebSocket клиент для уведомлений
-- Интегрировать RTSP клиент (возможно через нативную библиотеку)
-- Реализовать ONVIF клиент для discoverCameras() в CameraRepositoryImpl
+- Завершить WS-Discovery в OnvifClient (см. [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#1-xml-парсинг-для-onvif))
+- Интегрировать RTSP клиент с нативной библиотекой (см. [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#2-rtsp-клиент---интеграция-live555))
+- Реализовать discoverCameras() через OnvifClient в CameraRepositoryImpl
+- Детальный анализ: [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md)
 
 ---
 
@@ -127,26 +155,35 @@
 
 ### 5. ⚠️ Платформо-специфичные реализации
 
-**Статус:** ⚠️ **Частично реализовано**
+**Статус:** ⚠️ **Частично реализовано** (~30%)
 
 **Что есть:**
 - ✅ Базовые файлы `Platform.kt` для Android, iOS, common
 - ✅ Интерфейсы `PlatformCrypto` и `LicenseRepository` (expect declarations)
+- ✅ Android реализации `LicenseRepository` (использует SharedPreferences, требует доработки)
+- ✅ iOS реализации `LicenseRepository` (использует NSUserDefaults, требует доработки)
+- ✅ Android реализации `PlatformCrypto` (частично - getSecureDeviceFingerprint возвращает заглушку)
+- ✅ iOS реализации `PlatformCrypto` (частично - getSecureDeviceFingerprint использует identifierForVendor)
 
 **Что отсутствует:**
-- ❌ Android реализации `PlatformCrypto` (в `core/license/src/androidMain/`)
-- ❌ Android реализации `LicenseRepository` (в `core/license/src/androidMain/`)
-- ❌ iOS реализации `PlatformCrypto` (в `core/license/src/iosMain/`)
-- ❌ iOS реализации `LicenseRepository` (в `core/license/src/iosMain/`)
-- ❌ Desktop реализации для Windows, Linux, macOS
+- ⚠️ Android `PlatformCrypto.getSecureDeviceFingerprint()` - требует Android Keystore
+- ⚠️ Android `PlatformCrypto.decryptOfflineCode()` - не реализован (NotImplementedError)
+- ⚠️ Android `PlatformCrypto.schedulePeriodicCheck()` - не реализован (TODO)
+- ⚠️ Android `LicenseRepository.saveLicense()` - использует SharedPreferences, нужен EncryptedSharedPreferences
+- ⚠️ iOS `PlatformCrypto.getSecureDeviceFingerprint()` - использует identifierForVendor, нужен Keychain
+- ⚠️ iOS `PlatformCrypto.decryptOfflineCode()` - не реализован (NotImplementedError)
+- ⚠️ iOS `PlatformCrypto.schedulePeriodicCheck()` - не реализован (TODO)
+- ⚠️ iOS `LicenseRepository.saveLicense()` - использует NSUserDefaults, нужен Keychain
+- ❌ Desktop реализации для Windows, Linux, macOS (полностью отсутствуют)
 - ❌ Платформо-специфичные реализации для работы с файловой системой
-- ❌ Платформо-специфичные реализации для криптографии
+- ❌ Полная реализация криптографии для лицензий
 
 **Рекомендации:**
-- Реализовать `actual` классы для каждой платформы
-- Использовать Android Keystore для Android
-- Использовать Keychain для iOS
+- Завершить платформо-специфичные реализации для LicenseManager (см. [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#4-платформо-специфичные-реализации))
+- Использовать Android Keystore и EncryptedSharedPreferences для Android
+- Использовать iOS Keychain для iOS
 - Реализовать Desktop версии
+- См. детали: [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#5-криптография-для-лицензирования)
 
 ---
 
@@ -307,12 +344,12 @@
 | Реализации репозиториев | ✅ Частично | ~40% |
 | Use Cases | ✅ Частично | ~25% |
 | База данных | ✅ Частично | ~50% |
-| Сетевые клиенты | ❌ Не реализовано | 0% |
-| Платформо-специфичные реализации | ⚠️ Частично | ~15% |
+| Сетевые клиенты | ⚠️ Частично | ~40% |
+| Платформо-специфичные реализации | ⚠️ Частично | ~30% |
 | UI компоненты | ❌ Не реализовано | 0% |
 | Нативные библиотеки | ⚠️ Частично | ~5% |
 | Серверная часть | ❌ Не реализовано | 0% |
-| Тесты | ❌ Не реализовано | 0% |
+| Тесты | ⚠️ Частично | ~15% |
 | Скрипты | ⚠️ Частично | ~10% |
 
 **Общий прогресс проекта:** ~14.5%
@@ -394,11 +431,17 @@
 **Основные пробелы:**
 - ❌ UI компоненты для всех платформ
 - ❌ Серверная часть (API, WebSocket)
-- ❌ Нативные библиотеки (C++)
-- ❌ Сетевые клиенты (REST API, WebSocket, RTSP, ONVIF)
+- ❌ Нативные библиотеки (C++) - RTSP клиент
+- ⚠️ Сетевые клиенты - частично реализованы:
+  - ✅ ApiClient - полностью
+  - ⚠️ OnvifClient - WS-Discovery не реализован
+  - ⚠️ WebSocketClient - базовая функциональность есть
+  - ⚠️ RtspClient - требует интеграции с нативной библиотекой
 - ❌ Use Cases для записи, аналитики, лицензирования
 - ❌ Репозитории для записей, событий, пользователей, настроек
-- ❌ Тесты
+- ⚠️ Тесты - базовые unit тесты есть
+
+**Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md)
 
 Проект находится в активной разработке. Реализованы ключевые компоненты для управления камерами. Следующий этап - разработка UI и серверной части.
 

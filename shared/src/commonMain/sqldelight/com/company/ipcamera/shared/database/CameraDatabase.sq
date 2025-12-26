@@ -49,3 +49,25 @@ UPDATE camera SET status = ?, last_seen = ?, updated_at = ? WHERE id = ?;
 updateCameraTimestamp:
 UPDATE camera SET updated_at = ? WHERE id = ?;
 
+updateCamera:
+UPDATE camera SET
+    name = ?,
+    url = ?,
+    username = ?,
+    password = ?,
+    model = ?,
+    status = ?,
+    resolution_width = ?,
+    resolution_height = ?,
+    fps = ?,
+    bitrate = ?,
+    codec = ?,
+    audio = ?,
+    ptz_config = ?,
+    streams = ?,
+    settings = ?,
+    statistics = ?,
+    updated_at = ?,
+    last_seen = ?
+WHERE id = ?;
+
