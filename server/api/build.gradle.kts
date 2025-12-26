@@ -26,11 +26,11 @@ dependencies {
 
     // Logging
     implementation(libs.kotlin.logging)
-    implementation("ch.qos.logback:logback-classic:1.4.11")
+    implementation("ch.qos.logback:logback-classic:1.5.9")
 
     // Dependency Injection
     implementation(libs.bundles.koin)
-    implementation("io.insert-koin:koin-ktor:3.5.3")
+    implementation("io.insert-koin:koin-ktor:3.6.0")
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)

@@ -1,117 +1,122 @@
-name: CD Pipeline - Multi-platform Release
+name: CD
 
 on:
   push:
-    tags: ['v*.*.*']
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
-      release_type:
-        description: 'Release type'
+      version:
+        description: 'Version to release'
         required: true
-        default: 'minor'
-        type: choice
-        options:
-        - patch
-        - minor
-        - major
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  validate-release:
+  build-and-push:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
-
-    outputs:
-      version: ${{ steps.extract-version.outputs.version }}
-      is-prerelease: ${{ steps.extract-version.outputs.is-prerelease }}
+    permissions:
+      contents: read
+      packages: write
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Extract version
-      id: extract-version
-      run: |
-        if [[ ${{ github.ref }} == refs/tags/* ]]; then
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build server API
+        run: ./gradlew :server:api:build --no-daemon
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version
+        id: version
+        run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          if [[ $VERSION == *"-rc"* ]] || [[ $VERSION == *"-beta"* ]] || [[ $VERSION == *"-alpha"* ]]; then
-            echo "is-prerelease=true" >> $GITHUB_OUTPUT
-          else
-            echo "is-prerelease=false" >> $GITHUB_OUTPUT
-          fi
-        else
-          echo "version=0.0.0" >> $GITHUB_OUTPUT
-          echo "is-prerelease=false" >> $GITHUB_OUTPUT
-        fi
+      - name: Generate changelog
+        id: changelog
+        run: |
+          CHANGELOG=$(git log --pretty=format:"- %s" $(git describe --tags --abbrev=0 HEAD^)..HEAD)
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-  build-all-platforms:
-    needs: validate-release
-    permissions:
-      contents: write
-      packages: write
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## Changes
 
-    strategy:
-      matrix:
-        platform: [android, windows, linux, macos]
-        include:
-          - platform: android
-            os: ubuntu-latest
-          - platform: windows
-            os: windows-latest
-          - platform: linux
-            os: ubuntu-latest
-          - platform: macos
-            os: macos-latest
+            ${{ steps.changelog.outputs.changelog }}
 
-    runs-on: ${{ matrix.os }}
+            ## Docker Image
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-
-    - name: Cache Gradle
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-
-    - name: Build ${{ matrix.platform }}
-      run: |
-        echo "Building ${{ matrix.platform }}"
-        if [ "${{ matrix.platform }}" == "android" ]; then
-          ./gradlew :shared:assembleDebug --no-daemon || echo "Android build skipped (no Android module yet)"
-        elif [ "${{ matrix.platform }}" == "windows" ] || [ "${{ matrix.platform }}" == "linux" ] || [ "${{ matrix.platform }}" == "macos" ]; then
-          ./gradlew :shared:build --no-daemon
-          ./gradlew :core:network:build --no-daemon
-          ./gradlew :core:license:build --no-daemon
-        fi
-
-  create-github-release:
-    needs: [validate-release, build-all-platforms]
-    runs-on: ubuntu-latest
-    if: needs.validate-release.outputs.version != '0.0.0'
-
-    steps:
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        name: Release v${{ needs.validate-release.outputs.version }}
-        draft: false
-        prerelease: ${{ needs.validate-release.outputs.is-prerelease == 'true' }}
-        generate_release_notes: true
+            ```bash
+            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+            ```
+          draft: false
+          prerelease: false

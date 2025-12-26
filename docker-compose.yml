@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   surveillance:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: company/ip-camera-surveillance:latest
     container_name: ip-camera-surveillance
     restart: unless-stopped

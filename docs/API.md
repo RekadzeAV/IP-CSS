@@ -831,7 +831,7 @@ ws://localhost:8080/api/v1/ws
   "error": {
     "code": "INVALID_REQUEST",
     "message": "Неверный формат запроса",
-    "timestamp": "2024-01-20T14:30:00Z"
+    "timestamp": "2025-01-20T14:30:00Z"
   }
 }
 ```

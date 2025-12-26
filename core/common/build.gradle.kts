@@ -35,6 +35,9 @@ kotlin {
         }
 
         val androidMain by getting {
+            dependencies {
+                implementation(libs.androidx.security.crypto)
+            }
         }
 
         val iosMain by creating {

@@ -1,0 +1,47 @@
+# Multi-stage build for IP Camera Surveillance System Server
+
+# Stage 1: Build
+FROM gradle:8.5-jdk17 AS build
+
+WORKDIR /app
+
+# Copy Gradle files
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+COPY gradle ./gradle
+
+# Copy source code
+COPY shared ./shared
+COPY core ./core
+COPY server/api ./server/api
+
+# Build the application
+RUN gradle :server:api:build --no-daemon -x test
+
+# Stage 2: Runtime
+FROM eclipse-temurin:17-jre-alpine
+
+WORKDIR /app
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Create directories for data
+RUN mkdir -p /app/config /app/recordings /app/database /app/logs /app/models
+
+# Copy built JAR
+COPY --from=build /app/server/api/build/libs/*.jar /app/app.jar
+
+# Set environment variables
+ENV TZ=Europe/Moscow
+ENV JAVA_OPTS="-Xmx2048m -Xms512m"
+
+# Expose ports
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+# Run the application
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
+

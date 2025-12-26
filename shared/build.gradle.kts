@@ -94,7 +94,7 @@ kotlin {
         val androidUnitTest by getting {
             dependencies {
                 implementation("junit:junit:4.13.2")
-                implementation("app.cash.sqldelight:sqlite-driver:2.0.0")
+                implementation("app.cash.sqldelight:sqlite-driver:2.0.3")
             }
         }
 

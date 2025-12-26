@@ -1,6 +1,6 @@
 # Разделение разработки по платформам
 
-**Дата создания:** Декабрь 2024
+**Дата создания:** Январь 2025
 **Версия проекта:** 3.0.0
 
 ## Обзор
@@ -258,6 +258,207 @@ desktop/
 - Node.js (все платформы)
 - Docker контейнеры
 
+## NAS устройства
+
+### Обзор
+
+**Модуль:** `:server:nas` (планируется)
+
+**Поддерживаемые платформы:**
+- ✅ Synology DSM (Linux-based)
+- ✅ QNAP QTS (Linux-based)
+- ✅ Asustor ADM (Linux-based)
+- ✅ TrueNAS CORE (FreeBSD-based)
+- ✅ TrueNAS SCALE (Linux + Kubernetes)
+- ⚠️ Terramaster TOS (Linux-based)
+
+**Архитектуры:**
+- x86_64 (Intel/AMD) - все платформы
+- ARMv8 / aarch64 - Synology, QNAP, Asustor, Terramaster
+- ARMv7 (устаревшие модели) - ограниченная поддержка
+
+### Synology DSM
+
+**Формат пакета:** `.spk`
+
+**Особенности:**
+- Основан на Debian Linux
+- Пакетный менеджер: Synology Package Center
+- Поддержка Docker: ✅
+- API: Synology API, RESTful API
+
+**Разработка:**
+- Synology Developer SDK
+- Python 3.x, Node.js, Bash
+- SPK Builder Tool
+
+**Требования:**
+- Архитектура: x86_64 (bromolow, apollolake, geminilake, denverton, v1000, broadwell, broadwellnk), aarch64 (rtd1296), armv7 (alpine)
+- Минимум: 4 ГБ RAM, 50 ГБ свободного места
+
+### QNAP QTS
+
+**Формат пакета:** `.qpkg`
+
+**Особенности:**
+- Основан на CentOS/RHEL Linux
+- Пакетный менеджер: QNAP App Center
+- Поддержка Docker: ✅
+- Поддержка Kubernetes: ✅ (QKVS)
+- API: QNAP API, RESTful API
+
+**Разработка:**
+- QNAP Developer SDK
+- Python 3.x, Node.js, PHP, Bash
+- QPKG Tool
+
+**Требования:**
+- Архитектура: x86_64, arm_64, arm_x31
+- Минимум: 4 ГБ RAM, 50 ГБ свободного места
+
+### Asustor ADM
+
+**Формат пакета:** `.apk` (не Android!)
+
+**Особенности:**
+- Основан на Debian Linux
+- Пакетный менеджер: Asustor App Central
+- Поддержка Docker: ✅
+- API: Asustor API, RESTful API
+
+**Разработка:**
+- Asustor Developer SDK
+- Python 3.x, Node.js, Bash
+- ADM Toolkit
+
+**Требования:**
+- Архитектура: x86_64, aarch64, Realtek RTD1296
+- Минимум: 2 ГБ RAM, 50 ГБ свободного места
+
+### TrueNAS CORE
+
+**Формат:** FreeBSD Jails, `.pbi`
+
+**Особенности:**
+- Основан на FreeBSD 13.x
+- Файловая система: ZFS
+- Поддержка Docker: ❌ (только через Jails)
+- API: FreeNAS API v2.0, RESTful API
+
+**Разработка:**
+- FreeBSD SDK
+- Jail упаковка
+- FreeBSD пакеты
+
+**Требования:**
+- Архитектура: x86_64
+- Минимум: 8 ГБ RAM, 50 ГБ свободного места
+
+### TrueNAS SCALE
+
+**Формат:** Docker, Helm charts, Kubernetes манифесты
+
+**Особенности:**
+- Основан на Debian Linux + Kubernetes
+- Файловая система: ZFS
+- Поддержка Docker: ✅
+- Поддержка Kubernetes: ✅ (встроенный)
+- API: RESTful API, Kubernetes API
+
+**Разработка:**
+- Docker образы
+- Helm charts
+- Kubernetes манифесты
+
+**Требования:**
+- Архитектура: x86_64
+- Минимум: 16 ГБ RAM, 100 ГБ свободного места
+
+### Универсальное решение: Docker
+
+**Преимущества:**
+- ✅ Работает на всех платформах с Docker (Synology, QNAP, Asustor, TrueNAS SCALE)
+- ✅ Единая сборка для всех архитектур (multi-arch)
+- ✅ Изоляция зависимостей
+- ✅ Легкое обновление
+
+**Недостатки:**
+- ❌ Требует Docker на целевой системе
+- ❌ Меньше интеграции с системой NAS
+
+**Multi-arch Docker образ:**
+```dockerfile
+FROM --platform=$BUILDPLATFORM company/base:latest AS builder
+# ... сборка ...
+
+FROM --platform=$TARGETPLATFORM company/runtime:latest
+COPY --from=builder /app /app
+```
+
+**Платформы Docker:**
+- `linux/amd64` - x86_64
+- `linux/arm64` - ARMv8 / aarch64
+
+### Архитектура для NAS
+
+```
+┌─────────────────────────────────────────┐
+│         NAS Operating System            │
+│  (DSM/QTS/ADM/TrueNAS/TOS)             │
+├─────────────────────────────────────────┤
+│                                         │
+│  ┌───────────────────────────────────┐ │
+│  │   IP-CSS Package/Container        │ │
+│  │                                   │ │
+│  │  ┌─────────────────────────────┐  │ │
+│  │  │   Web UI (Next.js)          │  │ │
+│  │  │   Port: 8080                │  │ │
+│  │  └─────────────────────────────┘  │ │
+│  │                                   │ │
+│  │  ┌─────────────────────────────┐  │ │
+│  │  │   API Server (Ktor)         │  │ │
+│  │  │   Port: 8081                │  │ │
+│  │  └─────────────────────────────┘  │ │
+│  │                                   │ │
+│  │  ┌─────────────────────────────┐  │ │
+│  │  │   Shared Module (KMP)       │  │ │
+│  │  │   - Business Logic          │  │ │
+│  │  │   - Repositories            │  │ │
+│  │  └─────────────────────────────┘  │ │
+│  │                                   │ │
+│  │  ┌─────────────────────────────┐  │ │
+│  │  │   Native Libraries (C++)   │  │ │
+│  │  │   - Video Processing       │  │ │
+│  │  │   - Analytics              │  │ │
+│  │  └─────────────────────────────┘  │ │
+│  │                                   │ │
+│  │  ┌─────────────────────────────┐  │ │
+│  │  │   Database (SQLite)         │  │ │
+│  │  │   Location: /data/db/       │  │ │
+│  │  └─────────────────────────────┘  │ │
+│  │                                   │ │
+│  │  ┌─────────────────────────────┐  │ │
+│  │  │   Storage (Recordings)      │  │ │
+│  │  │   Location: /recordings/    │  │ │
+│  │  └─────────────────────────────┘  │ │
+│  └───────────────────────────────────┘ │
+│                                         │
+└─────────────────────────────────────────┘
+```
+
+**Пути данных для каждой платформы:**
+- **Synology**: `/volume1/ip-css/`
+- **QNAP**: `/share/CACHEDEV1_DATA/ip-css/`
+- **Asustor**: `/volume1/ip-css/`
+- **TrueNAS**: `/mnt/tank/ip-css/`
+
+**Аппаратное ускорение:**
+- **Intel Quick Sync** (x86_64 с Intel процессорами) - H.264/H.265 декодирование
+- **AMD VCE/VCN** (x86_64 с AMD процессорами) - H.264/H.265 декодирование
+- **ARM Mali/VideoCore** (ARM64 на некоторых платформах) - ограниченная поддержка
+
+Подробная информация: [NAS_PLATFORMS_ANALYSIS.md](NAS_PLATFORMS_ANALYSIS.md)
+
 ## Разделение ответственности
 
 ### Что общее (commonMain)
@@ -428,5 +629,5 @@ native (C++ через FFI)
 
 ---
 
-**Последнее обновление:** Декабрь 2024
+**Последнее обновление:** Январь 2025
 

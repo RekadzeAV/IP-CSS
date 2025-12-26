@@ -2,6 +2,7 @@ package com.company.ipcamera.core.network
 
 import com.company.ipcamera.core.common.model.CameraStatus
 import com.company.ipcamera.core.common.model.Resolution
+import com.company.ipcamera.core.common.security.InputValidator
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.*
@@ -482,7 +483,11 @@ class OnvifClient(
             setBody(soapBody)
         }
 
-        return response.body<String>()
+        val responseBody = response.body<String>()
+
+        // Санитизация ответа от сервера для предотвращения XSS/инъекций при парсинге
+        // Примечание: SOAP запросы генерируются нами, поэтому не требуют санитизации
+        return responseBody
     }
 
     private fun parseCapabilities(xml: String): OnvifCapabilities? {

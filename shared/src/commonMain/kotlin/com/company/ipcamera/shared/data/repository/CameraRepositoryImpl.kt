@@ -44,6 +44,27 @@ class CameraRepositoryImpl(
 
     override suspend fun addCamera(camera: Camera): Result<Camera> = withContext(Dispatchers.Default) {
         try {
+            // Валидация входных данных
+            val urlValidation = InputValidator.validateCameraUrl(camera.url)
+            if (urlValidation is com.company.ipcamera.core.common.security.ValidationResult.Error) {
+                return@withContext Result.failure(IllegalArgumentException("Некорректный URL: ${urlValidation.message}"))
+            }
+
+            val nameValidation = InputValidator.validateCameraName(camera.name)
+            if (nameValidation is com.company.ipcamera.core.common.security.ValidationResult.Error) {
+                return@withContext Result.failure(IllegalArgumentException("Некорректное имя: ${nameValidation.message}"))
+            }
+
+            val usernameValidation = InputValidator.validateUsername(camera.username)
+            if (usernameValidation is com.company.ipcamera.core.common.security.ValidationResult.Error) {
+                return@withContext Result.failure(IllegalArgumentException("Некорректное имя пользователя: ${usernameValidation.message}"))
+            }
+
+            val passwordValidation = InputValidator.validatePassword(camera.password)
+            if (passwordValidation is com.company.ipcamera.core.common.security.ValidationResult.Error) {
+                return@withContext Result.failure(IllegalArgumentException("Некорректный пароль: ${passwordValidation.message}"))
+            }
+
             val dbCamera = mapper.toDatabase(camera)
             database.cameraDatabaseQueries.insertCamera(
                 id = dbCamera.id,
@@ -76,6 +97,27 @@ class CameraRepositoryImpl(
 
     override suspend fun updateCamera(camera: Camera): Result<Camera> = withContext(Dispatchers.Default) {
         try {
+            // Валидация входных данных
+            val urlValidation = InputValidator.validateCameraUrl(camera.url)
+            if (urlValidation is com.company.ipcamera.core.common.security.ValidationResult.Error) {
+                return@withContext Result.failure(IllegalArgumentException("Некорректный URL: ${urlValidation.message}"))
+            }
+
+            val nameValidation = InputValidator.validateCameraName(camera.name)
+            if (nameValidation is com.company.ipcamera.core.common.security.ValidationResult.Error) {
+                return@withContext Result.failure(IllegalArgumentException("Некорректное имя: ${nameValidation.message}"))
+            }
+
+            val usernameValidation = InputValidator.validateUsername(camera.username)
+            if (usernameValidation is com.company.ipcamera.core.common.security.ValidationResult.Error) {
+                return@withContext Result.failure(IllegalArgumentException("Некорректное имя пользователя: ${usernameValidation.message}"))
+            }
+
+            val passwordValidation = InputValidator.validatePassword(camera.password)
+            if (passwordValidation is com.company.ipcamera.core.common.security.ValidationResult.Error) {
+                return@withContext Result.failure(IllegalArgumentException("Некорректный пароль: ${passwordValidation.message}"))
+            }
+
             val dbCamera = mapper.toDatabase(camera.copy(updatedAt = System.currentTimeMillis()))
             // Используем правильный UPDATE запрос вместо INSERT OR REPLACE
             // Это сохраняет created_at и правильно обновляет только измененные поля
