@@ -2,10 +2,11 @@ plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("com.android.library")
+    id("app.cash.sqldelight")
 }
 
 kotlin {
-    android {
+    androidTarget {
         compilations.all {
             kotlinOptions {
                 jvmTarget = "1.8"
@@ -47,6 +48,8 @@ kotlin {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+                // SQLDelight driver for testing
+                implementation("app.cash.sqldelight:sqlite-driver:2.0.0")
             }
         }
         
@@ -57,9 +60,10 @@ kotlin {
             }
         }
         
-        val androidTest by getting {
+        val androidUnitTest by getting {
             dependencies {
                 implementation("junit:junit:4.13.2")
+                implementation("app.cash.sqldelight:sqlite-driver:2.0.0")
             }
         }
         
@@ -97,6 +101,15 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+sqldelight {
+    databases {
+        create("CameraDatabase") {
+            packageName.set("com.company.ipcamera.shared.database")
+            generateAsync.set(true)
+        }
     }
 }
 

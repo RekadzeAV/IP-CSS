@@ -17,6 +17,7 @@ include(":shared")
 
 // Core cross-platform modules
 include(":core:license")
+include(":core:network")
 
 // Native C++ libraries
 // Note: Native modules are built with CMake, not Gradle

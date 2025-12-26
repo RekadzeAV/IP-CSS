@@ -20,6 +20,10 @@ IP-CSS/
 ├── core/                      # Общие кроссплатформенные модули
 │   ├── license/               # Система лицензирования
 │   ├── network/               # Сетевое взаимодействие
+│   │   ├── ApiClient.kt       # REST API клиент
+│   │   ├── WebSocketClient.kt # WebSocket клиент
+│   │   ├── RtspClient.kt      # RTSP клиент (обертка)
+│   │   └── OnvifClient.kt     # ONVIF клиент
 │   ├── database/              # База данных
 │   └── utils/                 # Утилиты
 ├── desktop/                    # Desktop приложения
@@ -150,7 +154,11 @@ server/
 native/
 ├── video-processing/
 │   ├── src/                  # Исходные файлы C++
+│   │   ├── rtsp_client.cpp   # RTSP клиент (нативный)
+│   │   └── ...
 │   ├── include/               # Заголовочные файлы
+│   │   ├── rtsp_client.h     # RTSP клиент (заголовок)
+│   │   └── ...
 │   └── CMakeLists.txt
 ├── analytics/
 │   ├── src/

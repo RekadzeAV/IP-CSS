@@ -1,6 +1,7 @@
 package com.company.ipcamera.shared.domain.repository
 
 import com.company.ipcamera.shared.domain.model.Camera
+import com.company.ipcamera.shared.domain.model.CameraStatus
 
 /**
  * Репозиторий для работы с камерами
@@ -96,10 +97,4 @@ enum class ErrorCode {
     UNKNOWN
 }
 
-enum class CameraStatus {
-    ONLINE,
-    OFFLINE,
-    ERROR,
-    CONNECTING
-}
 
