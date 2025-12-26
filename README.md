@@ -78,18 +78,51 @@ docker-compose up -d
 ./gradlew :server:run
 ```
 
+## Статус проекта
+
+**Текущий прогресс:** ~14.5%
+
+### Реализовано:
+- ✅ Базовая структура проекта и конфигурация
+- ✅ Модели данных (Camera)
+- ✅ CameraRepositoryImpl с SQLDelight
+- ✅ 5 Use Cases для управления камерами
+- ✅ База данных SQLDelight со схемой для камер
+- ✅ Мапперы между DB entity и domain model
+- ✅ Платформо-специфичные DatabaseFactory для Android и iOS
+
+### В разработке:
+- ⚠️ Лицензионная система (структура готова, требуется доработка)
+- ⚠️ ONVIF клиент для обнаружения камер
+- ⚠️ Проверка подключения к камерам
+
+### Планируется:
+- ❌ UI компоненты (Android, iOS, Desktop, Web)
+- ❌ REST API сервер
+- ❌ RTSP клиент
+- ❌ Запись видео
+- ❌ AI-аналитика
+
+Подробный статус реализации: [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
+Детальный анализ нереализованного функционала: [MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md)
+
 ## Документация
 
 Полная документация доступна в директории [docs/](docs/):
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Архитектура системы
+- [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) - Статус реализации компонентов
+- [MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md) - Детальный анализ нереализованного функционала
+- [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) - План дальнейшей разработки
+- [PROJECT_ROADMAP.md](PROJECT_ROADMAP.md) - Карта выполнения проекта
 - [DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) - Руководство по развертыванию
 - [API.md](docs/API.md) - API документация
 - [LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md) - Система лицензирования
+- [INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md) - Руководство по интеграции библиотек
 
 ## Лицензия
 
 Двойное лицензирование:
-- AGPLv3 для сообщества
+- GPLv3 для сообщества
 - Коммерческая лицензия для enterprise
 
 ## Поддержка

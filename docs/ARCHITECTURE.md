@@ -90,6 +90,7 @@
 **Ответственность**: Кроссплатформенные сервисы и утилиты
 
 **Модули**:
+- `:core:common` - общие типы и модели (Resolution, CameraStatus)
 - `:core:network` - сетевое взаимодействие (Ktor Client)
 - `:core:database` - работа с БД (SQLDelight)
 - `:core:utils` - общие утилиты
@@ -126,6 +127,7 @@ ip-camera-surveillance-system/
 │ ├── analytics/
 │ └── CMakeLists.txt
 ├── core/ # Общие кроссплатформенные модули
+│ ├── common/ # Общие типы (Resolution, CameraStatus)
 │ ├── network/
 │ ├── database/
 │ ├── license/
@@ -135,11 +137,17 @@ ip-camera-surveillance-system/
 
 ### Зависимости между модулями:
 ```
-android/ios/desktop → shared → core → native
-     ↓                ↓         ↓
-  UI Layer      Domain Layer  Infrastructure
+android/ios/desktop → shared → core:network → native
+     ↓                ↓    ↓
+  UI Layer      Domain Layer  core:common (базовые типы)
                       ↑
                   Data Layer
+
+Где:
+- :core:common - базовые типы (Resolution, CameraStatus)
+- :shared зависит от :core:common и :core:network
+- :core:network зависит только от :core:common (не зависит от :shared)
+- Это устраняет циклическую зависимость
 ```
 
 ## Кроссплатформенная коммуникация

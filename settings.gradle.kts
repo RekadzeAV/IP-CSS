@@ -10,13 +10,23 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.5.0"
 }
 
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            from(files("gradle/libs.versions.toml"))
+        }
+    }
+}
+
 rootProject.name = "ip-camera-surveillance-system"
 
 // Shared Kotlin Multiplatform module
 include(":shared")
 
 // Core cross-platform modules
+include(":core:common")
 include(":core:license")
+include(":core:network")
 
 // Native C++ libraries
 // Note: Native modules are built with CMake, not Gradle

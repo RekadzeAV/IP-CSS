@@ -1,5 +1,7 @@
 package com.company.ipcamera.shared.domain.model
 
+import com.company.ipcamera.core.common.model.CameraStatus
+import com.company.ipcamera.core.common.model.Resolution
 import kotlinx.serialization.Serializable
 
 /**
@@ -27,23 +29,6 @@ data class Camera(
     val updatedAt: Long = System.currentTimeMillis(),
     val lastSeen: Long? = null
 )
-
-@Serializable
-enum class CameraStatus {
-    ONLINE,
-    OFFLINE,
-    ERROR,
-    CONNECTING,
-    UNKNOWN
-}
-
-@Serializable
-data class Resolution(
-    val width: Int,
-    val height: Int
-) {
-    override fun toString(): String = "${width}x${height}"
-}
 
 @Serializable
 data class PTZConfig(

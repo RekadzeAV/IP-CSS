@@ -1,0 +1,32 @@
+# Editor configuration
+editorconfig:
+  # Indentation
+  indent_size: 4
+  indent_style: space
+  # Line endings
+  end_of_line: lf
+  # File encoding
+  charset: utf-8
+  # Trim trailing whitespace
+  trim_trailing_whitespace: true
+  # Insert final newline
+  insert_final_newline: true
+
+# Ktlint rules
+ktlint:
+  # Enable experimental rules
+  experimental: false
+  # Disable specific rules
+  disabled_rules:
+    - no-wildcard-imports
+  # Custom ruleset
+  custom_rulesets:
+    - io.gitlab.arturbosch.detekt:detekt-formatting:1.23.1
+
+# EditorConfig overrides
+editorconfig_overrides:
+  # Max line length
+  max_line_length: 120
+  # Continuation indent
+  continuation_indent_size: 4
+

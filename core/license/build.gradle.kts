@@ -6,47 +6,64 @@ plugins {
 
 kotlin {
     android()
+
+    jvm("desktop") {
+        compilations.all {
+            kotlinOptions {
+                jvmTarget = "11"
+            }
+        }
+    }
+
     iosX64()
     iosArm64()
     iosSimulatorArm64()
-    
+
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(project(":shared"))
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-                implementation("io.github.microutils:kotlin-logging:3.0.5")
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.coroutines.core)
+                implementation(libs.kotlin.logging)
             }
         }
-        
+
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
+                implementation(libs.kotlinx.coroutines.test)
+                implementation(libs.bundles.testing)
             }
         }
-        
+
         val androidMain by getting {
             dependencies {
-                // Android-specific crypto
+                implementation(libs.androidx.security.crypto)
+                implementation(libs.bouncycastle.provider)
+                implementation(libs.bouncycastle.pkix)
             }
         }
-        
+
         val iosMain by creating {
             dependsOn(commonMain)
         }
-        
+
         val iosX64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val iosArm64Main by getting {
             dependsOn(iosMain)
         }
-        
+
         val iosSimulatorArm64Main by getting {
             dependsOn(iosMain)
+        }
+
+        val desktopMain by creating {
+            dependsOn(commonMain)
         }
     }
 }
@@ -54,7 +71,7 @@ kotlin {
 android {
     namespace = "com.company.ipcamera.core.license"
     compileSdk = 34
-    
+
     defaultConfig {
         minSdk = 26
     }

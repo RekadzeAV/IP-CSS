@@ -57,15 +57,19 @@ enum class LicenseWarning {
     FEATURE_DEGRADED
 }
 
-class LicenseManager private constructor() {
+class LicenseManager private constructor(
+    licenseRepository: LicenseRepository? = null
+) {
     
     companion object {
         @Volatile
         private var INSTANCE: LicenseManager? = null
         
-        fun getInstance(): LicenseManager {
+        fun getInstance(context: Any? = null): LicenseManager {
             return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: LicenseManager().also {
+                INSTANCE ?: LicenseManager(
+                    licenseRepository = createLicenseRepository(context)
+                ).also {
                     INSTANCE = it
                 }
             }
@@ -73,7 +77,7 @@ class LicenseManager private constructor() {
     }
     
     private val platformCrypto: PlatformCrypto = getPlatformCrypto()
-    private val licenseRepository: LicenseRepository = LicenseRepositoryImpl()
+    private val licenseRepository: LicenseRepository = licenseRepository ?: createLicenseRepository(null)
     
     /**
      * Активация лицензии
@@ -246,7 +250,7 @@ expect class PlatformCrypto {
     fun schedulePeriodicCheck(checkCallback: (ActivatedLicense) -> Unit)
 }
 
-expect class LicenseRepository {
+expect class LicenseRepository(context: Any?) {
     fun saveLicense(license: ActivatedLicense)
     fun loadLicense(): ActivatedLicense?
     fun deleteLicense()
@@ -290,8 +294,12 @@ data class License(
     val features: List<Feature>,
     val limitations: List<Limitation>,
     val validity: Validity,
-    val supportsPlatform: (String) -> Boolean = { true }
-)
+    val supportedPlatforms: List<String> = emptyList()
+) {
+    fun supportsPlatform(platform: String): Boolean {
+        return supportedPlatforms.isEmpty() || supportedPlatforms.contains(platform)
+    }
+}
 
 @Serializable
 data class Feature(val name: String, val value: String)
@@ -337,26 +345,9 @@ class LicenseException(
     val requiresOnlineVerification: Boolean = false
 ) : Exception(error.name)
 
-class LicenseRepositoryImpl : LicenseRepository {
-    private var storedLicense: ActivatedLicense? = null
-    
-    override fun saveLicense(license: ActivatedLicense) {
-        storedLicense = license
-        // TODO: Сохранить в защищенное хранилище
-    }
-    
-    override fun loadLicense(): ActivatedLicense? {
-        return storedLicense
-        // TODO: Загрузить из защищенного хранилища
-    }
-    
-    override fun deleteLicense() {
-        storedLicense = null
-        // TODO: Удалить из хранилища
-    }
-}
+// LicenseRepositoryImpl должен быть actual классом в платформо-специфичных модулях
 
-fun getPlatformCrypto(): PlatformCrypto {
-    return PlatformCrypto()
-}
+expect fun getPlatformCrypto(): PlatformCrypto
+
+expect fun createLicenseRepository(context: Any?): LicenseRepository
 

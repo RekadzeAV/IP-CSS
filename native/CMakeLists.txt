@@ -23,6 +23,38 @@ add_subdirectory(codecs)
 # Общие зависимости
 find_package(Threads REQUIRED)
 
+# FFmpeg для RTSP, декодирования и кодирования видео
+option(ENABLE_FFMPEG "Enable FFmpeg" ON)
+if(ENABLE_FFMPEG)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(FFMPEG QUIET libavformat libavcodec libavutil libswscale libswresample)
+    endif()
+    
+    if(NOT FFMPEG_FOUND)
+        # Попытка найти через find_package
+        find_path(FFMPEG_INCLUDE_DIR
+            NAMES libavformat/avformat.h
+            PATHS
+                ${CMAKE_SOURCE_DIR}/third_party/ffmpeg
+                /usr/local/include
+                /usr/include
+                C:/ffmpeg/include
+        )
+        
+        if(FFMPEG_INCLUDE_DIR)
+            set(FFMPEG_FOUND TRUE)
+            set(FFMPEG_INCLUDE_DIRS ${FFMPEG_INCLUDE_DIR})
+            message(STATUS "FFmpeg found: ${FFMPEG_INCLUDE_DIR}")
+        else()
+            message(WARNING "FFmpeg not found. Install FFmpeg or set FFMPEG_INCLUDE_DIR")
+            set(ENABLE_FFMPEG OFF)
+        endif()
+    else()
+        message(STATUS "FFmpeg found via pkg-config")
+    endif()
+endif()
+
 # OpenCV
 if(ENABLE_OPENCV)
     find_package(OpenCV REQUIRED)

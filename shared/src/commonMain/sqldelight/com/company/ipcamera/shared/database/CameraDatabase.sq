@@ -1,0 +1,73 @@
+-- Таблица камер
+CREATE TABLE camera (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    username TEXT,
+    password TEXT,
+    model TEXT,
+    status TEXT NOT NULL,
+    resolution_width INTEGER,
+    resolution_height INTEGER,
+    fps INTEGER NOT NULL DEFAULT 25,
+    bitrate INTEGER NOT NULL DEFAULT 4096,
+    codec TEXT NOT NULL DEFAULT 'H.264',
+    audio INTEGER NOT NULL DEFAULT 0,
+    ptz_config TEXT,
+    streams TEXT,
+    settings TEXT,
+    statistics TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    last_seen INTEGER
+);
+
+CREATE INDEX camera_status_index ON camera(status);
+CREATE INDEX camera_created_at_index ON camera(created_at);
+
+-- Запросы для работы с камерами
+selectAll:
+SELECT * FROM camera ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM camera WHERE id = ?;
+
+insertCamera:
+INSERT OR REPLACE INTO camera(
+    id, name, url, username, password, model, status,
+    resolution_width, resolution_height, fps, bitrate, codec, audio,
+    ptz_config, streams, settings, statistics,
+    created_at, updated_at, last_seen
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteCamera:
+DELETE FROM camera WHERE id = ?;
+
+updateCameraStatus:
+UPDATE camera SET status = ?, last_seen = ?, updated_at = ? WHERE id = ?;
+
+updateCameraTimestamp:
+UPDATE camera SET updated_at = ? WHERE id = ?;
+
+updateCamera:
+UPDATE camera SET
+    name = ?,
+    url = ?,
+    username = ?,
+    password = ?,
+    model = ?,
+    status = ?,
+    resolution_width = ?,
+    resolution_height = ?,
+    fps = ?,
+    bitrate = ?,
+    codec = ?,
+    audio = ?,
+    ptz_config = ?,
+    streams = ?,
+    settings = ?,
+    statistics = ?,
+    updated_at = ?,
+    last_seen = ?
+WHERE id = ?;
+

@@ -1,0 +1,109 @@
+[versions]
+kotlin = "1.9.20"
+ktor = "2.3.5"
+sqldelight = "2.0.0"
+coroutines = "1.7.3"
+serialization = "1.6.0"
+logging = "3.0.5"
+datetime = "0.5.0"
+android-gradle = "8.1.2"
+compose = "1.5.3"
+security-crypto = "1.1.0-alpha06"
+bouncycastle = "1.70"
+mockk = "1.13.8"
+turbine = "1.0.0"
+koin = "3.5.3"
+opencv = "4.8.0"
+tensorflow-lite = "2.14.0"
+detekt = "1.23.1"
+ktlint = "11.6.1"
+dokka = "1.9.10"
+
+[libraries]
+# Ktor
+ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }
+ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
+ktor-client-java = { module = "io.ktor:ktor-client-java", version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktor-serialization-kotlinx-xml = { module = "io.ktor:ktor-serialization-kotlinx-xml", version.ref = "ktor" }
+ktor-client-logging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+ktor-client-websockets = { module = "io.ktor:ktor-client-websockets", version.ref = "ktor" }
+
+# Kotlinx
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "datetime" }
+
+# SQLDelight
+sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
+sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
+sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+
+# Logging
+kotlin-logging = { module = "io.github.microutils:kotlin-logging", version.ref = "logging" }
+
+# Android Security
+androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "security-crypto" }
+bouncycastle-provider = { module = "org.bouncycastle:bcprov-jdk15on", version.ref = "bouncycastle" }
+bouncycastle-pkix = { module = "org.bouncycastle:bcpkix-jdk15on", version.ref = "bouncycastle" }
+
+# Testing
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+
+# Android Work Manager
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version = "2.9.0" }
+
+# Dependency Injection
+koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koin-test = { module = "io.insert-koin:koin-test", version.ref = "koin" }
+
+# OpenCV (Android)
+opencv-android = { module = "org.opencv:opencv-android", version.ref = "opencv" }
+
+# TensorFlow Lite (Android)
+tensorflow-lite = { module = "org.tensorflow:tensorflow-lite", version.ref = "tensorflow-lite" }
+tensorflow-lite-gpu = { module = "org.tensorflow:tensorflow-lite-gpu", version.ref = "tensorflow-lite" }
+tensorflow-lite-support = { module = "org.tensorflow:tensorflow-lite-support", version = "0.4.4" }
+
+[bundles]
+ktor = [
+    "ktor-client-core",
+    "ktor-client-content-negotiation",
+    "ktor-serialization-kotlinx-json",
+    "ktor-client-logging",
+    "ktor-client-websockets"
+]
+
+ktor-xml = [
+    "ktor-client-core",
+    "ktor-client-content-negotiation",
+    "ktor-serialization-kotlinx-xml",
+    "ktor-client-logging"
+]
+
+testing = [
+    "mockk",
+    "turbine"
+]
+
+koin = [
+    "koin-core"
+]
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
+android-application = { id = "com.android.application", version.ref = "android-gradle" }
+android-library = { id = "com.android.library", version.ref = "android-gradle" }
+compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+

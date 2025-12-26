@@ -26,22 +26,24 @@ add_library(analytics ${SOURCES} ${HEADERS})
 target_link_libraries(analytics
     PRIVATE
         Threads::Threads
-        ${OpenCV_LIBS}
 )
 
-if(ENABLE_OPENCV)
+if(ENABLE_OPENCV AND OpenCV_FOUND)
+    target_link_libraries(analytics PRIVATE ${OpenCV_LIBS})
     target_include_directories(analytics
         PUBLIC
             ${CMAKE_CURRENT_SOURCE_DIR}/include
             ${OpenCV_INCLUDE_DIRS}
     )
+    target_compile_definitions(analytics PRIVATE ENABLE_OPENCV)
 endif()
 
-if(ENABLE_TENSORFLOW)
+if(ENABLE_TENSORFLOW AND TFLITE_INCLUDE_DIR)
     target_include_directories(analytics
         PRIVATE
             ${TFLITE_INCLUDE_DIR}
     )
+    target_compile_definitions(analytics PRIVATE ENABLE_TENSORFLOW)
     # TensorFlow Lite библиотеки должны быть добавлены вручную
     # target_link_libraries(analytics PRIVATE tensorflow-lite)
 endif()

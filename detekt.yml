@@ -1,0 +1,61 @@
+build:
+  maxIssues: 10
+  weights:
+    # complexity: 2
+    # LongParameterList: 1
+    # style: 1
+    # comments: 1
+
+complexity:
+  active: true
+  ComplexCondition:
+    active: true
+    threshold: 4
+  ComplexMethod:
+    active: true
+    threshold: 15
+  LongMethod:
+    active: true
+    threshold: 60
+  LongParameterList:
+    active: true
+    threshold: 6
+  TooManyFunctions:
+    active: true
+    threshold: 11
+
+style:
+  active: true
+  MagicNumber:
+    active: true
+    ignoreNumbers: ['-1', '0', '1', '2']
+  MaxLineLength:
+    active: true
+    maxLineLength: 120
+  NewLineAtEndOfFile:
+    active: true
+
+naming:
+  active: true
+  ClassNaming:
+    active: true
+    classPattern: '[A-Z][a-zA-Z0-9]*'
+  FunctionNaming:
+    active: true
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+  VariableNaming:
+    active: true
+    variablePattern: '[a-z][a-zA-Z0-9]*'
+
+potential-bugs:
+  active: true
+  UnusedPrivateMember:
+    active: true
+  UnreachableCode:
+    active: true
+
+performance:
+  active: true
+  ForEachOnRange:
+    active: true
+
