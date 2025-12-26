@@ -1,7 +1,7 @@
 # Карта выполнения проекта IP-CSS
 
-**Версия проекта:** 3.0.0
-**Дата обновления:** Январь 2025
+**Версия проекта:** Alfa-0.0.1
+**Дата обновления:** Декабрь 2025
 **Общий прогресс:** ~20%
 
 ---
@@ -478,26 +478,29 @@
 ## 10. Серверная часть
 
 ### 10.1 REST API сервер
-- ❌ Модуль `:server:api` - структура есть, код нет
-- ❌ **Технология:** Ktor или Spring Boot (не выбрано)
-- ❌ **Endpoints:**
-  - ❌ `GET /api/cameras` - список камер
-  - ❌ `POST /api/cameras` - создание камеры
-  - ❌ `GET /api/cameras/{id}` - получение камеры
-  - ❌ `PUT /api/cameras/{id}` - обновление камеры
-  - ❌ `DELETE /api/cameras/{id}` - удаление камеры
-  - ❌ `POST /api/cameras/{id}/test` - тест подключения
-  - ❌ `GET /api/recordings` - список записей
-  - ❌ `GET /api/recordings/{id}` - получение записи
-  - ❌ `DELETE /api/recordings/{id}` - удаление записи
-  - ❌ `GET /api/events` - список событий
-  - ❌ `GET /api/events/{id}` - получение события
-  - ❌ `POST /api/license/activate` - активация лицензии
-  - ❌ `GET /api/license/validate` - валидация лицензии
-  - ❌ `GET /api/users/me` - текущий пользователь
-  - ❌ `PUT /api/users/me` - обновление профиля
-  - ❌ `GET /api/settings` - настройки
-  - ❌ `PUT /api/settings` - обновление настроек
+- ✅ Модуль `:server:api` - реализован (Ktor)
+- ✅ **Технология:** Ktor Server
+- ✅ **Endpoints для камер:**
+  - ✅ `GET /api/v1/cameras` - список камер
+  - ✅ `POST /api/v1/cameras` - создание камеры
+  - ✅ `GET /api/v1/cameras/{id}` - получение камеры
+  - ✅ `PUT /api/v1/cameras/{id}` - обновление камеры
+  - ✅ `DELETE /api/v1/cameras/{id}` - удаление камеры
+  - ✅ `POST /api/v1/cameras/{id}/test` - тест подключения
+  - ✅ `GET /api/v1/cameras/discover` - обнаружение камер
+  - ✅ `GET /api/v1/health` - health check
+- ❌ **Endpoints для других сущностей:**
+  - ❌ `GET /api/v1/recordings` - список записей
+  - ❌ `GET /api/v1/recordings/{id}` - получение записи
+  - ❌ `DELETE /api/v1/recordings/{id}` - удаление записи
+  - ❌ `GET /api/v1/events` - список событий
+  - ❌ `GET /api/v1/events/{id}` - получение события
+  - ❌ `POST /api/v1/license/activate` - активация лицензии
+  - ❌ `GET /api/v1/license/validate` - валидация лицензии
+  - ❌ `GET /api/v1/users/me` - текущий пользователь
+  - ❌ `PUT /api/v1/users/me` - обновление профиля
+  - ❌ `GET /api/v1/settings` - настройки
+  - ❌ `PUT /api/v1/settings` - обновление настроек
 - ❌ **Аутентификация:**
   - ❌ JWT токены
   - ❌ OAuth2
@@ -505,10 +508,10 @@
 - ❌ **Авторизация:**
   - ❌ RBAC (роли и права)
   - ❌ Middleware для проверки прав
-- ❌ **Валидация:**
-  - ❌ Валидация запросов
-  - ❌ Обработка ошибок
-  - ❌ Стандартизированные ответы
+- ⚠️ **Валидация:**
+  - ⚠️ Валидация запросов (частично через DTO)
+  - ⚠️ Обработка ошибок (базовая через ApiResponse)
+  - ✅ Стандартизированные ответы (ApiResponse<T>)
 
 ### 10.2 WebSocket сервер
 - ❌ WebSocket endpoint
@@ -546,34 +549,38 @@
 - ✅ package.json с зависимостями
 - ✅ next.config.js
 - ✅ tsconfig.json
-- ❌ **Страницы:**
-  - ❌ `/` - главная страница
-  - ❌ `/cameras` - список камер
-  - ❌ `/cameras/[id]` - детали камеры
-  - ❌ `/cameras/add` - добавление камеры
-  - ❌ `/recordings` - список записей
+- ✅ **Страницы:**
+  - ✅ `/` - главная страница (редирект)
+  - ✅ `/login` - страница входа
+  - ✅ `/dashboard` - главная панель
+  - ✅ `/cameras` - список камер
+  - ✅ `/cameras/[id]` - детали камеры
+  - ⚠️ `/events` - список событий (заглушка)
+  - ⚠️ `/recordings` - список записей (заглушка)
+  - ⚠️ `/settings` - настройки (заглушка)
+  - ❌ `/cameras/add` - добавление камеры (через форму в списке)
   - ❌ `/recordings/[id]` - просмотр записи
-  - ❌ `/events` - список событий
   - ❌ `/events/[id]` - детали события
-  - ❌ `/settings` - настройки
   - ❌ `/license` - лицензирование
-  - ❌ `/login` - вход
-  - ❌ `/dashboard` - дашборд
-- ❌ **Компоненты:**
-  - ❌ `CameraGrid` - сетка камер
-  - ❌ `VideoPlayer` - видеоплеер
+- ✅ **Компоненты:**
+  - ✅ `Layout` - layout с навигацией
+  - ✅ `CameraCard` - карточка камеры
+  - ✅ `ProtectedRoute` - защита маршрутов
+  - ⚠️ `VideoPlayer` - видеоплеер (базовая структура)
   - ❌ `PTZControls` - управление PTZ
   - ❌ `RecordingList` - список записей
   - ❌ `EventTimeline` - временная шкала событий
   - ❌ `Charts` - графики статистики
-- ❌ **State Management:**
-  - ❌ Redux store настройка
-  - ❌ Slices (cameras, recordings, events, settings)
-  - ❌ Middleware (thunk, logger)
-- ❌ **API клиент:**
-  - ❌ Axios конфигурация
-  - ❌ Interceptors
-  - ❌ Обработка ошибок
+- ✅ **State Management:**
+  - ✅ Redux store настройка
+  - ✅ Slices (authSlice, camerasSlice)
+  - ⚠️ Middleware (базовая настройка)
+  - ❌ Slices для recordings, events, settings
+- ✅ **API клиент:**
+  - ✅ Axios конфигурация
+  - ✅ API сервисы (authService, cameraService)
+  - ⚠️ Interceptors (базовая обработка)
+  - ⚠️ Обработка ошибок (базовая)
 - ❌ **WebSocket клиент:**
   - ❌ Socket.io клиент
   - ❌ Подписки на события
@@ -863,6 +870,6 @@
 
 ---
 
-**Последнее обновление:** Январь 2025
+**Последнее обновление:** Декабрь 2025
 **Следующий пересмотр:** После реализации UI или REST API
 

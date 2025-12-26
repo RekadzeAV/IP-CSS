@@ -1,7 +1,8 @@
 # Архитектура кроссплатформенной системы видеонаблюдения
 
-**Дата обновления:** Январь 2025
-**Версия проекта:** 3.0.0
+**Дата обновления:** Декабрь 2025  
+**Версия проекта:** Alfa-0.0.1  
+**См. также:** [DEEP_ANALYSIS_2025.md](DEEP_ANALYSIS_2025.md) - углубленный анализ архитектуры и компонентов
 
 ## Обзор архитектуры
 
@@ -483,8 +484,10 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 - [PROJECT_STRUCTURE.md](../../PROJECT_STRUCTURE.md) - Структура проекта
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Руководство по разработке
 - [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) - Статус реализации
+- [DEEP_ANALYSIS_2025.md](DEEP_ANALYSIS_2025.md) - Углубленный расширенный анализ проекта (декабрь 2025) ⭐
 - [USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md](USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md) - Углубленный анализ управления пользователями и интеграции с SSO/Kerberos
+- [SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md) - Отчет аудита безопасности (25 уязвимостей)
 
 ---
 
-**Последнее обновление:** Январь 2025
+**Последнее обновление:** Декабрь 2025

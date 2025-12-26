@@ -1,7 +1,7 @@
 # Аналитика по NAS устройствам для IP-CSS
 
-**Дата создания:** Январь 2025
-**Версия:** 1.0.0
+**Дата создания:** Декабрь 2025
+**Версия:** Alfa-0.0.1
 **Статус:** Детальный анализ и рекомендации по реализации
 
 ---
@@ -109,7 +109,7 @@ package.spk
 Пример INFO файла:
 ```ini
 package="ip-css"
-version="3.0.0"
+version="Alfa-0.0.1"
 displayname="IP Camera Surveillance System"
 arch="x86_64"
 maintainer="Company"
@@ -186,7 +186,7 @@ package.qpkg
 <?xml version="1.0" encoding="UTF-8"?>
 <QPKG>
   <Name>ip-css</Name>
-  <Version>3.0.0</Version>
+  <Version>Alfa-0.0.1</Version>
   <DisplayName>IP Camera Surveillance System</DisplayName>
   <Architecture>x86_64</Architecture>
   <Author>Company</Author>
@@ -595,7 +595,7 @@ package.spk
 **INFO файл:**
 ```ini
 package="ip-css"
-version="3.0.0"
+version="Alfa-0.0.1"
 arch="x86_64 bromolow"
 displayname="IP Camera Surveillance System"
 description="Кроссплатформенная система видеонаблюдения с AI аналитикой"
@@ -622,7 +622,7 @@ startable="yes"
 # Использование Synology SDK
 synology-packager create \
   --name ip-css \
-  --version 3.0.0 \
+  --version Alfa-0.0.1 \
   --arch x86_64 \
   --package-dir ./package \
   --output ./ip-css.spk
@@ -649,7 +649,7 @@ package.qpkg
 <?xml version="1.0" encoding="UTF-8"?>
 <QPKG>
   <Name>ip-css</Name>
-  <Version>3.0.0</Version>
+  <Version>Alfa-0.0.1</Version>
   <DisplayName>IP Camera Surveillance System</DisplayName>
   <Architecture>x86_64</Architecture>
   <Author>Company</Author>
@@ -668,7 +668,7 @@ package.qpkg
 ```bash
 # Использование QPKG Tool
 qbuild --create ip-css \
-  --version 3.0.0 \
+  --version Alfa-0.0.1 \
   --arch x86_64 \
   --source ./source \
   --output ./ip-css.qpkg
@@ -687,7 +687,7 @@ package.apk
 **INFO файл:**
 ```ini
 package="ip-css"
-version="3.0.0"
+version="Alfa-0.0.1"
 displayname="IP Camera Surveillance System"
 architecture="x86_64"
 ```
@@ -697,7 +697,7 @@ architecture="x86_64"
 # Использование ADM Toolkit
 adm-packager create \
   --name ip-css \
-  --version 3.0.0 \
+  --version Alfa-0.0.1 \
   --arch x86_64 \
   --package-dir ./package \
   --output ./ip-css.apk
@@ -721,7 +721,7 @@ tar -czf ip-css-jail.tar.gz ip-css/
 version: '3.8'
 services:
   ip-css:
-    image: company/ip-css:3.0.0
+    image: company/ip-css:Alfa-0.0.1
     ports:
       - "8080:8080"
     volumes:
@@ -734,7 +734,7 @@ services:
 # values.yaml
 image:
   repository: company/ip-css
-  tag: "3.0.0"
+  tag: "Alfa-0.0.1"
 
 persistence:
   enabled: true
@@ -769,7 +769,7 @@ COPY --from=builder /app /app
 ```bash
 docker buildx build \
   --platform linux/amd64,linux/arm64 \
-  -t company/ip-css:3.0.0 \
+  -t company/ip-css:Alfa-0.0.1 \
   --push .
 ```
 
@@ -898,7 +898,7 @@ version: '3.8'
 
 services:
   ip-css-api:
-    image: company/ip-css-api:3.0.0
+    image: company/ip-css-api:Alfa-0.0.1
     platform: linux/amd64  # или linux/arm64
     ports:
       - "8081:8081"
@@ -911,7 +911,7 @@ services:
     restart: unless-stopped
 
   ip-css-web:
-    image: company/ip-css-web:3.0.0
+    image: company/ip-css-web:Alfa-0.0.1
     platform: linux/amd64  # или linux/arm64
     ports:
       - "8080:8080"
@@ -948,14 +948,14 @@ spec:
     spec:
       containers:
       - name: api
-        image: company/ip-css-api:3.0.0
+        image: company/ip-css-api:Alfa-0.0.1
         ports:
         - containerPort: 8081
         volumeMounts:
         - name: recordings
           mountPath: /app/recordings
       - name: web
-        image: company/ip-css-web:3.0.0
+        image: company/ip-css-web:Alfa-0.0.1
         ports:
         - containerPort: 8080
       volumes:
@@ -1206,6 +1206,6 @@ object AcceleratorFactory {
 
 ---
 
-**Последнее обновление:** Январь 2025
+**Последнее обновление:** Декабрь 2025
 **Следующий пересмотр:** После реализации Фазы 1
 

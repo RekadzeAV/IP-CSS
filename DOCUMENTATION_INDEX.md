@@ -1,7 +1,7 @@
 # Полный индекс документации проекта IP-CSS
 
-**Версия проекта:** 3.0.0
-**Последнее обновление:** Январь 2025
+**Версия проекта:** Alfa-0.0.1
+**Последнее обновление:** Декабрь 2025
 
 ---
 
@@ -32,7 +32,9 @@
 ## Архитектура и структура
 
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Архитектура системы, слои, модули, принципы проектирования
-- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Детальная структура проекта, модули, зависимости
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Детальная структура проекта, модули, зависимости (ручная документация)
+- **[PROJECT_STRUCTURE_AUTO.md](PROJECT_STRUCTURE_AUTO.md)** - Автоматически генерируемая структура проекта ⚠️ Не редактировать вручную!
+- **[docs/PROJECT_STRUCTURE_MANAGEMENT.md](docs/PROJECT_STRUCTURE_MANAGEMENT.md)** - Управление структурой проекта, автоматическое обновление ⭐ НОВОЕ
 - **[docs/PLATFORMS.md](docs/PLATFORMS.md)** - Разделение разработки по платформам (Android, iOS, Desktop, Web, NAS)
 
 ---
@@ -41,15 +43,21 @@
 
 ### Статус реализации
 
+- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Краткая сводка текущего состояния проекта (~20% прогресса)
 - **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** - Детальный статус реализации всех компонентов
-- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Краткая сводка текущего состояния проекта
 - **[docs/MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md)** - Детальный анализ нереализованного функционала
+- **[docs/TECHNICAL_DEBT.md](docs/TECHNICAL_DEBT.md)** - Технический долг с разбивкой по типам доработок и примерными сроками ⭐ НОВОЕ
+- **[PROJECT_ROADMAP.md](PROJECT_ROADMAP.md)** - Карта выполнения проекта (детальный статус по компонентам)
+- **[DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md)** - Карта разработки проекта с метриками и приоритетами (обновлено: декабрь 2025)
 
 ### Планирование
 
+- **[TIMELINE.md](TIMELINE.md)** - Временная шкала проекта (прошлое, настоящее, будущее) ⭐ НОВОЕ
+- **[docs/TIMELINE_GUIDE.md](docs/TIMELINE_GUIDE.md)** - Руководство по ведению временной шкалы (обязательное ведение) ⭐ НОВОЕ
 - **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)** - План дальнейшей разработки по фазам
-- **[PROJECT_ROADMAP.md](PROJECT_ROADMAP.md)** - Карта выполнения проекта с метриками и приоритетами
 - **[docs/FUNCTIONALITY_ANALYSIS.md](docs/FUNCTIONALITY_ANALYSIS.md)** - Анализ функционала: что можно добавить (критически необходимые, важные, дополнительные, инновационные функции)
+- **[docs/DEEP_ANALYSIS_2025.md](docs/DEEP_ANALYSIS_2025.md)** - Углубленный расширенный анализ проекта (декабрь 2025) ⭐ НОВОЕ
+- **[docs/DOCUMENTATION_GAPS.md](docs/DOCUMENTATION_GAPS.md)** - Анализ недостающей документации
 
 ---
 
@@ -60,6 +68,10 @@
 - **[docs/API.md](docs/API.md)** - REST API документация (endpoints, модели, примеры запросов/ответов)
 - **[server/web/README.md](server/web/README.md)** - Документация веб-интерфейса (Next.js)
 - **[server/web/WEB_UI_IMPLEMENTATION.md](server/web/WEB_UI_IMPLEMENTATION.md)** - Детальная документация реализации веб-интерфейса
+
+### Конфигурация и настройка
+
+- **[docs/CONFIGURATION.md](docs/CONFIGURATION.md)** - Руководство по настройке и конфигурации системы ⭐ НОВОЕ
 
 ### Протоколы и клиенты
 
@@ -99,9 +111,10 @@
 ### Руководства
 
 - **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Руководство по разработке (настройка окружения, сборка, запуск)
+- **[docs/TIMELINE_GUIDE.md](docs/TIMELINE_GUIDE.md)** - Руководство по ведению временной шкалы проекта (обязательное) ⭐ НОВОЕ
 - **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)** - План дальнейшей разработки
 - **[docs/DEVELOPMENT_TOOLS.md](docs/DEVELOPMENT_TOOLS.md)** - Инструменты разработки
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Руководство по участию в разработке
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Руководство по участию в разработке (включая требования по ведению TIMELINE.md)
 
 ### Тестирование
 
@@ -111,6 +124,9 @@
 
 ### Анализ и проектирование
 
+- **[docs/DOCUMENTATION_ANALYSIS_REPORT.md](docs/DOCUMENTATION_ANALYSIS_REPORT.md)** - Комплексный аналитический отчет о состоянии документации ⭐ НОВОЕ
+- **[docs/ANALYSIS_SUMMARY_2025.md](docs/ANALYSIS_SUMMARY_2025.md)** - Резюме анализа проекта (декабрь 2025) ⭐ НОВОЕ
+- **[docs/DEEP_ANALYSIS_2025.md](docs/DEEP_ANALYSIS_2025.md)** - Углубленный расширенный анализ проекта (декабрь 2025) ⭐ НОВОЕ
 - **[docs/PROMPT_ANALYSIS.md](docs/PROMPT_ANALYSIS.md)** - Анализ исходного промта проекта
 - **[docs/ANALYSIS_ERRORS.md](docs/ANALYSIS_ERRORS.md)** - Анализ ошибок и проблем
 - **[docs/DOCUMENTATION_GAPS.md](docs/DOCUMENTATION_GAPS.md)** - Анализ недостающей документации
@@ -127,13 +143,49 @@
 
 ---
 
+## Документация для пользователей
+
+### Руководства по ролям
+
+- **[docs/ADMINISTRATOR_GUIDE.md](docs/ADMINISTRATOR_GUIDE.md)** - Руководство для администраторов системы
+  - Установка и развертывание на всех платформах (серверы, NAS, микрокомпьютеры)
+  - Поддержка всех архитектур (x86_64, ARM, ARM64)
+  - Начальная настройка системы
+  - Управление пользователями и правами доступа
+  - Управление лицензиями
+  - Конфигурация системы и камер
+  - Мониторинг и обслуживание
+  - Резервное копирование и восстановление
+  - Безопасность
+  - Устранение неполадок
+
+- **[docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md)** - Руководство для операторов системы
+  - Работа с камерами (добавление, редактирование, настройка)
+  - Просмотр видео в реальном времени
+  - Управление записями (просмотр, поиск, экспорт)
+  - Работа с событиями (просмотр, подтверждение, фильтрация)
+  - Управление PTZ камерами
+  - Настройки оператора
+  - Поддержка всех платформ (веб, мобильные, desktop)
+
+- **[docs/USER_GUIDE.md](docs/USER_GUIDE.md)** - Руководство для конечных пользователей
+  - Просмотр камер в реальном времени
+  - Просмотр записей и событий
+  - Экспорт записей
+  - Настройки профиля
+  - Работа с мобильными приложениями
+  - Часто задаваемые вопросы
+  - Поддержка всех платформ и устройств
+
+---
+
 ## Дополнительные документы
 
 - **[docs/DOCUMENTATION_GAPS.md](docs/DOCUMENTATION_GAPS.md)** - Анализ недостающей документации
 
 ### Безопасность и аутентификация
 
-- **[docs/SECURITY_AUDIT_REPORT.md](docs/SECURITY_AUDIT_REPORT.md)** - Отчет аудита безопасности
+- **[docs/SECURITY_AUDIT_REPORT.md](docs/SECURITY_AUDIT_REPORT.md)** - Отчет аудита безопасности (обновлено: декабрь 2025) ⚠️ 25 уязвимостей выявлено
 - **[docs/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md](docs/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md)** - Углубленный анализ управления пользователями и интеграции с SSO/Kerberos
 - **[docs/SECURITY_REMEDIATION_PLAN.md](docs/SECURITY_REMEDIATION_PLAN.md)** - План устранения уязвимостей безопасности
 
@@ -170,13 +222,18 @@
 - **Работать с RTSP** → [docs/RTSP_CLIENT.md](docs/RTSP_CLIENT.md)
 - **Развернуть систему** → [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
 - **Развернуть на NAS** → [docs/NAS_PLATFORMS_ANALYSIS.md](docs/NAS_PLATFORMS_ANALYSIS.md) | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
+- **Настроить систему** → [docs/CONFIGURATION.md](docs/CONFIGURATION.md) ⭐ НОВОЕ
 - **Посмотреть API** → [docs/API.md](docs/API.md)
 - **Изучить тесты** → [docs/TESTING.md](docs/TESTING.md) | [docs/TESTS_SUMMARY.md](docs/TESTS_SUMMARY.md)
 - **Интегрировать библиотеки** → [docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md)
 - **Работать с лицензированием** → [docs/LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md)
 - **Узнать, какой документации не хватает** → [docs/DOCUMENTATION_GAPS.md](docs/DOCUMENTATION_GAPS.md)
+- **Узнать состояние документации** → [docs/DOCUMENTATION_ANALYSIS_REPORT.md](docs/DOCUMENTATION_ANALYSIS_REPORT.md) ⭐ НОВОЕ
 - **Узнать, какой функционал можно добавить** → [docs/FUNCTIONALITY_ANALYSIS.md](docs/FUNCTIONALITY_ANALYSIS.md)
 - **Изучить управление пользователями и SSO/Kerberos** → [docs/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md](docs/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md)
+- **Руководство для администраторов** → [docs/ADMINISTRATOR_GUIDE.md](docs/ADMINISTRATOR_GUIDE.md)
+- **Руководство для операторов** → [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md)
+- **Руководство для пользователей** → [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
 
 ---
 
@@ -185,11 +242,13 @@
 ```
 README.md (корневой)
   ├── CURRENT_STATUS.md
-  ├── PROJECT_STRUCTURE.md
+  ├── PROJECT_STRUCTURE.md (ручная документация)
+  ├── PROJECT_STRUCTURE_AUTO.md (автоматически генерируемая)
   ├── PROJECT_ROADMAP.md
   └── docs/
       ├── README.md (навигация)
       ├── ARCHITECTURE.md
+      ├── PROJECT_STRUCTURE_MANAGEMENT.md (управление структурой)
       ├── IMPLEMENTATION_STATUS.md
       │   └── MISSING_FUNCTIONALITY.md
       ├── FUNCTIONALITY_ANALYSIS.md
@@ -219,6 +278,7 @@ README.md (корневой)
 
 ---
 
-**Версия документации:** 1.0
-**Последнее обновление:** Январь 2025
+**Версия документации:** 1.2  
+**Последнее обновление:** Декабрь 2025  
+**Обновлено:** Добавлена документация для пользователей (администраторы, операторы, пользователи) с учетом всех платформ и архитектур
 

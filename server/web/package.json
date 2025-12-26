@@ -1,6 +1,6 @@
 {
   "name": "ip-camera-surveillance-web",
-  "version": "3.0.0",
+  "version": "Alfa-0.0.1",
   "description": "Web interface for IP Camera Surveillance System",
   "private": true,
   "scripts": {
