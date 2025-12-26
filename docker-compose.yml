@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  surveillance:
+    image: company/ip-camera-surveillance:latest
+    container_name: ip-camera-surveillance
+    restart: unless-stopped
+    ports:
+      - "8080:8080"    # Веб-интерфейс
+      - "554:554"      # RTSP сервер
+      - "1935:1935"    # RTMP сервер
+      - "8554:8554"    # Дополнительный RTSP
+    volumes:
+      - ./data/config:/app/config
+      - ./data/recordings:/app/recordings
+      - ./data/database:/app/database
+      - ./data/logs:/app/logs
+      - ./data/models:/app/models
+    environment:
+      - TZ=Europe/Moscow
+      - ADMIN_USER=admin
+      - ADMIN_PASSWORD_HASH=${ADMIN_PASSWORD_HASH:-changeme}
+      - LICENSE_KEY=${LICENSE_KEY:-}
+      - DATABASE_URL=jdbc:sqlite:/app/database/surveillance.db
+      - LOG_LEVEL=INFO
+    devices:
+      - /dev/dri:/dev/dri
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - surveillance-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: surveillance-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=surveillance
+      - POSTGRES_USER=surveillance
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - surveillance-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U surveillance"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: surveillance-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-changeme}
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - surveillance-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  surveillance-network:
+    driver: bridge
+

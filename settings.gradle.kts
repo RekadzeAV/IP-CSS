@@ -12,42 +12,20 @@ plugins {
 
 rootProject.name = "ip-camera-surveillance-system"
 
-// Shared Kotlin Multiplatform modules
+// Shared Kotlin Multiplatform module
 include(":shared")
-include(":shared:common")
-include(":shared:domain")
-include(":shared:data")
-
-// Platform-specific modules
-include(":android")
-include(":android:app")
-include(":android:ui")
-include(":android:platform")
-
-include(":ios")
-
-include(":desktop")
-include(":desktop:common")
-include(":desktop:windows")
-include(":desktop:linux")
-include(":desktop:macos")
-
-// Server modules
-include(":server")
-include(":server:nas")
-include(":server:web")
-include(":server:api")
-
-// Native C++ libraries
-include(":native")
-include(":native:video-processing")
-include(":native:analytics")
-include(":native:codecs")
 
 // Core cross-platform modules
-include(":core")
 include(":core:license")
-include(":core:network")
-include(":core:database")
-include(":core:utils")
+
+// Native C++ libraries
+// Note: Native modules are built with CMake, not Gradle
+// They are included here for reference but won't be built by Gradle
+// include(":native")
+// include(":native:video-processing")
+// include(":native:analytics")
+
+// Server modules
+// Note: server:web is a Node.js project, not a Gradle module
+// It should be built separately using npm/yarn
 
