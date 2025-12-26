@@ -123,6 +123,8 @@ docker-compose up -d
 ### Основная документация
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Архитектура системы
 - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Структура проекта
+- **[PROJECT_STRUCTURE_ANALYSIS.md](PROJECT_STRUCTURE_ANALYSIS.md)** - Полный анализ структуры проекта
+- **[PROJECT_STRUCTURE_VISUAL.md](PROJECT_STRUCTURE_VISUAL.md)** - Визуальная схема структуры проекта
 - [PLATFORMS.md](docs/PLATFORMS.md) - Разделение разработки по платформам
 - [DEVELOPMENT.md](docs/DEVELOPMENT.md) - Руководство по разработке
 - [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) - План дальнейшей разработки
