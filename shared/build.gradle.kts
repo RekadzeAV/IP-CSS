@@ -33,6 +33,9 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                // Core common module
+                implementation(project(":core:common"))
+
                 // Coroutines
                 implementation(libs.kotlinx.coroutines.core)
 

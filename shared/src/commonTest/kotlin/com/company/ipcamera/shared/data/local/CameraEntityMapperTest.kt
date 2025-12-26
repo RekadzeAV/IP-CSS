@@ -1,5 +1,6 @@
 package com.company.ipcamera.shared.data.local
 
+import com.company.ipcamera.core.common.model.Resolution
 import com.company.ipcamera.shared.domain.model.*
 import com.company.ipcamera.shared.test.TestDataFactory
 import kotlin.test.*
@@ -8,9 +9,9 @@ import kotlin.test.*
  * Тесты для CameraEntityMapper
  */
 class CameraEntityMapperTest {
-    
+
     private val mapper = CameraEntityMapper()
-    
+
     @Test
     fun `test toDomain basic camera`() {
         // Arrange
@@ -36,10 +37,10 @@ class CameraEntityMapperTest {
             updated_at = 2000L,
             last_seen = 3000L
         )
-        
+
         // Act
         val domainCamera = mapper.toDomain(dbCamera)
-        
+
         // Assert
         assertEquals("camera-1", domainCamera.id)
         assertEquals("Test Camera", domainCamera.name)
@@ -59,7 +60,7 @@ class CameraEntityMapperTest {
         assertEquals(2000L, domainCamera.updatedAt)
         assertEquals(3000L, domainCamera.lastSeen)
     }
-    
+
     @Test
     fun `test toDomain camera without optional fields`() {
         // Arrange
@@ -85,10 +86,10 @@ class CameraEntityMapperTest {
             updated_at = 1000L,
             last_seen = null
         )
-        
+
         // Act
         val domainCamera = mapper.toDomain(dbCamera)
-        
+
         // Assert
         assertEquals("camera-2", domainCamera.id)
         assertNull(domainCamera.username)
@@ -99,7 +100,7 @@ class CameraEntityMapperTest {
         assertFalse(domainCamera.audio)
         assertNull(domainCamera.lastSeen)
     }
-    
+
     @Test
     fun `test toDatabase basic camera`() {
         // Arrange
@@ -109,10 +110,10 @@ class CameraEntityMapperTest {
             resolution = Resolution(1920, 1080),
             audio = true
         )
-        
+
         // Act
         val dbCamera = mapper.toDatabase(domainCamera)
-        
+
         // Assert
         assertEquals("camera-1", dbCamera.id)
         assertEquals("Test Camera", dbCamera.name)
@@ -121,7 +122,7 @@ class CameraEntityMapperTest {
         assertEquals(1L, dbCamera.audio)
         assertEquals(domainCamera.status.name, dbCamera.status)
     }
-    
+
     @Test
     fun `test toDatabase camera without audio`() {
         // Arrange
@@ -129,14 +130,14 @@ class CameraEntityMapperTest {
             id = "camera-2",
             audio = false
         )
-        
+
         // Act
         val dbCamera = mapper.toDatabase(domainCamera)
-        
+
         // Assert
         assertEquals(0L, dbCamera.audio)
     }
-    
+
     @Test
     fun `test round trip conversion`() {
         // Arrange
@@ -147,11 +148,11 @@ class CameraEntityMapperTest {
             streams = listOf(TestDataFactory.createTestStreamConfig()),
             statistics = TestDataFactory.createTestCameraStatistics()
         )
-        
+
         // Act
         val dbCamera = mapper.toDatabase(originalCamera)
         val convertedCamera = mapper.toDomain(dbCamera)
-        
+
         // Assert
         assertEquals(originalCamera.id, convertedCamera.id)
         assertEquals(originalCamera.name, convertedCamera.name)
@@ -163,13 +164,13 @@ class CameraEntityMapperTest {
         assertEquals(originalCamera.codec, convertedCamera.codec)
         assertEquals(originalCamera.audio, convertedCamera.audio)
     }
-    
+
     @Test
     fun `test toDomain with PTZ config`() {
         // Arrange
         val ptzConfig = TestDataFactory.createTestPTZConfig()
         val ptzJson = kotlinx.serialization.json.Json.encodeToString(PTZConfig.serializer(), ptzConfig)
-        
+
         val dbCamera = com.company.ipcamera.shared.database.Camera(
             id = "camera-ptz",
             name = "PTZ Camera",
@@ -192,10 +193,10 @@ class CameraEntityMapperTest {
             updated_at = 1000L,
             last_seen = null
         )
-        
+
         // Act
         val domainCamera = mapper.toDomain(dbCamera)
-        
+
         // Assert
         assertNotNull(domainCamera.ptz)
         assertEquals(ptzConfig.enabled, domainCamera.ptz?.enabled)

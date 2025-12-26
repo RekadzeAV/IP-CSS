@@ -1,12 +1,14 @@
 package com.company.ipcamera.shared.test
 
+import com.company.ipcamera.core.common.model.CameraStatus
+import com.company.ipcamera.core.common.model.Resolution
 import com.company.ipcamera.shared.domain.model.*
 
 /**
  * Фабрика для создания тестовых данных
  */
 object TestDataFactory {
-    
+
     fun createTestCamera(
         id: String = "test-camera-1",
         name: String = "Test Camera",
@@ -47,7 +49,7 @@ object TestDataFactory {
             lastSeen = System.currentTimeMillis()
         )
     }
-    
+
     fun createTestCameras(count: Int): List<Camera> {
         return (1..count).map { index ->
             createTestCamera(
@@ -57,7 +59,7 @@ object TestDataFactory {
             )
         }
     }
-    
+
     fun createTestPTZConfig(
         enabled: Boolean = true,
         type: PTZType = PTZType.PTZ,
@@ -69,7 +71,7 @@ object TestDataFactory {
             presets = presets
         )
     }
-    
+
     fun createTestStreamConfig(
         type: StreamType = StreamType.MAIN,
         resolution: Resolution = Resolution(1920, 1080),
@@ -83,7 +85,7 @@ object TestDataFactory {
             bitrate = bitrate
         )
     }
-    
+
     fun createTestCameraSettings(
         recording: RecordingSettings = RecordingSettings(),
         analytics: AnalyticsSettings = AnalyticsSettings(),
@@ -95,7 +97,7 @@ object TestDataFactory {
             notifications = notifications
         )
     }
-    
+
     fun createTestCameraStatistics(
         uptime: Double = 100.0,
         recordedHours: Long = 24,

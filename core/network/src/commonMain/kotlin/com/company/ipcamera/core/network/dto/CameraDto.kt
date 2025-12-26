@@ -1,6 +1,5 @@
 package com.company.ipcamera.core.network.dto
 
-import com.company.ipcamera.shared.domain.model.*
 import kotlinx.serialization.Serializable
 
 /**

@@ -1,7 +1,7 @@
 # Детальный анализ нереализованного функционала
 
-**Дата анализа:** Декабрь 2024  
-**Версия проекта:** 3.0.0  
+**Дата анализа:** Декабрь 2024
+**Версия проекта:** 3.0.0
 **Последнее обновление:** Декабрь 2024
 
 ---
@@ -18,9 +18,9 @@
 
 ## OnvifClient
 
-**Файл:** `core/network/src/commonMain/kotlin/com/company/ipcamera/core/network/OnvifClient.kt`  
-**Статус:** ⚠️ Частично реализовано (~40%)  
-**Документация:** [ONVIF_CLIENT.md](ONVIF_CLIENT.md)  
+**Файл:** `core/network/src/commonMain/kotlin/com/company/ipcamera/core/network/OnvifClient.kt`
+**Статус:** ⚠️ Частично реализовано (~40%)
+**Документация:** [ONVIF_CLIENT.md](ONVIF_CLIENT.md)
 **Интеграция:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#1-xml-парсинг-для-onvif)
 
 ### ❌ Критически важный нереализованный функционал
@@ -99,7 +99,7 @@
        @XmlElement(true) val header: SoapHeader?,
        @XmlElement(true) val body: SoapBody
    )
-   
+
    @Serializable
    @XmlSerialName("Body", namespace = "http://www.w3.org/2003/05/soap-envelope")
    data class SoapBody(
@@ -187,8 +187,8 @@
 
 ## LicenseManager
 
-**Файл:** `core/license/src/commonMain/kotlin/com/company/ipcamera/core/license/LicenseManager.kt`  
-**Статус:** ⚠️ Частично реализовано (~20%)  
+**Файл:** `core/license/src/commonMain/kotlin/com/company/ipcamera/core/license/LicenseManager.kt`
+**Статус:** ⚠️ Частично реализовано (~20%)
 **Документация:** [LICENSE_SYSTEM.md](LICENSE_SYSTEM.md)
 
 ### ❌ Критически важный нереализованный функционал
@@ -358,8 +358,8 @@
 
 ## WebSocketClient
 
-**Файл:** `core/network/src/commonMain/kotlin/com/company/ipcamera/core/network/WebSocketClient.kt`  
-**Статус:** ✅ Частично реализовано (~80%)  
+**Файл:** `core/network/src/commonMain/kotlin/com/company/ipcamera/core/network/WebSocketClient.kt`
+**Статус:** ✅ Частично реализовано (~80%)
 **Документация:** [WEBSOCKET_CLIENT.md](WEBSOCKET_CLIENT.md)
 
 ### ⚠️ Недостающий функционал
@@ -435,10 +435,10 @@
 
 ## RtspClient
 
-**Файл:** `core/network/src/commonMain/kotlin/com/company/ipcamera/core/network/RtspClient.kt`  
-**Нативная библиотека:** `native/video-processing/src/rtsp_client.cpp`  
-**Статус:** ⚠️ Частично реализовано (~10%)  
-**Документация:** [RTSP_CLIENT.md](RTSP_CLIENT.md)  
+**Файл:** `core/network/src/commonMain/kotlin/com/company/ipcamera/core/network/RtspClient.kt`
+**Нативная библиотека:** `native/video-processing/src/rtsp_client.cpp`
+**Статус:** ⚠️ Частично реализовано (~10%)
+**Документация:** [RTSP_CLIENT.md](RTSP_CLIENT.md)
 **Интеграция:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#2-rtsp-клиент---интеграция-live555)
 
 ### ❌ Критически важный нереализованный функционал

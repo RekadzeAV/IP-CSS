@@ -4,8 +4,8 @@ import com.company.ipcamera.shared.common.createHttpClientEngine
 import com.company.ipcamera.shared.data.local.CameraEntityMapper
 import com.company.ipcamera.shared.data.local.DatabaseFactory
 import com.company.ipcamera.shared.data.local.createDatabase
+import com.company.ipcamera.core.common.model.CameraStatus
 import com.company.ipcamera.shared.domain.model.Camera
-import com.company.ipcamera.shared.domain.model.CameraStatus
 import com.company.ipcamera.shared.domain.repository.*
 import com.company.ipcamera.core.network.OnvifClient
 import kotlinx.coroutines.Dispatchers
@@ -20,10 +20,10 @@ private val logger = KotlinLogging.logger {}
 class CameraRepositoryImpl(
     private val databaseFactory: DatabaseFactory
 ) : CameraRepository {
-    
+
     private val database = createDatabase(databaseFactory.createDriver())
     private val mapper = CameraEntityMapper()
-    
+
     override suspend fun getCameras(): List<Camera> = withContext(Dispatchers.Default) {
         try {
             database.cameraDatabaseQueries.selectAll().executeAsList().map { mapper.toDomain(it) }
@@ -32,7 +32,7 @@ class CameraRepositoryImpl(
             emptyList()
         }
     }
-    
+
     override suspend fun getCameraById(id: String): Camera? = withContext(Dispatchers.Default) {
         try {
             database.cameraDatabaseQueries.selectById(id).executeAsOneOrNull()?.let { mapper.toDomain(it) }
@@ -41,7 +41,7 @@ class CameraRepositoryImpl(
             null
         }
     }
-    
+
     override suspend fun addCamera(camera: Camera): Result<Camera> = withContext(Dispatchers.Default) {
         try {
             val dbCamera = mapper.toDatabase(camera)
@@ -73,7 +73,7 @@ class CameraRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun updateCamera(camera: Camera): Result<Camera> = withContext(Dispatchers.Default) {
         try {
             val dbCamera = mapper.toDatabase(camera.copy(updatedAt = System.currentTimeMillis()))
@@ -106,7 +106,7 @@ class CameraRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun removeCamera(id: String): Result<Unit> = withContext(Dispatchers.Default) {
         try {
             database.cameraDatabaseQueries.deleteCamera(id)
@@ -116,20 +116,20 @@ class CameraRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun discoverCameras(): List<DiscoveredCamera> = withContext(Dispatchers.IO) {
         try {
             logger.info { "Starting camera discovery via ONVIF..." }
             val engine = createHttpClientEngine()
             val onvifClient = OnvifClient(engine)
-            
+
             try {
                 // OnvifClient.discoverCameras() использует WS-Discovery для обнаружения камер
                 // В текущей реализации WS-Discovery не полностью реализован,
                 // поэтому метод возвращает пустой список
                 // В будущем, когда WS-Discovery будет реализован, метод вернет список обнаруженных камер
                 val discovered = onvifClient.discoverCameras(timeoutMillis = 5000)
-                
+
                 logger.info { "Discovered ${discovered.size} cameras via ONVIF" }
                 discovered
             } finally {
@@ -141,13 +141,13 @@ class CameraRepositoryImpl(
             emptyList()
         }
     }
-    
+
     override suspend fun testConnection(camera: Camera): ConnectionTestResult = withContext(Dispatchers.IO) {
         try {
             logger.info { "Testing connection to camera: ${camera.name} (${camera.url})" }
             val engine = createHttpClientEngine()
             val onvifClient = OnvifClient(engine)
-            
+
             try {
                 // OnvifClient.testConnection() проверяет подключение через ONVIF GetCapabilities
                 // и возвращает информацию о потоках и возможностях камеры
@@ -156,7 +156,7 @@ class CameraRepositoryImpl(
                     username = camera.username,
                     password = camera.password
                 )
-                
+
                 when (result) {
                     is ConnectionTestResult.Success -> {
                         logger.info { "Camera connection test successful: ${camera.name}" }
@@ -165,7 +165,7 @@ class CameraRepositoryImpl(
                         logger.warn { "Camera connection test failed: ${camera.name} - ${result.error}" }
                     }
                 }
-                
+
                 result
             } finally {
                 onvifClient.close()
@@ -179,7 +179,7 @@ class CameraRepositoryImpl(
             )
         }
     }
-    
+
     /**
      * Извлекает IP адрес из URL
      */
@@ -197,7 +197,7 @@ class CameraRepositoryImpl(
             url
         }
     }
-    
+
     /**
      * Извлекает порт из URL
      */
@@ -208,7 +208,7 @@ class CameraRepositoryImpl(
                 .removePrefix("http://")
                 .removePrefix("https://")
                 .substringBefore("/")
-            
+
             if (cleanUrl.contains(":")) {
                 cleanUrl.substringAfter(":").toIntOrNull()
             } else {
@@ -218,7 +218,7 @@ class CameraRepositoryImpl(
             null
         }
     }
-    
+
     override suspend fun getCameraStatus(id: String): CameraStatus = withContext(Dispatchers.Default) {
         try {
             val camera = getCameraById(id)

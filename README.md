@@ -103,7 +103,7 @@ docker-compose up -d
 - ❌ Запись видео
 - ❌ AI-аналитика
 
-Подробный статус реализации: [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)  
+Подробный статус реализации: [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 Детальный анализ нереализованного функционала: [MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md)
 
 ## Документация

@@ -56,11 +56,11 @@ class MyEventHandler : WebSocketEventHandler {
     override fun onConnected() {
         println("WebSocket connected")
     }
-    
+
     override fun onDisconnected(cause: Throwable?) {
         println("WebSocket disconnected: ${cause?.message}")
     }
-    
+
     override fun onMessage(message: WebSocketMessage) {
         when (message) {
             is WebSocketMessage.EventMessage -> {
@@ -73,7 +73,7 @@ class MyEventHandler : WebSocketEventHandler {
             else -> {}
         }
     }
-    
+
     override fun onError(error: Throwable) {
         println("Error: ${error.message}")
     }
@@ -168,7 +168,7 @@ WebSocketMessage.ErrorMessage(
 ```kotlin
 class CameraMonitor {
     private val wsClient: WebSocketClient
-    
+
     init {
         val engine = HttpClientEngineFactory.create()
         val config = WebSocketClientConfig(
@@ -176,7 +176,7 @@ class CameraMonitor {
             autoReconnect = true
         )
         wsClient = WebSocketClient(engine, config)
-        
+
         wsClient.addEventHandler(object : WebSocketEventHandler {
             override fun onMessage(message: WebSocketMessage) {
                 if (message is WebSocketMessage.EventMessage) {
@@ -185,18 +185,18 @@ class CameraMonitor {
             }
         })
     }
-    
+
     suspend fun start(token: String) {
         wsClient.connect(token)
         wsClient.subscribe(
             channels = listOf("camera_events", "camera_status")
         )
     }
-    
+
     private fun handleCameraEvent(event: WebSocketMessage.EventMessage) {
         // Обработка события камеры
     }
-    
+
     fun stop() {
         wsClient.disconnect()
     }

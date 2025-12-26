@@ -196,7 +196,7 @@ data class RtspStreamInfo(
 ```kotlin
 class CameraStreamPlayer {
     private val rtspClient: RtspClient
-    
+
     init {
         val config = RtspClientConfig(
             url = "rtsp://camera.example.com/stream",
@@ -204,22 +204,22 @@ class CameraStreamPlayer {
             password = "password"
         )
         rtspClient = RtspClient(config)
-        
+
         rtspClient.setVideoFrameCallback { frame ->
             updateVideoView(frame)
         }
     }
-    
+
     suspend fun start() {
         rtspClient.connect()
         rtspClient.play()
     }
-    
+
     fun stop() {
         rtspClient.stop()
         rtspClient.disconnect()
     }
-    
+
     private fun updateVideoView(frame: RtspFrame) {
         // Обновление UI с новым кадром
     }
@@ -315,6 +315,6 @@ make
 - ❌ Декодирование видео/аудио (H.264, H.265, AAC)
 - ❌ Аутентификация (Basic, Digest)
 
-**Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#rtspclient)  
+**Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#rtspclient)
 **Руководство по интеграции:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#2-rtsp-клиент---интеграция-live555)
 

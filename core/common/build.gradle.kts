@@ -22,19 +22,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                // Core common module
-                implementation(project(":core:common"))
-                // Ktor Client
-                implementation(libs.bundles.ktor)
-                implementation(libs.ktor.serialization.kotlinx.xml)
                 // Serialization
                 implementation(libs.kotlinx.serialization.json)
-                // Coroutines
-                implementation(libs.kotlinx.coroutines.core)
-                // Logging
-                implementation(libs.kotlin.logging)
-                // DateTime
-                implementation(libs.kotlinx.datetime)
             }
         }
 
@@ -42,22 +31,14 @@ kotlin {
             dependencies {
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation(libs.kotlinx.coroutines.test)
-                implementation(libs.bundles.testing)
             }
         }
 
         val androidMain by getting {
-            dependencies {
-                implementation(libs.ktor.client.android)
-            }
         }
 
         val iosMain by creating {
             dependsOn(commonMain)
-            dependencies {
-                implementation(libs.ktor.client.darwin)
-            }
         }
 
         val iosX64Main by getting {
@@ -72,21 +53,23 @@ kotlin {
             dependsOn(iosMain)
         }
 
-        val desktopMain by getting {
+        val desktopMain by creating {
             dependsOn(commonMain)
-            dependencies {
-                implementation(libs.ktor.client.java)
-            }
         }
     }
 }
 
 android {
-    namespace = "com.company.ipcamera.core.network"
+    namespace = "com.company.ipcamera.core.common"
     compileSdk = 34
 
     defaultConfig {
         minSdk = 26
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
     }
 }
 

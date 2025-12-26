@@ -121,7 +121,7 @@
 - ❌ Проверка целостности (проверка подписи и хеша)
 - ❌ Полная реализация платформо-специфичных хранилищ (Android Keystore, iOS Keychain)
 
-**Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#licensemanager)  
-**Руководство по интеграции:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#5-криптография-для-лицензирования)  
+**Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#licensemanager)
+**Руководство по интеграции:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#5-криптография-для-лицензирования)
 **API документация:** [API.md](API.md#лицензии-apiv1license)
 

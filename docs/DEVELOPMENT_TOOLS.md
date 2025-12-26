@@ -116,16 +116,16 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
-      
+
       - name: Run Detekt
         run: ./gradlew detekt
-      
+
       - name: Check Ktlint
         run: ./gradlew ktlintCheck
-      
+
       - name: Generate Documentation
         run: ./gradlew dokkaHtml
 ```

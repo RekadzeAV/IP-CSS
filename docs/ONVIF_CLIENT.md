@@ -237,32 +237,32 @@ data class OnvifProfile(
 ```kotlin
 class CameraDiscoveryService {
     private val onvifClient = OnvifClient(httpClientEngine)
-    
+
     suspend fun discoverAndAddCameras(): List<Camera> {
         val discovered = onvifClient.discoverCameras()
         val cameras = mutableListOf<Camera>()
-        
+
         discovered.forEach { discoveredCamera ->
             val deviceInfo = onvifClient.getDeviceInformation(
                 url = discoveredCamera.url,
                 username = null,
                 password = null
             )
-            
+
             val capabilities = onvifClient.getCapabilities(
                 url = discoveredCamera.url
             )
-            
+
             val profiles = onvifClient.getProfiles(
                 url = discoveredCamera.url
             )
-            
+
             if (profiles.isNotEmpty()) {
                 val streamUri = onvifClient.getStreamUri(
                     url = discoveredCamera.url,
                     profileToken = profiles.first().token
                 )
-                
+
                 val camera = Camera(
                     id = generateId(),
                     name = discoveredCamera.name,
@@ -278,11 +278,11 @@ class CameraDiscoveryService {
                     fps = profiles.first().fps ?: 25,
                     codec = profiles.first().codec ?: "H.264"
                 )
-                
+
                 cameras.add(camera)
             }
         }
-        
+
         return cameras
     }
 }
@@ -293,7 +293,7 @@ class CameraDiscoveryService {
 ```kotlin
 class PtzController(private val camera: Camera) {
     private val onvifClient = OnvifClient(httpClientEngine)
-    
+
     suspend fun move(direction: PtzDirection, speed: Float = 0.5f) {
         val url = camera.url.replace("rtsp://", "http://").substringBefore("/")
         onvifClient.movePtz(
@@ -304,7 +304,7 @@ class PtzController(private val camera: Camera) {
             password = camera.password
         )
     }
-    
+
     suspend fun stop() {
         val url = camera.url.replace("rtsp://", "http://").substringBefore("/")
         onvifClient.stopPtz(
@@ -358,6 +358,6 @@ class PtzController(private val camera: Camera) {
 - ❌ Digest Authentication (только Basic)
 - ❌ Дополнительные ONVIF функции (AbsoluteMove, GetPresets, Imaging, Events)
 
-**Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#onvifclient)  
+**Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#onvifclient)
 **Руководство по интеграции:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#1-xml-парсинг-для-onvif)
 

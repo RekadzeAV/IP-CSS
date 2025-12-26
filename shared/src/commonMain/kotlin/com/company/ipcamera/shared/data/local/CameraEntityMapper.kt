@@ -1,5 +1,7 @@
 package com.company.ipcamera.shared.data.local
 
+import com.company.ipcamera.core.common.model.CameraStatus
+import com.company.ipcamera.core.common.model.Resolution
 import com.company.ipcamera.shared.database.Camera
 import com.company.ipcamera.shared.domain.model.*
 import kotlinx.serialization.decodeFromString
@@ -10,12 +12,12 @@ import kotlinx.serialization.json.Json
  * Маппер между сущностью базы данных и доменной моделью Camera
  */
 internal class CameraEntityMapper {
-    
+
     private val json = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
     }
-    
+
     fun toDomain(dbCamera: Camera): com.company.ipcamera.shared.domain.model.Camera {
         return com.company.ipcamera.shared.domain.model.Camera(
             id = dbCamera.id,
@@ -43,7 +45,7 @@ internal class CameraEntityMapper {
             lastSeen = dbCamera.last_seen
         )
     }
-    
+
     fun toDatabase(camera: com.company.ipcamera.shared.domain.model.Camera): Camera {
         return Camera(
             id = camera.id,

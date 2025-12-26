@@ -24,6 +24,7 @@ rootProject.name = "ip-camera-surveillance-system"
 include(":shared")
 
 // Core cross-platform modules
+include(":core:common")
 include(":core:license")
 include(":core:network")
 

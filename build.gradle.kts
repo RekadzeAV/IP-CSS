@@ -27,6 +27,7 @@ tasks.register("clean", Delete::class) {
 
 tasks.register("buildAll") {
     dependsOn(
+        ":core:common:build",
         ":shared:build",
         ":core:license:build",
         ":core:network:build"
@@ -37,6 +38,7 @@ tasks.register("buildAll") {
 
 tasks.register("testAll") {
     dependsOn(
+        ":core:common:test",
         ":shared:test",
         ":core:license:test",
         ":core:network:test"

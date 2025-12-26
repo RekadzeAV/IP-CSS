@@ -1,7 +1,7 @@
 package com.company.ipcamera.shared.domain.repository
 
+import com.company.ipcamera.core.common.model.CameraStatus
 import com.company.ipcamera.shared.domain.model.Camera
-import com.company.ipcamera.shared.domain.model.CameraStatus
 
 /**
  * Репозиторий для работы с камерами
@@ -11,37 +11,37 @@ interface CameraRepository {
      * Получить все камеры
      */
     suspend fun getCameras(): List<Camera>
-    
+
     /**
      * Получить камеру по ID
      */
     suspend fun getCameraById(id: String): Camera?
-    
+
     /**
      * Добавить новую камеру
      */
     suspend fun addCamera(camera: Camera): Result<Camera>
-    
+
     /**
      * Обновить камеру
      */
     suspend fun updateCamera(camera: Camera): Result<Camera>
-    
+
     /**
      * Удалить камеру
      */
     suspend fun removeCamera(id: String): Result<Unit>
-    
+
     /**
      * Обнаружить камеры в сети
      */
     suspend fun discoverCameras(): List<DiscoveredCamera>
-    
+
     /**
      * Проверить подключение к камере
      */
     suspend fun testConnection(camera: Camera): ConnectionTestResult
-    
+
     /**
      * Получить статус камеры
      */
@@ -68,7 +68,7 @@ sealed class ConnectionTestResult {
         val streams: List<StreamInfo>,
         val capabilities: CameraCapabilities
     ) : ConnectionTestResult()
-    
+
     data class Failure(
         val error: String,
         val code: ErrorCode
