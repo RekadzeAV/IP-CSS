@@ -1,4 +1,4 @@
-import apiClient from '@/utils/api';
+import apiClient, { API_URL } from '@/utils/api';
 
 export interface StreamStatus {
   active: boolean;
@@ -70,7 +70,6 @@ export const streamService = {
    * Получить HLS URL для веб-плеера
    */
   getHlsUrl(cameraId: string): string {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
     return `${API_URL}/cameras/${cameraId}/stream/hls/playlist.m3u8`;
   },
 };
