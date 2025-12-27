@@ -2,6 +2,9 @@
 
 **Дата обновления:** Декабрь 2025  
 **Версия проекта:** Alfa-0.0.1  
+
+> **📚 Полный индекс документации:** [DOCUMENTATION_INDEX.md](../DOCUMENTATION_INDEX.md)
+
 **См. также:** [DEEP_ANALYSIS_2025.md](DEEP_ANALYSIS_2025.md) - углубленный анализ архитектуры и компонентов
 
 ## Обзор архитектуры
@@ -479,14 +482,35 @@ native fun recognizeLicensePlate(image: ByteArray): String?
 
 ## Связанные документы
 
-- [PLATFORM_STRUCTURE.md](../../PLATFORM_STRUCTURE.md) - Структура платформ и веток
+> **📚 Полный индекс документации:** [DOCUMENTATION_INDEX.md](../DOCUMENTATION_INDEX.md)
+
+### Основные документы
+- **[DOCUMENTATION_INDEX.md](../DOCUMENTATION_INDEX.md)** - Полный индекс документации
+- **[README.md](../README.md)** - Обзор проекта
+- **[CURRENT_STATUS.md](../CURRENT_STATUS.md)** - Текущее состояние проекта
+
+### Архитектура и структура
+- [PLATFORM_STRUCTURE.md](../PLATFORM_STRUCTURE.md) - Структура платформ и веток Git
 - [PLATFORMS.md](PLATFORMS.md) - Разделение разработки по платформам
-- [PROJECT_STRUCTURE.md](../../PROJECT_STRUCTURE.md) - Структура проекта
-- [DEVELOPMENT.md](DEVELOPMENT.md) - Руководство по разработке
-- [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) - Статус реализации
+- [PROJECT_STRUCTURE.md](../PROJECT_STRUCTURE.md) - Структура проекта
+- [PROJECT_STRUCTURE_AUTO.md](../PROJECT_STRUCTURE_AUTO.md) - Автоматически генерируемая структура
+
+### Статус и анализ
+- [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) - Статус реализации компонентов
+- [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md) - Детальный анализ нереализованного функционала
+- [TECHNICAL_DEBT.md](TECHNICAL_DEBT.md) - Технический долг
 - [DEEP_ANALYSIS_2025.md](DEEP_ANALYSIS_2025.md) - Углубленный расширенный анализ проекта (декабрь 2025) ⭐
-- [USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md](USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md) - Углубленный анализ управления пользователями и интеграции с SSO/Kerberos
+
+### Разработка
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Руководство по разработке
+- [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) - План дальнейшей разработки
+- [PROJECT_ROADMAP.md](../PROJECT_ROADMAP.md) - Карта выполнения проекта
+- [DEVELOPMENT_ROADMAP.md](../DEVELOPMENT_ROADMAP.md) - Карта разработки проекта
+
+### Безопасность
 - [SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md) - Отчет аудита безопасности (25 уязвимостей)
+- [SECURITY_REMEDIATION_PLAN.md](SECURITY_REMEDIATION_PLAN.md) - План устранения уязвимостей
+- [USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md](USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md) - Углубленный анализ управления пользователями и интеграции с SSO/Kerberos
 
 ---
 
