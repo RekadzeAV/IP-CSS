@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
-import { Box, Paper, Typography, CircularProgress } from '@mui/material';
+import { Box, Paper, Typography, CircularProgress, Button } from '@mui/material';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import Hls from 'hls.js';
 import type { Camera } from '@/types';
 
 interface VideoPlayerProps {
@@ -10,6 +12,7 @@ interface VideoPlayerProps {
   controls?: boolean;
   width?: string | number;
   height?: string | number;
+  streamType?: 'hls' | 'webrtc' | 'auto';
 }
 
 export default function VideoPlayer({
@@ -18,47 +21,151 @@ export default function VideoPlayer({
   controls = true,
   width = '100%',
   height = 'auto',
+  streamType = 'hls',
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
+  // Генерация URL потока
+  const getStreamUrl = (): string => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+    
+    // Поддерживаем разные типы потоков
+    switch (streamType) {
+      case 'hls':
+        // HLS поток (требует медиа-сервер для конвертации RTSP -> HLS)
+        return `${API_URL}/streams/${camera.id}/hls/playlist.m3u8`;
+      case 'webrtc':
+        // WebRTC поток (требует WebRTC сервер)
+        return `${API_URL}/streams/${camera.id}/webrtc`;
+      default:
+        // Прямой RTSP URL (не будет работать в браузере, нужна конвертация)
+        return camera.url;
+    }
+  };
+
+  // Инициализация HLS
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Для RTSP потока нужна трансляция через HLS или WebRTC
-    // В реальном проекте здесь будет интеграция с медиа-сервером
-    // Для демонстрации используем placeholder
+    const streamUrl = getStreamUrl();
 
-    const handleLoadStart = () => {
-      setLoading(true);
-      setError(null);
-    };
+    // Если это HLS поток
+    if (streamType === 'hls' && Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 90,
+      });
 
-    const handleLoadedData = () => {
+      hlsRef.current = hls;
+
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        setLoading(false);
+        setError(null);
+        if (autoPlay) {
+          video.play().catch((err) => {
+            console.error('Error playing video:', err);
+            setError('Не удалось воспроизвести видео');
+          });
+        }
+      });
+
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.error('HLS Network Error:', data);
+              setError('Ошибка сети. Попробуйте переподключиться.');
+              setLoading(false);
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.error('HLS Media Error:', data);
+              // Попытка восстановления
+              hls.recoverMediaError();
+              break;
+            default:
+              console.error('HLS Fatal Error:', data);
+              setError('Ошибка воспроизведения видео');
+              setLoading(false);
+              hls.destroy();
+              break;
+          }
+        }
+      });
+
+      return () => {
+        if (hlsRef.current) {
+          hlsRef.current.destroy();
+          hlsRef.current = null;
+        }
+      };
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      // Нативная поддержка HLS (Safari)
+      video.src = streamUrl;
       setLoading(false);
-    };
+    } else {
+      // Fallback для других форматов
+      video.src = streamUrl;
+      
+      const handleLoadStart = () => {
+        setLoading(true);
+        setError(null);
+      };
 
-    const handleError = () => {
-      setLoading(false);
-      setError('Не удалось загрузить видео');
-    };
+      const handleLoadedData = () => {
+        setLoading(false);
+        setIsPlaying(true);
+      };
 
-    video.addEventListener('loadstart', handleLoadStart);
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('error', handleError);
+      const handleError = () => {
+        setLoading(false);
+        setError('Не удалось загрузить видео. Возможно, поток недоступен.');
+      };
 
+      video.addEventListener('loadstart', handleLoadStart);
+      video.addEventListener('loadeddata', handleLoadedData);
+      video.addEventListener('error', handleError);
+      video.addEventListener('play', () => setIsPlaying(true));
+      video.addEventListener('pause', () => setIsPlaying(false));
+
+      return () => {
+        video.removeEventListener('loadstart', handleLoadStart);
+        video.removeEventListener('loadeddata', handleLoadedData);
+        video.removeEventListener('error', handleError);
+        video.removeEventListener('play', () => setIsPlaying(true));
+        video.removeEventListener('pause', () => setIsPlaying(false));
+      };
+    }
+  }, [camera, streamType, autoPlay]);
+
+  // Очистка при размонтировании
+  useEffect(() => {
     return () => {
-      video.removeEventListener('loadstart', handleLoadStart);
-      video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('error', handleError);
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
     };
-  }, [camera]);
+  }, []);
 
-  // В реальном проекте URL будет преобразован через медиа-сервер
-  // Например: /api/streams/{cameraId}/hls/playlist.m3u8
-  const videoUrl = `/api/streams/${camera.id}`;
+  const handleRetry = () => {
+    setError(null);
+    setLoading(true);
+    const video = videoRef.current;
+    if (video) {
+      video.load();
+    }
+  };
+
+  const streamUrl = getStreamUrl();
 
   return (
     <Paper sx={{ p: 2, position: 'relative' }}>
@@ -79,12 +186,26 @@ export default function VideoPlayer({
         <Box
           sx={{
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: 200,
+            minHeight: 300,
+            gap: 2,
           }}
         >
-          <Typography color="error">{error}</Typography>
+          <Typography color="error" variant="body1" align="center">
+            {error}
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<RefreshIcon />}
+            onClick={handleRetry}
+          >
+            Переподключиться
+          </Button>
+          <Typography variant="caption" color="text.secondary" align="center">
+            Камера: {camera.name}
+          </Typography>
         </Box>
       ) : (
         <Box
@@ -109,7 +230,7 @@ export default function VideoPlayer({
               display: loading ? 'none' : 'block',
             }}
           />
-          {!videoRef.current?.readyState && (
+          {loading && !error && (
             <Box
               sx={{
                 position: 'absolute',
@@ -117,9 +238,14 @@ export default function VideoPlayer({
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 color: '#fff',
+                textAlign: 'center',
               }}
             >
-              <Typography>Подключение к камере...</Typography>
+              <CircularProgress size={40} sx={{ mb: 2, color: '#fff' }} />
+              <Typography variant="body2">Подключение к камере...</Typography>
+              <Typography variant="caption" sx={{ display: 'block', mt: 1, opacity: 0.7 }}>
+                {camera.name}
+              </Typography>
             </Box>
           )}
         </Box>

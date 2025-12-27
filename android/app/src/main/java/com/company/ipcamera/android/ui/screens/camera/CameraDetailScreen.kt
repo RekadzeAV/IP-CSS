@@ -17,7 +17,8 @@ import org.koin.compose.koinInject
 @Composable
 fun CameraDetailScreen(
     cameraId: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onViewVideo: () -> Unit = {}
 ) {
     val repository: CameraRepository = koinInject()
     val scope = rememberCoroutineScope()
@@ -155,6 +156,15 @@ fun CameraDetailScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                             }
                             Text("Test Connection")
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Button(
+                            onClick = onViewVideo,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("View Video")
                         }
                     }
                 }

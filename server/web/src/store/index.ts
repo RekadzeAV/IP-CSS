@@ -4,6 +4,7 @@ import camerasReducer from './slices/camerasSlice';
 import eventsReducer from './slices/eventsSlice';
 import recordingsReducer from './slices/recordingsSlice';
 import settingsReducer from './slices/settingsSlice';
+import websocketReducer from './slices/websocketSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     events: eventsReducer,
     recordings: recordingsReducer,
     settings: settingsReducer,
+    websocket: websocketReducer,
   },
 });
 

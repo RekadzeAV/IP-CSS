@@ -27,8 +27,9 @@ import {
   Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAppDispatch } from '@/store/hooks';
+import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
+import { WebSocketProvider } from '@/components/WebSocketProvider';
 
 const DRAWER_WIDTH = 240;
 
@@ -167,7 +168,7 @@ export default function Layout({ children }: LayoutProps) {
           mt: 8,
         }}
       >
-        {children}
+        <WebSocketProvider>{children}</WebSocketProvider>
       </Box>
     </Box>
   );

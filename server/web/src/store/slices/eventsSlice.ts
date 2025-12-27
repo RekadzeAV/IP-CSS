@@ -121,6 +121,35 @@ const eventsSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    // WebSocket: добавление нового события
+    addEventFromWebSocket: (state, action: PayloadAction<Event>) => {
+      // Проверяем, соответствует ли событие текущим фильтрам
+      const matchesFilters = 
+        (!state.filters.type || state.filters.type === action.payload.type) &&
+        (!state.filters.cameraId || state.filters.cameraId === action.payload.cameraId) &&
+        (!state.filters.severity || state.filters.severity === action.payload.severity) &&
+        (state.filters.acknowledged === undefined || state.filters.acknowledged === action.payload.acknowledged);
+
+      if (matchesFilters) {
+        // Добавляем в начало списка (новые события сначала)
+        state.events.unshift(action.payload);
+        // Ограничиваем размер списка
+        if (state.events.length > state.pagination.limit * 2) {
+          state.events = state.events.slice(0, state.pagination.limit);
+        }
+        state.pagination.total += 1;
+      }
+    },
+    // WebSocket: обновление события
+    updateEventFromWebSocket: (state, action: PayloadAction<Event>) => {
+      const index = state.events.findIndex((e) => e.id === action.payload.id);
+      if (index !== -1) {
+        state.events[index] = action.payload;
+      }
+      if (state.selectedEvent?.id === action.payload.id) {
+        state.selectedEvent = action.payload;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -201,6 +230,13 @@ const eventsSlice = createSlice({
   },
 });
 
-export const { setSelectedEvent, setFilters, clearFilters, clearError } = eventsSlice.actions;
+export const {
+  setSelectedEvent,
+  setFilters,
+  clearFilters,
+  clearError,
+  addEventFromWebSocket,
+  updateEventFromWebSocket,
+} = eventsSlice.actions;
 export default eventsSlice.reducer;
 

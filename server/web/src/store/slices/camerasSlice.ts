@@ -124,6 +124,26 @@ const camerasSlice = createSlice({
     clearConnectionTest: (state) => {
       state.connectionTest = null;
     },
+    // WebSocket обновление статуса камеры
+    updateCameraStatus: (state, action: PayloadAction<{ cameraId: string; status: string }>) => {
+      const camera = state.cameras.find((c) => c.id === action.payload.cameraId);
+      if (camera) {
+        camera.status = action.payload.status as any;
+      }
+      if (state.selectedCamera?.id === action.payload.cameraId) {
+        state.selectedCamera.status = action.payload.status as any;
+      }
+    },
+    // WebSocket обновление камеры
+    updateCameraFromWebSocket: (state, action: PayloadAction<Camera>) => {
+      const index = state.cameras.findIndex((c) => c.id === action.payload.id);
+      if (index !== -1) {
+        state.cameras[index] = action.payload;
+      }
+      if (state.selectedCamera?.id === action.payload.id) {
+        state.selectedCamera = action.payload;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -196,6 +216,12 @@ const camerasSlice = createSlice({
   },
 });
 
-export const { setSelectedCamera, clearError, clearConnectionTest } = camerasSlice.actions;
+export const {
+  setSelectedCamera,
+  clearError,
+  clearConnectionTest,
+  updateCameraStatus,
+  updateCameraFromWebSocket,
+} = camerasSlice.actions;
 export default camerasSlice.reducer;
 
