@@ -31,7 +31,7 @@ tasks.register("buildAll") {
     dependsOn(
         ":core:common:build",
         ":shared:build",
-        ":core:license:build",
+        // ":core:license:build", // Отложено: лицензирование вынесено за рамки проекта
         ":core:network:build"
     )
     group = "build"
@@ -42,7 +42,7 @@ tasks.register("testAll") {
     dependsOn(
         ":core:common:test",
         ":shared:test",
-        ":core:license:test",
+        // ":core:license:test", // Отложено: лицензирование вынесено за рамки проекта
         ":core:network:test"
     )
     group = "verification"
@@ -53,7 +53,7 @@ tasks.register("publishToLocalMaven") {
     dependsOn(
         ":core:common:publishToMavenLocal",
         ":core:network:publishToMavenLocal",
-        ":core:license:publishToMavenLocal",
+        // ":core:license:publishToMavenLocal", // Отложено: лицензирование вынесено за рамки проекта
         ":shared:publishToMavenLocal"
     )
     group = "publishing"

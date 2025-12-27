@@ -21,7 +21,7 @@ dependencies {
     // Core modules
     implementation(project(":core:common"))
     implementation(project(":core:network"))
-    implementation(project(":core:license"))
+    // implementation(project(":core:license")) // Отложено: лицензирование вынесено за рамки проекта
 
     // Compose Desktop
     implementation(compose.desktop.currentOs)

@@ -23,7 +23,7 @@ IP-CSS/
 │       └── cd.yml             # CD pipeline
 ├── .gradle/                   # Gradle cache (не коммитится)
 ├── core/                      # Общие кроссплатформенные модули
-│   ├── license/               # Система лицензирования
+│   ├── license/               # ⏸️ Система лицензирования (отложено)
 │   │   ├── src/
 │   │   │   ├── commonMain/    # Общий код для всех платформ
 │   │   │   ├── androidMain/   # Android-специфичные реализации
@@ -41,7 +41,7 @@ IP-CSS/
 │       │   │       ├── api/                  # API сервисы
 │       │   │       │   ├── CameraApiService.kt
 │       │   │       │   ├── EventApiService.kt
-│       │   │       │   ├── LicenseApiService.kt
+│       │   │       │   ├── LicenseApiService.kt  # ⏸️ Отложено
 │       │   │       │   ├── RecordingApiService.kt
 │       │   │       │   ├── SettingsApiService.kt
 │       │   │       │   └── UserApiService.kt
@@ -49,7 +49,7 @@ IP-CSS/
 │       │   │           ├── ApiResponse.kt
 │       │   │           ├── CameraDto.kt
 │       │   │           ├── EventDto.kt
-│       │   │           ├── LicenseDto.kt
+│       │   │           ├── LicenseDto.kt  # ⏸️ Отложено
 │       │   │           ├── RecordingDto.kt
 │       │   │           ├── SettingsDto.kt
 │       │   │           └── UserDto.kt
@@ -63,7 +63,7 @@ IP-CSS/
 │   ├── DEVELOPMENT_PLAN.md    # План разработки
 │   ├── DEVELOPMENT.md         # Руководство по разработке
 │   ├── API.md                 # API документация
-│   ├── LICENSE_SYSTEM.md      # Система лицензирования
+│   ├── LICENSE_SYSTEM.md      # ⏸️ Система лицензирования (отложено)
 │   ├── ONVIF_CLIENT.md        # Документация ONVIF клиента
 │   ├── RTSP_CLIENT.md         # Документация RTSP клиента
 │   ├── WEBSOCKET_CLIENT.md    # Документация WebSocket клиента
@@ -192,7 +192,7 @@ IP-CSS/
 │   │   │   │   │   ├── model/ # Доменные модели
 │   │   │   │   │   │   ├── Camera.kt
 │   │   │   │   │   │   ├── Event.kt
-│   │   │   │   │   │   ├── License.kt
+│   │   │   │   │   │   ├── License.kt  # ⏸️ Отложено
 │   │   │   │   │   │   ├── Notification.kt
 │   │   │   │   │   │   ├── Recording.kt
 │   │   │   │   │   │   ├── Settings.kt
@@ -200,7 +200,7 @@ IP-CSS/
 │   │   │   │   │   ├── repository/ # Интерфейсы репозиториев
 │   │   │   │   │   │   ├── CameraRepository.kt
 │   │   │   │   │   │   ├── EventRepository.kt
-│   │   │   │   │   │   ├── LicenseRepository.kt
+│   │   │   │   │   │   ├── LicenseRepository.kt  # ⏸️ Отложено
 │   │   │   │   │   │   ├── NotificationRepository.kt
 │   │   │   │   │   │   ├── RecordingRepository.kt
 │   │   │   │   │   │   ├── SettingsRepository.kt
@@ -234,7 +234,7 @@ IP-CSS/
 │   │   │   │           ├── CameraRepositoryImpl.kt (SQLDelight)
 │   │   │   │           ├── EventRepositoryImpl.kt (API-based)
 │   │   │   │           ├── EventRepositoryImplSqlDelight.kt (SQLDelight)
-│   │   │   │           ├── LicenseRepositoryImpl.kt
+│   │   │   │           ├── LicenseRepositoryImpl.kt  # ⏸️ Отложено
 │   │   │   │           ├── NotificationRepositoryImpl.kt (API-based)
 │   │   │   │           ├── NotificationRepositoryImplSqlDelight.kt (SQLDelight)
 │   │   │   │           ├── RecordingRepositoryImpl.kt (API-based)
@@ -321,11 +321,18 @@ IP-CSS/
 **Технологии:**
 - Kotlin Multiplatform
 
-### core/license/ - Модуль лицензирования
+### ⏸️ core/license/ - Модуль лицензирования (ОТЛОЖЕН)
 
-Модуль для управления лицензиями приложения. Поддерживает Android и iOS.
+> **Статус:** Модуль вынесен за рамки проекта. Код сохранен для будущей доработки.
 
-**Технологии:**
+Модуль для управления лицензиями приложения. Требуется полная переработка архитектуры.
+
+**Текущее состояние:**
+- Базовая структура сохранена (~20% реализации)
+- Не используется в текущей версии продукта
+- Будет реализован в отдельной доработке
+
+**Технологии (планируемые):**
 - Kotlin Multiplatform
 - Android Security Crypto (для Android)
 - BouncyCastle (для криптографии)
@@ -419,7 +426,7 @@ native (C++ библиотеки через FFI, не Gradle модули)
 **Текущая структура модулей Gradle:**
 - `:shared` - основной KMM модуль (общая бизнес-логика)
 - `:core:common` - модуль общих типов (Resolution, CameraStatus)
-- `:core:license` - модуль лицензирования
+- ⏸️ `:core:license` - модуль лицензирования (отложено)
 - `:core:network` - модуль сетевого взаимодействия (Ktor Client, ONVIF, WebSocket, RTSP)
 - `:android:app` - Android приложение
 - `:server:api` - REST API сервер (Ktor)
@@ -470,7 +477,7 @@ Native модули (`native/`) собираются отдельно через
 - `API.md` - API документация
 - `DEPLOYMENT_GUIDE.md` - руководство по развертыванию
 - `INTEGRATION_GUIDE.md` - руководство по интеграции библиотек
-- `LICENSE_SYSTEM.md` - система лицензирования
+- ⏸️ `LICENSE_SYSTEM.md` - система лицензирования (отложено)
 
 ### Клиенты и протоколы
 - `ONVIF_CLIENT.md` - документация ONVIF клиента

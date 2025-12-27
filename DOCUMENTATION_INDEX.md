@@ -93,7 +93,7 @@
 
 ### Системные компоненты
 
-- **[docs/LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md)** - Система лицензирования (типы лицензий, активация, перенос)
+- ⏸️ **[docs/LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md)** - Система лицензирования (отложено - вынесено за рамки проекта)
 - **[docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md)** - Руководство по интеграции библиотек (XML парсинг, Live555, FFmpeg, OpenCV, TensorFlow Lite)
 - **[docs/AI_ANALYTICS.md](docs/AI_ANALYTICS.md)** - AI-аналитика в системах видеонаблюдения (детекция объектов, ANPR, трекинг, машинное зрение) ⭐ НОВОЕ
 
@@ -223,7 +223,6 @@
   - Поддержка всех архитектур (x86_64, ARM, ARM64)
   - Начальная настройка системы
   - Управление пользователями и правами доступа
-  - Управление лицензиями
   - Конфигурация системы и камер
   - Мониторинг и обслуживание
   - Резервное копирование и восстановление
@@ -280,7 +279,7 @@
 
 - **[core/network/README.md](core/network/README.md)** - Документация модуля network
 - **[core/common/README.md](core/common/README.md)** - Документация модуля common
-- **[core/license/src/commonTest/README.md](core/license/src/commonTest/README.md)** - Документация тестов модуля license
+- ⏸️ **[core/license/src/commonTest/README.md](core/license/src/commonTest/README.md)** - Документация тестов модуля license (отложено)
 
 ### Настройка инструментов
 
@@ -310,7 +309,7 @@
 - **Посмотреть API** → [docs/API.md](docs/API.md) | [docs/API_EXAMPLES.md](docs/API_EXAMPLES.md) ⭐ НОВОЕ
 - **Изучить тесты** → [docs/TESTING.md](docs/TESTING.md) | [docs/TESTS_SUMMARY.md](docs/TESTS_SUMMARY.md)
 - **Интегрировать библиотеки** → [docs/INTEGRATION_GUIDE.md](docs/INTEGRATION_GUIDE.md)
-- **Работать с лицензированием** → [docs/LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md)
+- ⏸️ **Работать с лицензированием** → [docs/LICENSE_SYSTEM.md](docs/LICENSE_SYSTEM.md) (отложено)
 - **Изучить AI-аналитику** → [docs/AI_ANALYTICS.md](docs/AI_ANALYTICS.md) ⭐ НОВОЕ
 - **Узнать, какой документации не хватает** → [docs/DOCUMENTATION_GAPS.md](docs/DOCUMENTATION_GAPS.md)
 - **Узнать состояние документации** → [docs/DOCUMENTATION_ANALYSIS_REPORT.md](docs/DOCUMENTATION_ANALYSIS_REPORT.md) ⭐ НОВОЕ
@@ -345,7 +344,7 @@ README.md (корневой)
       ├── RTSP_CLIENT.md
       │   └── INTEGRATION_GUIDE.md
       ├── WEBSOCKET_CLIENT.md
-      ├── LICENSE_SYSTEM.md
+      ├── LICENSE_SYSTEM.md (⏸️ отложено)
       ├── DEPLOYMENT_GUIDE.md
       ├── NAS_PLATFORMS_ANALYSIS.md
       └── ...

@@ -1,7 +1,7 @@
 package com.company.ipcamera.android.di
 
 import android.content.Context
-import com.company.ipcamera.core.license.LicenseManager
+// import com.company.ipcamera.core.license.LicenseManager // Отложено: лицензирование вынесено за рамки проекта
 import com.company.ipcamera.core.network.ApiClient
 import com.company.ipcamera.core.network.ApiClientConfig
 import com.company.ipcamera.core.network.api.*
@@ -41,19 +41,19 @@ val appModule = module {
     single<EventApiService> { EventApiService(get()) }
     single<RecordingApiService> { RecordingApiService(get()) }
     single<SettingsApiService> { SettingsApiService(get()) }
-    single<LicenseApiService> { LicenseApiService(get()) }
+    // single<LicenseApiService> { LicenseApiService(get()) } // Отложено: лицензирование вынесено за рамки проекта
     single<UserApiService> { UserApiService(get()) }
     single<StreamApiService> { StreamApiService(get()) }
 
-    // License Manager
-    single<LicenseManager> { LicenseManager.getInstance() }
+    // License Manager - Отложено: лицензирование вынесено за рамки проекта
+    // single<LicenseManager> { LicenseManager.getInstance() }
 
     // Repositories
     single<CameraRepository> { CameraRepositoryImpl(get()) }
     single<EventRepository> { EventRepositoryImpl(get()) }
     single<RecordingRepository> { RecordingRepositoryImpl(get()) }
     single<SettingsRepository> { SettingsRepositoryImpl(get()) }
-    single<LicenseRepository> { LicenseRepositoryImpl(get(), get()) }
+    // single<LicenseRepository> { LicenseRepositoryImpl(get(), get()) } // Отложено: лицензирование вынесено за рамки проекта
     single<UserRepository> { UserRepositoryImpl(get()) }
 
     // ViewModels
@@ -64,7 +64,7 @@ val appModule = module {
     viewModel { RecordingsViewModel(get()) }
     viewModel { EventsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }
-    viewModel { LicenseViewModel(get()) }
+    // viewModel { LicenseViewModel(get()) } // Отложено: лицензирование вынесено за рамки проекта
 }
 
 
