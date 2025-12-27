@@ -47,21 +47,40 @@
 
 ### 2. ✅ Use Cases
 
-**Статус:** ✅ **Частично реализовано** (~25%)
+**Статус:** ✅ **Частично реализовано** (~50%)
 
-**Что реализовано:**
-- ✅ `AddCameraUseCase` - добавление новой камеры
-- ✅ `GetCamerasUseCase` - получение списка всех камер
-- ✅ `GetCameraByIdUseCase` - получение камеры по ID
-- ✅ `UpdateCameraUseCase` - обновление камеры
-- ✅ `DeleteCameraUseCase` - удаление камеры
+**Что реализовано (21 Use Case):**
+- ✅ **Управление камерами (5):**
+  - ✅ `AddCameraUseCase` - добавление новой камеры
+  - ✅ `GetCamerasUseCase` - получение списка всех камер
+  - ✅ `GetCameraByIdUseCase` - получение камеры по ID
+  - ✅ `UpdateCameraUseCase` - обновление камеры
+  - ✅ `DeleteCameraUseCase` - удаление камеры
+- ✅ **Обнаружение камер (4):**
+  - ✅ `DiscoverCamerasUseCase` - обнаружение камер в сети
+  - ✅ `DiscoverAndAddCameraUseCase` - обнаружение и добавление камеры
+  - ✅ `AddDiscoveredCameraUseCase` - добавление обнаруженной камеры
+  - ✅ `TestDiscoveredCameraUseCase` - тестирование обнаруженной камеры
+- ✅ **Управление записями (6):**
+  - ✅ `StartRecordingUseCase` - начало записи
+  - ✅ `StopRecordingUseCase` - остановка записи
+  - ✅ `PauseRecordingUseCase` - пауза записи
+  - ✅ `ResumeRecordingUseCase` - возобновление записи
+  - ✅ `GetRecordingsUseCase` - получение списка записей
+  - ✅ `DeleteRecordingUseCase` - удаление записи
+- ✅ **Управление событиями (3):**
+  - ✅ `GetEventsUseCase` - получение списка событий
+  - ✅ `AcknowledgeEventUseCase` - подтверждение события
+  - ✅ `DeleteEventUseCase` - удаление события
+- ✅ **Управление настройками (2):**
+  - ✅ `GetSettingsUseCase` - получение настроек
+  - ✅ `UpdateSettingUseCase` - обновление настройки
+- ✅ **PTZ управление (1):**
+  - ✅ `ControlPtzUseCase` - управление PTZ камерой
 
 **Что отсутствует:**
-- ❌ Use cases для записи видео (`StartRecordingUseCase`, `StopRecordingUseCase`, `GetRecordingsUseCase`)
 - ❌ Use cases для аналитики (`DetectObjectsUseCase`, `TrackObjectsUseCase`, `AnalyzeVideoUseCase`)
 - ❌ Use cases для лицензирования (`ActivateLicenseUseCase`, `ValidateLicenseUseCase`) - частично в LicenseManager
-- ❌ Use cases для обнаружения камер (`DiscoverCamerasUseCase`)
-- ❌ Use cases для проверки подключения (`TestCameraConnectionUseCase`)
 
 **Рекомендации:**
 - Реализовать use cases для записи и аналитики
@@ -106,7 +125,7 @@
   - ❌ Очередь сообщений при отключении
   - ❌ Rate limiting
   - См. детали: [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#websocketclient)
-- ⚠️ **RtspClient** - частично реализован (~10%)
+- ⚠️ **RtspClient** - частично реализован (~15%)
   - ✅ Kotlin обертка с базовой структурой
   - ✅ Нативная C++ библиотека с заголовками
   - ❌ Интеграция Kotlin ↔ C++ (FFI биндинги)

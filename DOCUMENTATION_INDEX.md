@@ -26,7 +26,7 @@
 ### Для новых разработчиков
 
 1. **[README.md](README.md)** - Обзор проекта, быстрый старт
-2. **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Статус и карта проекта (~60% прогресса) ⭐ ОБНОВЛЕНО
+2. **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Статус и карта проекта (~65% прогресса) ⭐ ОБНОВЛЕНО
 3. **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Архитектура системы
 4. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Структура проекта и модули
 5. **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Руководство по разработке
@@ -295,7 +295,7 @@
 ### Я хочу...
 
 - **Понять архитектуру проекта** → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **Узнать текущий статус** → [DEVELOPMENT_MAP.md](DEVELOPMENT_MAP.md) ⭐ НОВОЕ | [CURRENT_STATUS.md](CURRENT_STATUS.md) | [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
+- **Узнать текущий статус** → [PROJECT_STATUS.md](PROJECT_STATUS.md) ⭐ ОБНОВЛЕНО | [DEVELOPMENT_MAP.md](DEVELOPMENT_MAP.md) | [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 - **Начать разработку** → [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)
 - **Реализовать Desktop приложение** → [docs/DESKTOP_IMPLEMENTATION_PLAN.md](docs/DESKTOP_IMPLEMENTATION_PLAN.md) ⭐ НОВОЕ
 - **Работать с ONVIF** → [docs/ONVIF_CLIENT.md](docs/ONVIF_CLIENT.md)
