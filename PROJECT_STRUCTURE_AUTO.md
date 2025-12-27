@@ -6,32 +6,32 @@
 > 
 > Для изменения структуры проекта редактируйте файлы проекта, а затем запустите скрипт генерации.
 
-**Дата генерации:** 2025-12-27 04:48:37
+**Дата генерации:** 2025-12-27 05:01:46
 
 ## Статистика проекта
 
-- **Всего файлов:** 334
-- **Всего директорий:** 245
+- **Всего файлов:** 342
+- **Всего директорий:** 259
 - **Модулей:** 12
 
 ### Статистика по типам файлов
 
-- `.kt`: 144 файлов
-- `.md`: 87 файлов
+- `.kt`: 149 файлов
+- `.md`: 89 файлов
 - `.ts`: 22 файлов
 - `.tsx`: 15 файлов
 - `.h`: 14 файлов
 - `.cpp`: 14 файлов
 - `.sh`: 5 файлов
-- `.txt`: 4 файлов
 - `.yml`: 4 файлов
-- `.xml`: 3 файлов
+- `.txt`: 4 файлов
 - `.ps1`: 3 файлов
+- `.xml`: 3 файлов
 - `.json`: 2 файлов
-- `.sq`: 1 файлов
-- `.bat`: 1 файлов
 - `.js`: 1 файлов
 - `.py`: 1 файлов
+- `.sq`: 1 файлов
+- `.bat`: 1 файлов
 
 ## Дерево структуры проекта
 
@@ -52,6 +52,7 @@ IP-CSS/
 ├── DUPLICATES_ANALYSIS.md
 ├── Dockerfile
 ├── EXTENSIONS_SETUP_REPORT.md
+├── IMPLEMENTATION_PROGRESS_REPORT.md
 ├── KOTLIN_VERSION_ANALYSIS.md
 ├── LICENSE
 ├── PLATFORM_STRUCTURE.md
@@ -109,7 +110,11 @@ IP-CSS/
 │           │   └── kotlin/
 │           ├── iosMain/
 │           │   └── kotlin/
-│           └── jvmMain/
+│           ├── jvmMain/
+│           │   └── kotlin/
+│           ├── nativeInterop/
+│           │   └── cinterop/
+│           └── nativeMain/
 │               └── kotlin/
 ├── detekt.yml
 ├── docker-compose.yml
@@ -149,6 +154,7 @@ IP-CSS/
 │   ├── REQUIRED_LIBRARIES.md
 │   ├── REQUIRED_LIBRARIES_SUMMARY.md
 │   ├── RTSP_CLIENT.md
+│   ├── RTSP_CLIENT_INTEGRATION.md
 │   ├── SECURITY_AUDIT_REPORT.md
 │   ├── SECURITY_REMEDIATION_PLAN.md
 │   ├── SOLUTIONS_FOR_DISCREPANCIES.md
