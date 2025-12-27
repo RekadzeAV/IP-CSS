@@ -19,8 +19,20 @@ set(HEADERS
     include/motion_detector.h
 )
 
+# Включение заголовочных файлов (до создания target)
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 # Создание библиотеки
 add_library(analytics ${SOURCES} ${HEADERS})
+
+# Включение заголовочных файлов (для экспорта)
+target_include_directories(analytics
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 # Зависимости
 target_link_libraries(analytics

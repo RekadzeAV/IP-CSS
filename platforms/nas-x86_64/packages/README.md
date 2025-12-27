@@ -99,3 +99,4 @@ kubectl apply -f build/truenas-Alfa-0.0.1/kubernetes/
 
 Подробная документация по NAS платформам: [docs/NAS_PLATFORMS_ANALYSIS.md](../../../docs/NAS_PLATFORMS_ANALYSIS.md)
 
+

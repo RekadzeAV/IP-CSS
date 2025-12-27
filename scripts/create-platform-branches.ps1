@@ -55,3 +55,4 @@ Write-Host "`nBranch structure:" -ForegroundColor Cyan
 git branch -a | Select-String -Pattern "(develop|test)/platform"
 
 
+

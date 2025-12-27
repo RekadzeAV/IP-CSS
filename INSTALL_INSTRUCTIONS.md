@@ -84,3 +84,4 @@ ffmpeg -version
 2. Проверьте установку: `.\scripts\install-build-dependencies.ps1`
 3. Начните сборку проекта согласно документации
 
+

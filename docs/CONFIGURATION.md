@@ -1,12 +1,13 @@
 # Руководство по настройке и конфигурации IP-CSS
 
-**Версия проекта:** Alfa-0.0.1  
+**Версия проекта:** Alfa-0.0.1
 **Последнее обновление:** Декабрь 2025
 
 > **📚 Связанные документы:**
 > - [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) - Руководство по развертыванию
 > - [ADMINISTRATOR_GUIDE.md](ADMINISTRATOR_GUIDE.md) - Руководство для администраторов
-> - [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) - Переменные окружения
+> - [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) - Переменные окружения ⭐ НОВОЕ
+> - [TROUBLESHOOTING.md](TROUBLESHOOTING.md) - Устранение неполадок ⭐ НОВОЕ
 
 ---
 
@@ -68,7 +69,7 @@ ip-css/
 server:
   port: 8080
   host: 0.0.0.0
-  
+
 database:
   type: sqlite  # sqlite, postgresql, mysql
   path: ./data/ipcss.db
@@ -78,18 +79,18 @@ database:
   # name: ipcss
   # username: ipcss
   # password: ${DB_PASSWORD}
-  
+
 security:
   jwt:
     secret: ${JWT_SECRET}
     expiration: 3600  # секунды
     refreshExpiration: 604800  # 7 дней
-  
+
 cors:
   allowedOrigins:
     - http://localhost:3000
     - https://yourdomain.com
-  
+
 logging:
   level: INFO
   file: ./logs/ipcss.log
@@ -105,11 +106,11 @@ ktor {
     port = 8080
     host = "0.0.0.0"
   }
-  
+
   application {
     modules = [com.company.ipcamera.server.ApplicationKt.module]
   }
-  
+
   security {
     jwt {
       secret = ${JWT_SECRET}
@@ -198,26 +199,26 @@ EMAIL_PASSWORD=your-email-password
 recording:
   # Качество записи по умолчанию
   defaultQuality: HIGH  # LOW, MEDIUM, HIGH, ULTRA
-  
+
   # Формат записи
   defaultFormat: mp4  # mp4, mkv, avi
-  
+
   # Максимальная длительность записи (секунды)
   maxDuration: 3600  # 1 час
-  
+
   # Автоматическое удаление старых записей
   autoDelete: true
   retentionDays: 30
-  
+
   # Путь для хранения записей
   storagePath: ./data/recordings
-  
+
   # Максимальный размер хранилища (байты)
   maxStorageSize: 1000000000000  # 1TB
-  
+
   # Автоматическая очистка при достижении лимита
   autoCleanup: true
-  
+
   # Настройки кодирования
   encoding:
     codec: H.264
@@ -255,7 +256,7 @@ security:
     expiration: 3600  # 1 час
     refreshExpiration: 604800  # 7 дней
     algorithm: HS256
-  
+
   # Политика паролей
   passwordPolicy:
     minLength: 8
@@ -263,18 +264,18 @@ security:
     requireLowercase: true
     requireNumbers: true
     requireSpecialChars: false
-  
+
   # Сессии
   session:
     timeout: 3600  # секунды
     maxConcurrentSessions: 5
-  
+
   # Блокировка после неудачных попыток
   lockout:
     enabled: true
     maxAttempts: 5
     lockoutDuration: 900  # 15 минут
-  
+
   # LDAP/Active Directory (опционально)
   ldap:
     enabled: false
@@ -282,7 +283,7 @@ security:
     baseDN: dc=company,dc=com
     bindDN: cn=admin,dc=company,dc=com
     bindPassword: ${LDAP_PASSWORD}
-  
+
   # SSO (опционально)
   sso:
     enabled: false
@@ -324,7 +325,7 @@ notifications:
       tls: true
     from: ipcss@company.com
     to: admin@company.com
-  
+
   # SMS уведомления (опционально)
   sms:
     enabled: false
@@ -332,19 +333,19 @@ notifications:
     apiKey: ${SMS_API_KEY}
     apiSecret: ${SMS_API_SECRET}
     from: +1234567890
-  
+
   # Push уведомления
   push:
     enabled: true
     fcm:
       serverKey: ${FCM_SERVER_KEY}
-  
+
   # Webhook уведомления
   webhook:
     enabled: false
     url: https://your-webhook-url.com/events
     secret: ${WEBHOOK_SECRET}
-  
+
   # Типы событий для уведомлений
   eventTypes:
     - motion_detected
@@ -367,19 +368,19 @@ network:
     port: 8080
     host: 0.0.0.0
     allowRemoteAccess: false
-  
+
   # WebSocket сервер
   websocket:
     port: 8081
     host: 0.0.0.0
     path: /api/v1/ws
-  
+
   # RTSP прокси (опционально)
   rtsp:
     enabled: true
     port: 8554
     host: 0.0.0.0
-  
+
   # CORS настройки
   cors:
     allowedOrigins:
@@ -395,7 +396,7 @@ network:
       - Content-Type
       - Authorization
     allowCredentials: true
-  
+
   # Таймауты
   timeouts:
     connect: 5000  # мс
@@ -415,15 +416,15 @@ performance:
   video:
     # Количество потоков для обработки
     processingThreads: 4
-    
+
     # Использование аппаратного ускорения
     hardwareAcceleration: true
-    
+
     # Кэширование кадров
     frameCache:
       enabled: true
       maxSize: 100  # количество кадров
-  
+
   # База данных
   database:
     # Connection pool
@@ -431,18 +432,18 @@ performance:
       minSize: 5
       maxSize: 20
       timeout: 30000  # мс
-    
+
     # Кэширование запросов
     cache:
       enabled: true
       maxSize: 1000  # количество записей
       ttl: 300  # секунды
-  
+
   # Память
   memory:
     # Максимальное использование памяти (MB)
     maxHeapSize: 2048
-    
+
     # Очистка неиспользуемых ресурсов
     gc:
       enabled: true

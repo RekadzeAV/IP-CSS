@@ -52,3 +52,4 @@ Write-Host "Установка завершена!" -ForegroundColor Green
 Write-Host ""
 Write-Host "ВАЖНО: Перезапустите терминал для применения изменений PATH" -ForegroundColor Yellow
 
+

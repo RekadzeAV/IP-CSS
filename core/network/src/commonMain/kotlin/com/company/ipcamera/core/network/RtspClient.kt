@@ -48,7 +48,10 @@ data class RtspStreamInfo(
     val type: RtspStreamType,
     val resolution: Resolution?,
     val fps: Int,
-    val codec: String
+    val codec: String,
+    val audioCodec: String? = null, // Кодек аудио (AAC, PCM, G.711 и т.д.)
+    val sampleRate: Int? = null, // Частота дискретизации аудио (Hz)
+    val channels: Int? = null // Количество аудио каналов
 )
 
 /**
@@ -171,7 +174,7 @@ class RtspClient(
                     // Получение информации о потоках
                     streams.clear()
                     val streamCount = nativeClient.getStreamCount(handle)
-                    
+
                     for (i in 0 until streamCount) {
                         val streamInfo = nativeClient.getStreamInfo(handle, i)
                         if (streamInfo != null) {
@@ -199,7 +202,10 @@ class RtspClient(
                                     type = RtspStreamType.AUDIO,
                                     resolution = null,
                                     fps = 0,
-                                    codec = "AAC"
+                                    codec = "AAC", // По умолчанию AAC
+                                    audioCodec = "AAC",
+                                    sampleRate = 44100,
+                                    channels = 2
                                 )
                             )
                         }
@@ -253,7 +259,7 @@ class RtspClient(
      */
     suspend fun stop() = withContext(Dispatchers.IO) {
         val handle = nativeHandle ?: return@withContext
-        
+
         if (status.value != RtspClientStatus.PLAYING) {
             return@withContext
         }
@@ -275,7 +281,7 @@ class RtspClient(
      */
     suspend fun pause() = withContext(Dispatchers.IO) {
         val handle = nativeHandle ?: return@withContext
-        
+
         if (status.value != RtspClientStatus.PLAYING) {
             return@withContext
         }
@@ -362,12 +368,58 @@ class RtspClient(
     }
 
     /**
+     * Определить аудио кодек из данных кадра
+     *
+     * @param audioData Данные аудио кадра
+     * @return Название кодека или null если не удалось определить
+     */
+    fun detectAudioCodec(audioData: ByteArray): String? {
+        if (audioData.isEmpty()) return null
+
+        // Проверяем AAC (ADTS заголовок: 0xFF 0xF1-0xF9)
+        if (audioData.size >= 2 && audioData[0] == 0xFF.toByte() &&
+            (audioData[1].toInt() and 0xF0) == 0xF0) {
+            return "AAC"
+        }
+
+        // Проверяем G.711 PCMU (μ-law) - обычно payload type 0
+        // G.711 имеет характерные паттерны в байтах
+        if (audioData.size >= 2) {
+            val firstBytes = audioData.sliceArray(0..minOf(1, audioData.size - 1))
+            if (firstBytes.all { it.toInt() and 0x7F in 0..127 }) {
+                // Может быть PCMU или PCMA
+                return "PCMU" // По умолчанию PCMU
+            }
+        }
+
+        // Проверяем G.711 PCMA (A-law) - обычно payload type 8
+        // PCMA имеет схожие паттерны
+
+        // PCM (raw) - сложно определить без метаданных
+        // Возвращаем null для использования информации из потока
+
+        return null
+    }
+
+    /**
+     * Получить информацию об аудио кодеках из доступных потоков
+     *
+     * @return Список аудио кодеков или пустой список
+     */
+    fun getAudioCodecs(): List<String> {
+        return streams
+            .filter { it.type == RtspStreamType.AUDIO }
+            .mapNotNull { it.audioCodec ?: it.codec }
+            .distinct()
+    }
+
+    /**
      * Освободить ресурсы
      */
     fun close() {
         connectionJob?.cancel()
         receiveJob?.cancel()
-        
+
         nativeHandle?.let { handle ->
             try {
                 nativeClient.destroy(handle)
@@ -376,7 +428,7 @@ class RtspClient(
             }
             nativeHandle = null
         }
-        
+
         streams.clear()
         status.value = RtspClientStatus.DISCONNECTED
     }

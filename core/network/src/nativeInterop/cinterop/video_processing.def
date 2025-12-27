@@ -1,0 +1,22 @@
+language = C
+headers = rtsp_client.h video_decoder.h video_encoder.h frame_processor.h stream_manager.h
+headerFilter = rtsp_client.h video_decoder.h video_encoder.h frame_processor.h stream_manager.h
+package = com.company.ipcamera.core.network.native.videoprocessing
+compilerOpts = -I../../../../native/video-processing/include
+linkerOpts = -L../../../../native/video-processing/lib -lvideo_processing
+
+# Платформо-специфичные опции линковки
+---
+staticLibraries = video_processing
+libraryPaths = ../../../../native/video-processing/lib
+
+# Явно указываем типы структур для правильной генерации биндингов
+---
+typedef struct RTSPClient RTSPClient;
+typedef struct RTSPStream RTSPStream;
+typedef struct RTSPFrame RTSPFrame;
+typedef struct VideoDecoder VideoDecoder;
+typedef struct VideoEncoder VideoEncoder;
+typedef struct FrameProcessor FrameProcessor;
+typedef struct StreamManager StreamManager;
+

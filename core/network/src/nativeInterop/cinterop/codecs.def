@@ -1,0 +1,16 @@
+language = C
+headers = codec_manager.h h264_codec.h h265_codec.h mjpeg_codec.h
+headerFilter = codec_manager.h h264_codec.h h265_codec.h mjpeg_codec.h
+package = com.company.ipcamera.core.network.native.codecs
+compilerOpts = -I../../../../native/codecs/include
+linkerOpts = -L../../../../native/codecs/lib -lcodecs
+
+# Платформо-специфичные опции линковки
+---
+staticLibraries = codecs
+libraryPaths = ../../../../native/codecs/lib
+
+# Явно указываем типы структур для правильной генерации биндингов
+---
+# Структуры определены в заголовочных файлах
+

@@ -19,8 +19,20 @@ set(HEADERS
     include/stream_manager.h
 )
 
+# Включение заголовочных файлов (до создания target)
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 # Создание shared библиотеки для динамической загрузки
 add_library(video_processing SHARED ${SOURCES} ${HEADERS})
+
+# Включение заголовочных файлов (для экспорта)
+target_include_directories(video_processing
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 # Установка visibility символов (для правильного экспорта)
 set_target_properties(video_processing PROPERTIES
@@ -47,20 +59,25 @@ target_link_libraries(video_processing
         Threads::Threads
 )
 
+# Windows sockets
+if(WIN32)
+    target_link_libraries(video_processing PRIVATE ws2_32)
+endif()
+
 # FFmpeg для RTSP, декодирования и кодирования видео
 option(ENABLE_FFMPEG "Enable FFmpeg" ON)
 if(ENABLE_FFMPEG)
     find_package(PkgConfig REQUIRED)
     if(PkgConfig_FOUND)
-        pkg_check_modules(FFMPEG REQUIRED 
-            libavformat 
-            libavcodec 
-            libavutil 
+        pkg_check_modules(FFMPEG REQUIRED
+            libavformat
+            libavcodec
+            libavutil
             libswscale
             libswresample
         )
     endif()
-    
+
     if(FFMPEG_FOUND)
         target_include_directories(video_processing
             PUBLIC
@@ -86,7 +103,7 @@ if(ENABLE_OPENCV)
         message(STATUS "OpenCV version: ${OpenCV_VERSION}")
         message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
         message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
-        
+
         target_link_libraries(video_processing PRIVATE ${OpenCV_LIBS})
         target_include_directories(video_processing
             PUBLIC

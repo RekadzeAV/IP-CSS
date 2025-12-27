@@ -103,6 +103,54 @@
 
 **Примечание:** Pull Request, который вносит значимые изменения в проект, но не обновляет TIMELINE.md, может быть отклонен до обновления временной шкалы.
 
+### Управление документацией
+
+Проект использует автоматизированную систему управления документацией с версионированием.
+
+#### Создание нового документа
+
+```powershell
+# Windows PowerShell
+.\scripts\manage-documentation.ps1 -Action create -Document "docs/NEW_FEATURE.md"
+
+# Linux/macOS
+./scripts/manage-documentation.sh --action create --document "docs/NEW_FEATURE.md"
+```
+
+#### Обновление существующего документа
+
+При обновлении документа версия автоматически увеличивается на 1 (Alfa-0.0.1 → Alfa-0.0.2), а старая версия архивируется:
+
+```powershell
+# Windows PowerShell
+.\scripts\manage-documentation.ps1 -Action update -Document "docs/ARCHITECTURE.md"
+
+# Linux/macOS
+./scripts/manage-documentation.sh --action update --document "docs/ARCHITECTURE.md"
+```
+
+#### Слияние документов
+
+При объединении нескольких документов исходные автоматически архивируются:
+
+```powershell
+# Windows PowerShell
+.\scripts\manage-documentation.ps1 `
+    -Action merge `
+    -SourceDocuments @("docs/DOC1.md", "docs/DOC2.md") `
+    -OutputDocument "docs/MERGED.md"
+```
+
+**Подробная документация:** [docs/DOCUMENTATION_MANAGEMENT.md](docs/DOCUMENTATION_MANAGEMENT.md)
+
+#### Чеклист при работе с документацией:
+
+- [ ] Использован скрипт управления документацией для создания/обновления
+- [ ] Версия проекта указана корректно (из `gradle.properties`)
+- [ ] Документ размещен в правильном каталоге (`docs/` или корень проекта)
+- [ ] Обновлен `DOCUMENTATION_INDEX.md` (если добавлен новый документ)
+- [ ] Обновлен `docs/README.md` (если изменена структура)
+
 ## Вопросы?
 
 Создайте Issue с меткой "question" или свяжитесь с maintainers.

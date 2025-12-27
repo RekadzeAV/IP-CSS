@@ -40,3 +40,4 @@ bool codec_has_hardware_acceleration(CodecType type);
 #endif // CODEC_MANAGER_H
 
 
+

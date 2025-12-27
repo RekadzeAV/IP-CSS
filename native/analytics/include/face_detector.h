@@ -60,3 +60,4 @@ void face_detection_result_release(FaceDetectionResult* result);
 #endif // FACE_DETECTOR_H
 
 
+

@@ -152,10 +152,11 @@ IP-CSS/
 │   │   │   │   ├── PasswordService.kt
 │   │   │   │   └── StreamQuality.kt
 │   │   │   ├── middleware/     # Middleware
-│   │   │   │   ├── AuthorizationMiddleware.kt
-│   │   │   │   ├── CookieAuthMiddleware.kt
-│   │   │   │   ├── RateLimitMiddleware.kt
-│   │   │   │   └── ValidationMiddleware.kt
+│   │   │   │   ├── AuthorizationMiddleware.kt  # Проверка прав доступа (RBAC)
+│   │   │   │   ├── CookieAuthMiddleware.kt     # Управление аутентификацией через cookies
+│   │   │   │   ├── RateLimitMiddleware.kt      # Ограничение частоты запросов (защита от брутфорса)
+│   │   │   │   ├── SecurityLogger.kt           # Логирование событий безопасности
+│   │   │   │   └── RequestValidator.kt         # Валидация входящих запросов (ValidationMiddleware)
 │   │   │   ├── websocket/       # WebSocket сервер
 │   │   │   │   └── WebSocketServer.kt
 │   │   │   └── di/             # Dependency Injection (Koin)

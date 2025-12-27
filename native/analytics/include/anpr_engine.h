@@ -58,3 +58,4 @@ void anpr_result_release(ANPRResult* result);
 #endif // ANPR_ENGINE_H
 
 
+

@@ -86,3 +86,4 @@ g++ --version      # Проверка C++ компилятора
 
 **Подробная документация:** `docs/NAS_LOCAL_BUILD_REQUIREMENTS.md`
 
+

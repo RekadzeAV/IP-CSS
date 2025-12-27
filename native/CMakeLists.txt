@@ -15,13 +15,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
+# Общие зависимости (должны быть найдены до add_subdirectory)
+find_package(Threads REQUIRED)
+
 # Поддиректории
 add_subdirectory(video-processing)
 add_subdirectory(analytics)
 add_subdirectory(codecs)
-
-# Общие зависимости
-find_package(Threads REQUIRED)
 
 # FFmpeg для RTSP, декодирования и кодирования видео
 option(ENABLE_FFMPEG "Enable FFmpeg" ON)
@@ -30,7 +30,7 @@ if(ENABLE_FFMPEG)
     if(PkgConfig_FOUND)
         pkg_check_modules(FFMPEG QUIET libavformat libavcodec libavutil libswscale libswresample)
     endif()
-    
+
     if(NOT FFMPEG_FOUND)
         # Попытка найти через find_package
         find_path(FFMPEG_INCLUDE_DIR
@@ -41,7 +41,7 @@ if(ENABLE_FFMPEG)
                 /usr/include
                 C:/ffmpeg/include
         )
-        
+
         if(FFMPEG_INCLUDE_DIR)
             set(FFMPEG_FOUND TRUE)
             set(FFMPEG_INCLUDE_DIRS ${FFMPEG_INCLUDE_DIR})
@@ -73,7 +73,7 @@ if(ENABLE_TENSORFLOW)
             /usr/local/include
             /usr/include
     )
-    
+
     if(TFLITE_INCLUDE_DIR)
         include_directories(${TFLITE_INCLUDE_DIR})
         message(STATUS "TensorFlow Lite found: ${TFLITE_INCLUDE_DIR}")
@@ -92,7 +92,7 @@ if(ENABLE_GPU)
         message(STATUS "CUDA found: ${CUDA_VERSION}")
         set(ENABLE_CUDA ON)
     endif()
-    
+
     # OpenCL
     find_package(OpenCL QUIET)
     if(OpenCL_FOUND)

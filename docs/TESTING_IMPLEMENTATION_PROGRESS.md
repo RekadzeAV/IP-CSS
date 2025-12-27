@@ -205,3 +205,4 @@ server/api/src/testIntegration/kotlin/com/company/ipcamera/server/
 
 Рекомендуется продолжить с создания тестов для Repositories и критических Server Components (Middleware), так как они обеспечивают безопасность и стабильность данных.
 
+

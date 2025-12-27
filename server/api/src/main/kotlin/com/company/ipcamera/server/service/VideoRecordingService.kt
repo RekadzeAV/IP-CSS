@@ -447,6 +447,9 @@ class VideoRecordingService(
 
     /**
      * Запись потока в файл
+     *
+     * Использует FFmpeg pipe для правильного мультиплексирования видео и аудио.
+     * Если FFmpeg недоступен, записывает только видео (fallback режим).
      */
     private suspend fun recordStream(
         rtspClient: RtspClient,
@@ -454,39 +457,164 @@ class VideoRecordingService(
         recording: Recording,
         duration: Long?
     ) = withContext(Dispatchers.IO) {
+        val startTime = System.currentTimeMillis()
+        val endTime = if (duration != null) startTime + duration else Long.MAX_VALUE
+
+        // Пытаемся использовать FFmpeg pipe для записи с аудио
+        if (ffmpegService.isAvailable()) {
+            try {
+                recordStreamWithFfmpegPipe(
+                    rtspClient = rtspClient,
+                    outputFile = File(recording.filePath ?: return@withContext),
+                    recording = recording,
+                    duration = duration
+                )
+                return@withContext
+            } catch (e: Exception) {
+                logger.warn(e) { "FFmpeg pipe recording failed, falling back to basic recording" }
+            }
+        }
+
+        // Fallback: записываем только видео (старый метод)
+        // ВАЖНО: Этот метод не поддерживает аудио из-за сложности мультиплексирования
+        // Рекомендуется использовать FFmpeg для полной поддержки аудио
+        logger.warn {
+            "Using fallback recording method without audio support. " +
+            "Audio frames will be discarded. Consider installing FFmpeg for full audio support."
+        }
+
         val videoFrames = rtspClient.getVideoFrames()
+        // В fallback режиме аудио не записывается из-за сложности мультиплексирования
+        // Получаем аудиокадры только для предотвращения блокировки потока
         val audioFrames = if (recording.quality != Quality.LOW) {
             rtspClient.getAudioFrames()
         } else null
 
-        val startTime = System.currentTimeMillis()
-        val endTime = if (duration != null) startTime + duration else Long.MAX_VALUE
-
-        // TODO: Реализовать правильное кодирование видео в MP4/MKV
-        // Сейчас просто записываем сырые кадры
-        // В будущем нужно использовать FFmpeg или нативную библиотеку для кодирования
-
         try {
+            // Запускаем корутину для сбора аудио (но не записываем)
+            val audioJob = audioFrames?.let { frames ->
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        frames.collect {
+                            // Аудиокадры получаются, но не записываются в fallback режиме
+                            // Это ограничение текущей реализации
+                        }
+                    } catch (e: CancellationException) {
+                        // Игнорируем отмену
+                    } catch (e: Exception) {
+                        logger.debug(e) { "Audio frame collection error (ignored in fallback mode)" }
+                    }
+                }
+            }
+
+            // Записываем только видеокадры
             videoFrames.collect { frame ->
                 if (System.currentTimeMillis() >= endTime) {
+                    audioJob?.cancel()
                     return@collect
                 }
 
                 try {
                     // Записываем кадр в файл
-                    // TODO: Правильное кодирование в выбранный формат
+                    // ВАЖНО: Это сырые кадры без правильного контейнера
+                    // Файл может быть некорректным для воспроизведения
                     fileOutputStream.write(frame.data)
                     fileOutputStream.flush()
                 } catch (e: Exception) {
                     logger.error(e) { "Error writing frame to file" }
                 }
             }
+
+            audioJob?.cancel()
         } catch (e: CancellationException) {
             logger.info { "Recording cancelled: ${recording.id}" }
             throw e
         } catch (e: Exception) {
             logger.error(e) { "Error during stream recording: ${recording.id}" }
             throw e
+        }
+    }
+
+    /**
+     * Запись потока через FFmpeg pipe с поддержкой аудио
+     *
+     * Использует FFmpeg для правильного мультиплексирования видео и аудио потоков
+     * в выбранный формат контейнера (MP4, MKV и т.д.)
+     */
+    private suspend fun recordStreamWithFfmpegPipe(
+        rtspClient: RtspClient,
+        outputFile: File,
+        recording: Recording,
+        duration: Long?
+    ) = withContext(Dispatchers.IO) {
+        val videoFrames = rtspClient.getVideoFrames()
+        val audioFrames = rtspClient.getAudioFrames()
+
+        // Создаем временные файлы для видео и аудио потоков
+        val tempVideoFile = File(outputFile.parent, "${outputFile.nameWithoutExtension}.video.tmp")
+        val tempAudioFile = File(outputFile.parent, "${outputFile.nameWithoutExtension}.audio.tmp")
+
+        try {
+            // Записываем видео и аудио в отдельные временные файлы
+            val videoJob = CoroutineScope(Dispatchers.IO).launch {
+                FileOutputStream(tempVideoFile).use { videoOut ->
+                    videoFrames.collect { frame ->
+                        try {
+                            videoOut.write(frame.data)
+                            videoOut.flush()
+                        } catch (e: Exception) {
+                            logger.error(e) { "Error writing video frame" }
+                        }
+                    }
+                }
+            }
+
+            val audioJob = CoroutineScope(Dispatchers.IO).launch {
+                FileOutputStream(tempAudioFile).use { audioOut ->
+                    audioFrames.collect { frame ->
+                        try {
+                            audioOut.write(frame.data)
+                            audioOut.flush()
+                        } catch (e: Exception) {
+                            logger.debug(e) { "Error writing audio frame" }
+                        }
+                    }
+                }
+            }
+
+            // Ждем завершения записи или таймаут
+            val startTime = System.currentTimeMillis()
+            val endTime = if (duration != null) startTime + duration else Long.MAX_VALUE
+
+            while (System.currentTimeMillis() < endTime && (videoJob.isActive || audioJob.isActive)) {
+                delay(1000)
+            }
+
+            // Останавливаем запись
+            videoJob.cancel()
+            audioJob.cancel()
+            videoJob.join()
+            audioJob.join()
+
+            // Используем FFmpeg для мультиплексирования видео и аудио
+            val success = ffmpegService.muxVideoAndAudio(
+                videoFile = tempVideoFile,
+                audioFile = tempAudioFile,
+                outputFile = outputFile,
+                format = recording.format,
+                quality = recording.quality
+            )
+
+            if (!success) {
+                throw Exception("Failed to mux video and audio streams")
+            }
+
+            logger.info { "Successfully recorded stream with audio: ${outputFile.absolutePath}" }
+
+        } finally {
+            // Удаляем временные файлы
+            tempVideoFile.delete()
+            tempAudioFile.delete()
         }
     }
 

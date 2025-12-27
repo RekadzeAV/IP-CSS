@@ -66,10 +66,73 @@ RestartSec=10
 WantedBy=multi-user.target
 EOF
     systemctl daemon-reload
+    systemctl enable ip-css.service
+fi
+
+# Create init.d script for older systems (if systemd is not available)
+if [ ! -d "/etc/systemd/system" ] && [ -d "/etc/init.d" ]; then
+    cat > "/etc/init.d/ip-css" <<EOF
+#!/bin/sh
+# IP Camera Surveillance System init script
+# chkconfig: 2345 90 10
+# description: IP Camera Surveillance System
+
+INSTALL_DIR="$INSTALL_DIR"
+PID_FILE="$DATA_DIR/ip-css.pid"
+
+case "\$1" in
+    start)
+        echo "Starting IP-CSS..."
+        \$INSTALL_DIR/bin/start.sh
+        ;;
+    stop)
+        echo "Stopping IP-CSS..."
+        \$INSTALL_DIR/bin/stop.sh
+        ;;
+    restart)
+        echo "Restarting IP-CSS..."
+        \$INSTALL_DIR/bin/stop.sh
+        sleep 2
+        \$INSTALL_DIR/bin/start.sh
+        ;;
+    status)
+        if [ -f "\$PID_FILE" ]; then
+            PID=\$(cat "\$PID_FILE")
+            if ps -p "\$PID" > /dev/null 2>&1; then
+                echo "IP-CSS is running (PID: \$PID)"
+                exit 0
+            else
+                echo "IP-CSS is not running"
+                exit 1
+            fi
+        else
+            echo "IP-CSS is not running"
+            exit 1
+        fi
+        ;;
+    *)
+        echo "Usage: \$0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
+EOF
+    chmod +x "/etc/init.d/ip-css"
+    # Enable autostart on boot (for systems with chkconfig)
+    if command -v chkconfig > /dev/null 2>&1; then
+        chkconfig --add ip-css
+        chkconfig ip-css on
+    fi
+    # Enable autostart on boot (for systems with update-rc.d)
+    if command -v update-rc.d > /dev/null 2>&1; then
+        update-rc.d ip-css defaults
+    fi
 fi
 
 # Start the service
 /usr/syno/bin/synopkg start "$PACKAGE_NAME" > /dev/null 2>&1
 
 exit 0
+
 

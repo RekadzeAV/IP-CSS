@@ -138,7 +138,11 @@ struct RTSPClient {
     }
 
     ~RTSPClient() {
-        disconnect();
+        // Отключение от сервера
+        if (rtspSocket != INVALID_SOCKET) {
+            close(rtspSocket);
+            rtspSocket = INVALID_SOCKET;
+        }
         for (auto* stream : streams) {
             delete stream;
         }

@@ -228,3 +228,4 @@ ws.onmessage = (event) => {
 - [docs/SERVER_IMPLEMENTATION_PLAN.md](SERVER_IMPLEMENTATION_PLAN.md) - детальный план реализации
 - [DEVELOPMENT_ROADMAP.md](../../DEVELOPMENT_ROADMAP.md) - обновленный roadmap
 
+

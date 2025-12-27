@@ -26,6 +26,12 @@ target_link_libraries(codecs
         Threads::Threads
 )
 
+# Включение заголовочных файлов
+target_include_directories(codecs
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 # FFmpeg для кодеков
 if(ENABLE_FFMPEG AND FFMPEG_FOUND)
     target_include_directories(codecs
@@ -58,5 +64,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
         target_compile_options(codecs PRIVATE -O3 -march=native)
     endif()
 endif()
+
 
 

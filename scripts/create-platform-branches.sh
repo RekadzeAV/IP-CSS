@@ -58,3 +58,4 @@ echo "Branch structure:"
 git branch -a | grep -E "(develop|test)/platform"
 
 
+

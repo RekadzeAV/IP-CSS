@@ -11,7 +11,6 @@ extern "C" {
 // Типы данных для RTSP клиента
 typedef struct RTSPClient RTSPClient;
 typedef struct RTSPStream RTSPStream;
-typedef struct RTSPFrame RTSPFrame;
 
 // Тип потока
 typedef enum {
@@ -28,6 +27,16 @@ typedef enum {
     RTSP_STATUS_PLAYING,
     RTSP_STATUS_ERROR
 } RTSPStatus;
+
+// Получение данных кадра (определено раньше для использования в callback)
+typedef struct {
+    uint8_t* data;
+    int size;
+    int64_t timestamp;
+    RTSPStreamType type;
+    int width;
+    int height;
+} RTSPFrame;
 
 // Callback для получения кадров
 typedef void (*RTSPFrameCallback)(RTSPFrame* frame, void* userData);
@@ -95,16 +104,6 @@ bool rtsp_client_get_stream_info(
     int codecBufferSize
 );
 
-// Получение данных кадра
-typedef struct {
-    uint8_t* data;
-    int size;
-    int64_t timestamp;
-    RTSPStreamType type;
-    int width;
-    int height;
-} RTSPFrame;
-
 // Получение размера буфера кадра
 int rtsp_frame_get_size(RTSPFrame* frame);
 
@@ -122,5 +121,6 @@ void rtsp_frame_release(RTSPFrame* frame);
 #endif
 
 #endif // RTSP_CLIENT_H
+
 
 

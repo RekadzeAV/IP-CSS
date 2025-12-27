@@ -1136,3 +1136,4 @@ vcgencmd measure_temp
 **Автор:** AI Assistant
 **Версия документа:** 1.0
 
+

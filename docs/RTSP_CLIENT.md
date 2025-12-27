@@ -305,24 +305,207 @@ make
 - Аудиопотоки требуют дополнительной обработки для декодирования
 - FFI биндинги для Kotlin/Native должны быть настроены для каждой платформы отдельно
 
+## Установка зависимостей
+
+Перед использованием RTSP клиента необходимо установить зависимости для компиляции нативной библиотеки.
+
+### Требуемые зависимости
+
+- **CMake** (≥ 3.15) - для сборки нативной библиотеки
+- **FFmpeg** (libavformat, libavcodec, libavutil, libswscale, libswresample) - для обработки видео и аудио потоков
+- **pkg-config** - для обнаружения FFmpeg
+
+### macOS
+
+```bash
+# Установка Homebrew (если не установлен)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Установка зависимостей
+brew install cmake ffmpeg pkg-config
+
+# Проверка установки
+cmake --version
+pkg-config --exists libavformat && echo "FFmpeg OK" || echo "FFmpeg NOT FOUND"
+```
+
+### Linux (Ubuntu/Debian)
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+    cmake \
+    build-essential \
+    pkg-config \
+    libavformat-dev \
+    libavcodec-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev
+
+# Проверка установки
+cmake --version
+pkg-config --exists libavformat && echo "FFmpeg OK" || echo "FFmpeg NOT FOUND"
+```
+
+## Компиляция и установка
+
+### Шаг 1: Компиляция нативной библиотеки
+
+```bash
+# Автоматическая сборка (рекомендуется)
+./scripts/build-native-lib.sh
+
+# Или вручную:
+cd native/video-processing
+mkdir -p build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release
+```
+
+**Проверка успешной компиляции:**
+
+```bash
+# Linux
+ls -lh native/video-processing/build/libvideo_processing.so
+
+# macOS
+ls -lh native/video-processing/build/libvideo_processing.dylib
+```
+
+### Шаг 2: Проверка экспорта символов
+
+**Linux:**
+```bash
+nm -D native/video-processing/build/libvideo_processing.so | grep rtsp_client
+```
+
+**macOS:**
+```bash
+nm -gU native/video-processing/build/libvideo_processing.dylib | grep rtsp_client
+```
+
+Должны быть видны символы:
+- `rtsp_client_create`
+- `rtsp_client_connect`
+- `rtsp_client_play`
+- `rtsp_client_stop`
+- `rtsp_client_pause`
+
+### Шаг 3: Генерация cinterop биндингов
+
+```bash
+# Сборка для всех native платформ
+./gradlew :core:network:compileKotlinNative
+
+# Или для конкретных платформ:
+./gradlew :core:network:compileKotlinLinuxX64
+./gradlew :core:network:compileKotlinMacosX64
+./gradlew :core:network:compileKotlinMacosArm64
+```
+
+## Активация кода
+
+После установки зависимостей и компиляции библиотеки, необходимо активировать код в `NativeRtspClient.native.kt`.
+
+### Чек-лист активации
+
+#### 1. Раскомментировать импорты
+
+Найти строку:
+```kotlin
+// import com.company.ipcamera.core.network.rtsp.rtsp_client.*
+```
+
+Изменить на:
+```kotlin
+import com.company.ipcamera.core.network.rtsp.rtsp_client.*
+```
+
+#### 2. Раскомментировать реализацию методов
+
+Для каждого метода с комментариями `// TODO: После компиляции cinterop...`, раскомментировать реализацию:
+
+- `create()`
+- `connect()`
+- `disconnect()`
+- `getStatus()`
+- `play()`
+- `stop()`
+- `pause()`
+- `getStreamCount()`
+- `getStreamType()`
+- `getStreamInfo()`
+
+#### 3. Раскомментировать вспомогательные функции
+
+В конце файла раскомментировать все вспомогательные функции:
+- `handleToPointer()`
+- `convertNativeStatus()`
+- `convertNativeStreamType()`
+- `convertStreamType()`
+
+#### 4. Реализовать callbacks
+
+Реализовать методы `setFrameCallback()` и `setStatusCallback()` с использованием StableRef для thread-safety.
+
+#### 5. Проверка компиляции
+
+```bash
+./gradlew :core:network:compileKotlinNative
+```
+
+## Интеграция с видеоплеером
+
+### HLS генерация
+
+Реализована полная интеграция видеоплеера с RTSP клиентом для веб-интерфейса и Android приложения:
+
+- **HlsGeneratorService** - генерация HLS сегментов через FFmpeg
+- **VideoStreamService** - управление трансляцией RTSP потоков
+- **ScreenshotService** - создание снимков кадров
+- Поддержка разных уровней качества (LOW, MEDIUM, HIGH, ULTRA)
+
+### API Endpoints для видеоплеера
+
+- `POST /api/v1/cameras/{id}/stream/start` - запустить трансляцию
+- `POST /api/v1/cameras/{id}/stream/stop` - остановить трансляцию
+- `GET /api/v1/cameras/{id}/stream/status` - получить статус
+- `GET /api/v1/cameras/streams/{streamId}/hls/playlist.m3u8` - HLS плейлист
+- `POST /api/v1/cameras/{id}/stream/screenshot` - создать снимок
+
+Подробная документация по интеграции видеоплеера: [RTSP_VIDEO_PLAYER_INTEGRATION.md](RTSP_VIDEO_PLAYER_INTEGRATION.md)
+
 ## Статус реализации
 
-**Текущий прогресс:** ~10%
+**Текущий прогресс:** ~50% (инфраструктура готова, требуется активация)
 
-**Реализовано:**
+### ✅ Реализовано
+
+- ✅ Конфигурация cinterop настроена
+- ✅ Конфигурация build.gradle.kts обновлена
+- ✅ Конфигурация CMakeLists.txt обновлена
+- ✅ Структура кода подготовлена
+- ✅ Документация создана
+- ✅ Скрипты автоматизации созданы
 - ✅ Kotlin обертка с базовой структурой
 - ✅ Нативная C++ библиотека с заголовками и базовой структурой
 
-**Не реализовано:**
-- ❌ Интеграция Kotlin ↔ C++ (FFI биндинги)
-- ❌ Реальная реализация RTSP протокола (все функции - заглушки)
-- ❌ RTP/RTCP обработка
-- ❌ Декодирование видео/аудио (H.264, H.265, AAC)
-- ❌ Аутентификация (Basic, Digest)
+### ⚠️ Требуется активация
+
+- ⚠️ Компиляция библиотеки (требует установки зависимостей)
+- ⚠️ Активация кода (раскомментирование в NativeRtspClient.native.kt)
+
+### ❌ Не реализовано
+
+- ❌ Тестирование
+- ❌ Android/iOS платформо-специфичные реализации
+- ❌ Полная реализация RTSP протокола (частично)
+- ❌ RTP/RTCP обработка (частично)
+- ❌ Декодирование видео/аудио (H.264, H.265, AAC) - частично через FFmpeg
+- ❌ Аутентификация (Basic, Digest) - частично
 
 **Детальный анализ нереализованного функционала:** [MISSING_FUNCTIONALITY.md](MISSING_FUNCTIONALITY.md#rtspclient)
-**Руководство по интеграции:** [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md#2-rtsp-клиент---интеграция-live555)
-**Разделение разработки по платформам:** [PLATFORMS.md](PLATFORMS.md)
 
 ---
 

@@ -220,6 +220,68 @@ class OnvifClient(
     }
 
     /**
+     * Приближение (Zoom In)
+     */
+    suspend fun zoomIn(
+        url: String,
+        speed: Float = 0.5f,
+        profileToken: String = "Profile1",
+        username: String? = null,
+        password: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val deviceUrl = normalizeUrl(url)
+            val capabilities = getCapabilities(deviceUrl, username, password)
+                ?: return@withContext false
+
+            val ptzServiceUrl = capabilities.ptzServiceUrl ?: run {
+                logger.warn { "PTZ service not available" }
+                return@withContext false
+            }
+
+            val soapMessage = createZoomRequest(profileToken, speed)
+            sendSoapRequest(ptzServiceUrl, soapMessage, username, password)
+
+            true
+
+        } catch (e: Exception) {
+            logger.error(e) { "Error zooming in: ${e.message}" }
+            false
+        }
+    }
+
+    /**
+     * Отдаление (Zoom Out)
+     */
+    suspend fun zoomOut(
+        url: String,
+        speed: Float = 0.5f,
+        profileToken: String = "Profile1",
+        username: String? = null,
+        password: String? = null
+    ): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val deviceUrl = normalizeUrl(url)
+            val capabilities = getCapabilities(deviceUrl, username, password)
+                ?: return@withContext false
+
+            val ptzServiceUrl = capabilities.ptzServiceUrl ?: run {
+                logger.warn { "PTZ service not available" }
+                return@withContext false
+            }
+
+            val soapMessage = createZoomRequest(profileToken, -speed)
+            sendSoapRequest(ptzServiceUrl, soapMessage, username, password)
+
+            true
+
+        } catch (e: Exception) {
+            logger.error(e) { "Error zooming out: ${e.message}" }
+            false
+        }
+    }
+
+    /**
      * Получить профили камеры
      */
     suspend fun getProfiles(
@@ -451,13 +513,50 @@ class OnvifClient(
     private fun createContinuousMoveRequest(direction: PtzDirection, speed: Float): String {
         val pan = direction.getPan(speed)
         val tilt = direction.getTilt(speed)
+        val zoom = direction.getZoom(speed)
+
+        val panTiltElement = if (pan != 0f || tilt != 0f) {
+            """<tt:PanTilt x="$pan" y="$tilt" space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace"/>"""
+        } else {
+            ""
+        }
+
+        val zoomElement = if (zoom != 0f) {
+            """<tt:Zoom x="$zoom" space="http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace"/>"""
+        } else {
+            ""
+        }
+
+        val velocityContent = buildString {
+            if (panTiltElement.isNotEmpty()) {
+                append(panTiltElement)
+            }
+            if (zoomElement.isNotEmpty()) {
+                append(zoomElement)
+            }
+        }
+
         return """<?xml version="1.0" encoding="UTF-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
     <s:Body>
         <tptz:ContinuousMove xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl">
             <tptz:ProfileToken>Profile1</tptz:ProfileToken>
             <tt:Velocity xmlns:tt="http://www.onvif.org/ver10/schema">
-                <tt:PanTilt x="$pan" y="$tilt" space="http://www.onvif.org/ver10/tptz/PanTiltSpaces/PositionGenericSpace"/>
+                $velocityContent
+            </tt:Velocity>
+        </tptz:ContinuousMove>
+    </s:Body>
+</s:Envelope>"""
+    }
+
+    private fun createZoomRequest(profileToken: String, zoomSpeed: Float): String {
+        return """<?xml version="1.0" encoding="UTF-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope">
+    <s:Body>
+        <tptz:ContinuousMove xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl">
+            <tptz:ProfileToken>$profileToken</tptz:ProfileToken>
+            <tt:Velocity xmlns:tt="http://www.onvif.org/ver10/schema">
+                <tt:Zoom x="$zoomSpeed" space="http://www.onvif.org/ver10/tptz/ZoomSpaces/PositionGenericSpace"/>
             </tt:Velocity>
         </tptz:ContinuousMove>
     </s:Body>
@@ -471,6 +570,7 @@ class OnvifClient(
         <tptz:Stop xmlns:tptz="http://www.onvif.org/ver20/ptz/wsdl">
             <tptz:ProfileToken>$profileToken</tptz:ProfileToken>
             <tptz:PanTilt>true</tptz:PanTilt>
+            <tptz:Zoom>true</tptz:Zoom>
         </tptz:Stop>
     </s:Body>
 </s:Envelope>"""

@@ -129,6 +129,24 @@ kotlin {
                     includeDirs("${project.rootDir}/../native/video-processing/include")
                     linkerOpts("-L${project.rootDir}/../native/video-processing/lib/linux/x64 -lvideo_processing")
                 }
+                val videoProcessing by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/video_processing.def"))
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/linux/x64 -lvideo_processing")
+                }
+                val analytics by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/analytics.def"))
+                    compilerOpts("-I${project.rootDir}/../native/analytics/include")
+                    includeDirs("${project.rootDir}/../native/analytics/include")
+                    linkerOpts("-L${project.rootDir}/../native/analytics/lib/linux/x64 -lanalytics")
+                }
+                val codecs by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/codecs.def"))
+                    compilerOpts("-I${project.rootDir}/../native/codecs/include")
+                    includeDirs("${project.rootDir}/../native/codecs/include")
+                    linkerOpts("-L${project.rootDir}/../native/codecs/lib/linux/x64 -lcodecs")
+                }
             }
         }
     }
@@ -142,6 +160,24 @@ kotlin {
                     compilerOpts("-I${project.rootDir}/../native/video-processing/include")
                     includeDirs("${project.rootDir}/../native/video-processing/include")
                     linkerOpts("-L${project.rootDir}/../native/video-processing/lib/macos/x64 -lvideo_processing")
+                }
+                val videoProcessing by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/video_processing.def"))
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/macos/x64 -lvideo_processing")
+                }
+                val analytics by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/analytics.def"))
+                    compilerOpts("-I${project.rootDir}/../native/analytics/include")
+                    includeDirs("${project.rootDir}/../native/analytics/include")
+                    linkerOpts("-L${project.rootDir}/../native/analytics/lib/macos/x64 -lanalytics")
+                }
+                val codecs by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/codecs.def"))
+                    compilerOpts("-I${project.rootDir}/../native/codecs/include")
+                    includeDirs("${project.rootDir}/../native/codecs/include")
+                    linkerOpts("-L${project.rootDir}/../native/codecs/lib/macos/x64 -lcodecs")
                 }
             }
         }
@@ -157,6 +193,24 @@ kotlin {
                     includeDirs("${project.rootDir}/../native/video-processing/include")
                     linkerOpts("-L${project.rootDir}/../native/video-processing/lib/macos/arm64 -lvideo_processing")
                 }
+                val videoProcessing by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/video_processing.def"))
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/macos/arm64 -lvideo_processing")
+                }
+                val analytics by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/analytics.def"))
+                    compilerOpts("-I${project.rootDir}/../native/analytics/include")
+                    includeDirs("${project.rootDir}/../native/analytics/include")
+                    linkerOpts("-L${project.rootDir}/../native/analytics/lib/macos/arm64 -lanalytics")
+                }
+                val codecs by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/codecs.def"))
+                    compilerOpts("-I${project.rootDir}/../native/codecs/include")
+                    includeDirs("${project.rootDir}/../native/codecs/include")
+                    linkerOpts("-L${project.rootDir}/../native/codecs/lib/macos/arm64 -lcodecs")
+                }
             }
         }
     }
@@ -171,6 +225,24 @@ kotlin {
                     compilerOpts("-I${project.rootDir}/../native/video-processing/include")
                     includeDirs("${project.rootDir}/../native/video-processing/include")
                     linkerOpts("-L${project.rootDir}/../native/video-processing/lib/windows/x64 -lvideo_processing")
+                }
+                val videoProcessing by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/video_processing.def"))
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/windows/x64 -lvideo_processing")
+                }
+                val analytics by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/analytics.def"))
+                    compilerOpts("-I${project.rootDir}/../native/analytics/include")
+                    includeDirs("${project.rootDir}/../native/analytics/include")
+                    linkerOpts("-L${project.rootDir}/../native/analytics/lib/windows/x64 -lanalytics")
+                }
+                val codecs by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/codecs.def"))
+                    compilerOpts("-I${project.rootDir}/../native/codecs/include")
+                    includeDirs("${project.rootDir}/../native/codecs/include")
+                    linkerOpts("-L${project.rootDir}/../native/codecs/lib/windows/x64 -lcodecs")
                 }
             }
         }
@@ -237,6 +309,9 @@ kotlin {
             dependsOn(jvmMain)
             dependencies {
                 implementation(libs.ktor.client.java)
+                // JavaCV для декодирования H.264/H.265 через FFmpeg
+                implementation("org.bytedeco:javacv:1.5.9")
+                implementation("org.bytedeco:ffmpeg-platform:6.0-1.5.9")
             }
         }
 
