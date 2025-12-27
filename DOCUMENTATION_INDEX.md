@@ -22,7 +22,7 @@
 ### Для новых разработчиков
 
 1. **[README.md](README.md)** - Обзор проекта, быстрый старт
-2. **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Текущее состояние проекта (~20% прогресса)
+2. **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Текущее состояние проекта (~50% прогресса)
 3. **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Архитектура системы
 4. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Структура проекта и модули
 5. **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Руководство по разработке
@@ -43,7 +43,7 @@
 
 ### Статус реализации
 
-- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Краткая сводка текущего состояния проекта (~20% прогресса)
+- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Краткая сводка текущего состояния проекта (~50% прогресса)
 - **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** - Детальный статус реализации всех компонентов
 - **[docs/MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md)** - Детальный анализ нереализованного функционала
 - **[docs/TECHNICAL_DEBT.md](docs/TECHNICAL_DEBT.md)** - Технический долг с разбивкой по типам доработок и примерными сроками ⭐ НОВОЕ

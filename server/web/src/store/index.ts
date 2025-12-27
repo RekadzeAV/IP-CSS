@@ -1,11 +1,17 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/authSlice';
 import camerasReducer from './slices/camerasSlice';
+import eventsReducer from './slices/eventsSlice';
+import recordingsReducer from './slices/recordingsSlice';
+import settingsReducer from './slices/settingsSlice';
 
 export const store = configureStore({
   reducer: {
     auth: authReducer,
     cameras: camerasReducer,
+    events: eventsReducer,
+    recordings: recordingsReducer,
+    settings: settingsReducer,
   },
 });
 

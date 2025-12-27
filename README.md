@@ -112,30 +112,50 @@ cd server/web && npm run dev
 
 ## Статус проекта
 
-**Текущий прогресс:** ~20%
+**Текущий прогресс:** ~50%
 
 ### Реализовано:
 - ✅ Базовая структура проекта и конфигурация
-- ✅ Модели данных (Camera)
+- ✅ Модели данных (Camera, Event, Recording, User, Settings)
 - ✅ CameraRepositoryImpl с SQLDelight (полностью, включая discoverCameras и testConnection)
 - ✅ 5 Use Cases для управления камерами
 - ✅ База данных SQLDelight со схемой для камер
 - ✅ Мапперы между DB entity и domain model
 - ✅ Платформо-специфичные DatabaseFactory для Android, iOS и Desktop
-- ✅ REST API сервер на Ktor с эндпоинтами для камер
-- ✅ Веб-интерфейс на Next.js (базовые экраны, Redux store, API интеграция)
+- ✅ **REST API сервер на Ktor с полным набором endpoints:**
+  - ✅ Камеры (cameras) - полный CRUD + обнаружение + тест подключения
+  - ✅ Записи (recordings) - CRUD + скачивание + экспорт
+  - ✅ События (events) - CRUD + подтверждение + статистика
+  - ✅ Пользователи (users) - CRUD + управление
+  - ✅ Настройки (settings) - CRUD + импорт/экспорт + сброс
+- ✅ **Аутентификация и авторизация:**
+  - ✅ JWT токены (access + refresh)
+  - ✅ Rate limiting для защиты от брутфорса
+  - ✅ Хеширование паролей (BCrypt)
+  - ✅ Middleware для проверки прав доступа
+- ✅ **WebSocket сервер:**
+  - ✅ JWT аутентификация
+  - ✅ Подписки на каналы (cameras, events, recordings, notifications)
+  - ✅ Broadcast событий в каналы
+  - ✅ Менеджер сессий
+- ✅ **Веб-интерфейс на Next.js:**
+  - ✅ Страницы: Dashboard, Cameras, Events, Recordings, Settings
+  - ✅ Redux store со slices для всех сущностей (auth, cameras, events, recordings, settings)
+  - ✅ API интеграция через сервисы
+  - ✅ Аутентификация и защита маршрутов
 
 ### В разработке:
 - ⚠️ Лицензионная система (структура готова, требуется доработка)
 - ⚠️ ONVIF клиент для обнаружения камер (WS-Discovery частично реализован)
-- ⚠️ Веб-интерфейс (требуется завершение: события, записи, настройки, видеоплеер)
-- ⚠️ Аутентификация и авторизация в API
+- ⚠️ Видеоплеер в веб-интерфейсе (требует интеграции с RTSP клиентом)
+- ⚠️ Интеграция WebSocket клиента в веб-интерфейс
 
 ### Планируется:
 - ❌ UI компоненты для мобильных платформ (Android, iOS) и Desktop
 - ❌ RTSP клиент (полная реализация)
 - ❌ Запись видео
 - ❌ AI-аналитика
+- ❌ Миграция серверных репозиториев на SQLDelight/PostgreSQL (сейчас in-memory)
 
 Подробный статус реализации: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 Текущее состояние: [CURRENT_STATUS.md](CURRENT_STATUS.md)

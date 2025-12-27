@@ -759,61 +759,194 @@ Content-Type: application/json
 
 ## WebSocket API
 
+WebSocket сервер реализован и поддерживает real-time коммуникацию для получения обновлений о камерах, событиях, записях и уведомлениях.
+
 ### Подключение
 ```
-wss://api.company.com/v1/ws
+wss://api.company.com/api/v1/ws
 или
 ws://localhost:8080/api/v1/ws
 ```
 
 ### Аутентификация
+
+После подключения к WebSocket необходимо выполнить аутентификацию с помощью JWT токена:
+
 ```json
 {
   "type": "auth",
   "data": {
-    "token": "jwt-token-here"
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
   }
 }
 ```
 
-### Подписка на события
+**Ответ при успешной аутентификации:**
+```json
+{
+  "type": "auth_response",
+  "data": {
+    "success": true,
+    "message": "Authenticated successfully"
+  }
+}
+```
+
+**Ответ при ошибке аутентификации:**
+```json
+{
+  "type": "auth_response",
+  "data": {
+    "success": false,
+    "message": "Invalid token"
+  }
+}
+```
+
+### Подписка на каналы
+
+После аутентификации можно подписаться на каналы:
+
 ```json
 {
   "type": "subscribe",
   "data": {
-    "channels": ["camera_events", "camera_status"],
+    "channels": ["cameras", "events", "recordings", "notifications"],
     "filters": {
-      "camera_ids": ["cam-001"]
+      "camera_ids": ["cam-001", "cam-002"]
     }
   }
 }
 ```
 
-### Отписка от событий
+**Доступные каналы:**
+- `cameras` - обновления статуса камер
+- `events` - новые события
+- `recordings` - обновления записей
+- `notifications` - системные уведомления
+
+**Ответ при успешной подписке:**
+```json
+{
+  "type": "subscribe_response",
+  "data": {
+    "success": true,
+    "channels": ["cameras", "events"],
+    "message": "Subscribed successfully"
+  }
+}
+```
+
+### Отписка от каналов
+
 ```json
 {
   "type": "unsubscribe",
   "data": {
-    "channels": ["camera_events"]
+    "channels": ["events"]
+  }
+}
+```
+
+**Ответ при успешной отписке:**
+```json
+{
+  "type": "unsubscribe_response",
+  "data": {
+    "success": true,
+    "channels": ["events"],
+    "message": "Unsubscribed successfully"
   }
 }
 ```
 
 ### Получение сообщений
+
+После подписки на каналы, сервер будет отправлять сообщения в формате:
+
+#### Обновление статуса камеры
 ```json
 {
-  "type": "camera_event",
+  "type": "event",
+  "channel": "cameras",
   "data": {
     "cameraId": "cam-001",
-    "eventType": "motion",
-    "timestamp": 1642683600000,
-    "data": {
-      "zone": "Zone1",
-      "confidence": 0.95
-    }
+    "status": "ONLINE",
+    "timestamp": 1642683600000
   }
 }
 ```
+
+#### Новое событие
+```json
+{
+  "type": "event",
+  "channel": "events",
+  "data": {
+    "id": "evt-001",
+    "cameraId": "cam-001",
+    "cameraName": "Камера 1",
+    "type": "motion",
+    "severity": "WARNING",
+    "timestamp": 1642683600000,
+    "description": "Обнаружено движение",
+    "metadata": {
+      "zone": "Zone1",
+      "confidence": 0.95
+    },
+    "acknowledged": false
+  }
+}
+```
+
+#### Обновление записи
+```json
+{
+  "type": "event",
+  "channel": "recordings",
+  "data": {
+    "id": "rec-001",
+    "cameraId": "cam-001",
+    "status": "COMPLETED",
+    "duration": 3600,
+    "fileSize": 104857600
+  }
+}
+```
+
+#### Системное уведомление
+```json
+{
+  "type": "event",
+  "channel": "notifications",
+  "data": {
+    "id": "notif-001",
+    "type": "system",
+    "severity": "INFO",
+    "title": "Системное уведомление",
+    "message": "Камера cam-001 восстановлена",
+    "timestamp": 1642683600000
+  }
+}
+```
+
+### Обработка ошибок
+
+При возникновении ошибки сервер отправляет сообщение:
+
+```json
+{
+  "type": "error",
+  "data": {
+    "error": "Invalid channel name",
+    "code": "INVALID_CHANNEL"
+  }
+}
+```
+
+### Отключение
+
+При отключении клиента сессия автоматически очищается, все подписки удаляются.
 
 ## Ошибки
 

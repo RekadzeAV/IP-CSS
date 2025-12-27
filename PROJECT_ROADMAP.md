@@ -489,35 +489,58 @@
   - ✅ `POST /api/v1/cameras/{id}/test` - тест подключения
   - ✅ `GET /api/v1/cameras/discover` - обнаружение камер
   - ✅ `GET /api/v1/health` - health check
-- ❌ **Endpoints для других сущностей:**
-  - ❌ `GET /api/v1/recordings` - список записей
-  - ❌ `GET /api/v1/recordings/{id}` - получение записи
-  - ❌ `DELETE /api/v1/recordings/{id}` - удаление записи
-  - ❌ `GET /api/v1/events` - список событий
-  - ❌ `GET /api/v1/events/{id}` - получение события
-  - ❌ `POST /api/v1/license/activate` - активация лицензии
-  - ❌ `GET /api/v1/license/validate` - валидация лицензии
-  - ❌ `GET /api/v1/users/me` - текущий пользователь
-  - ❌ `PUT /api/v1/users/me` - обновление профиля
-  - ❌ `GET /api/v1/settings` - настройки
-  - ❌ `PUT /api/v1/settings` - обновление настроек
-- ❌ **Аутентификация:**
-  - ❌ JWT токены
-  - ❌ OAuth2
-  - ❌ Сессии
-- ❌ **Авторизация:**
-  - ❌ RBAC (роли и права)
-  - ❌ Middleware для проверки прав
+- ✅ **Endpoints для других сущностей:**
+  - ✅ `GET /api/v1/recordings` - список записей с фильтрацией и пагинацией
+  - ✅ `GET /api/v1/recordings/{id}` - получение записи
+  - ✅ `DELETE /api/v1/recordings/{id}` - удаление записи
+  - ✅ `GET /api/v1/recordings/{id}/download` - получение URL для скачивания
+  - ✅ `POST /api/v1/recordings/{id}/export` - экспорт записи
+  - ✅ `GET /api/v1/events` - список событий с фильтрацией и пагинацией
+  - ✅ `GET /api/v1/events/{id}` - получение события
+  - ✅ `DELETE /api/v1/events/{id}` - удаление события
+  - ✅ `POST /api/v1/events/{id}/acknowledge` - подтверждение события
+  - ✅ `POST /api/v1/events/acknowledge` - массовое подтверждение событий
+  - ✅ `GET /api/v1/events/statistics` - статистика событий
+  - ❌ `POST /api/v1/license/activate` - активация лицензии (планируется)
+  - ❌ `GET /api/v1/license/validate` - валидация лицензии (планируется)
+  - ✅ `GET /api/v1/users/me` - текущий пользователь
+  - ✅ `GET /api/v1/users` - список пользователей (только для администраторов)
+  - ✅ `POST /api/v1/users` - создание пользователя (только для администраторов)
+  - ✅ `GET /api/v1/users/{id}` - получение пользователя (только для администраторов)
+  - ✅ `PUT /api/v1/users/{id}` - обновление пользователя (только для администраторов)
+  - ✅ `DELETE /api/v1/users/{id}` - удаление пользователя (только для администраторов)
+  - ✅ `GET /api/v1/settings` - получение всех настроек
+  - ✅ `PUT /api/v1/settings` - обновление настроек (только для администраторов)
+  - ✅ `GET /api/v1/settings/{key}` - получение настройки по ключу
+  - ✅ `PUT /api/v1/settings/{key}` - обновление настройки (только для администраторов)
+  - ✅ `DELETE /api/v1/settings/{key}` - удаление настройки (только для администраторов)
+  - ✅ `GET /api/v1/settings/system` - получение системных настроек
+  - ✅ `POST /api/v1/settings/export` - экспорт настроек (только для администраторов)
+  - ✅ `POST /api/v1/settings/import` - импорт настроек (только для администраторов)
+  - ✅ `POST /api/v1/settings/reset` - сброс настроек (только для администраторов)
+- ✅ **Аутентификация:**
+  - ✅ JWT токены (access + refresh)
+  - ✅ `POST /api/v1/auth/login` - вход в систему
+  - ✅ `POST /api/v1/auth/refresh` - обновление токена
+  - ✅ `POST /api/v1/auth/logout` - выход из системы
+  - ❌ OAuth2 (планируется для корпоративных сред)
+  - ❌ Сессии (не используется, только JWT)
+- ✅ **Авторизация:**
+  - ✅ RBAC (роли и права) - базовая реализация
+  - ✅ Middleware для проверки прав (AuthorizationMiddleware)
+  - ✅ Защита маршрутов через JWT
 - ⚠️ **Валидация:**
   - ⚠️ Валидация запросов (частично через DTO)
   - ⚠️ Обработка ошибок (базовая через ApiResponse)
   - ✅ Стандартизированные ответы (ApiResponse<T>)
 
 ### 10.2 WebSocket сервер
-- ❌ WebSocket endpoint
-- ❌ Подписки на события
-- ❌ Real-time уведомления
-- ❌ Управление подключениями
+- ✅ WebSocket endpoint (`/api/v1/ws`)
+- ✅ JWT аутентификация для WebSocket
+- ✅ Подписки на события (cameras, events, recordings, notifications)
+- ✅ Real-time уведомления (broadcast в каналы)
+- ✅ Управление подключениями (WebSocketSessionManager)
+- ✅ Обработка отключений и переподключений
 
 ### 10.3 База данных сервера
 - ❌ Выбор БД (PostgreSQL/SQLite)
@@ -555,9 +578,9 @@
   - ✅ `/dashboard` - главная панель
   - ✅ `/cameras` - список камер
   - ✅ `/cameras/[id]` - детали камеры
-  - ⚠️ `/events` - список событий (заглушка)
-  - ⚠️ `/recordings` - список записей (заглушка)
-  - ⚠️ `/settings` - настройки (заглушка)
+  - ✅ `/events` - список событий с фильтрацией, подтверждением, массовыми операциями и статистикой
+  - ✅ `/recordings` - список записей с фильтрацией, скачиванием и экспортом
+  - ✅ `/settings` - настройки с управлением, импортом/экспортом и сбросом
   - ❌ `/cameras/add` - добавление камеры (через форму в списке)
   - ❌ `/recordings/[id]` - просмотр записи
   - ❌ `/events/[id]` - детали события
@@ -566,7 +589,7 @@
   - ✅ `Layout` - layout с навигацией
   - ✅ `CameraCard` - карточка камеры
   - ✅ `ProtectedRoute` - защита маршрутов
-  - ⚠️ `VideoPlayer` - видеоплеер (базовая структура)
+  - ⚠️ `VideoPlayer` - видеоплеер (базовая структура, требует интеграции с RTSP)
   - ❌ `PTZControls` - управление PTZ
   - ❌ `RecordingList` - список записей
   - ❌ `EventTimeline` - временная шкала событий

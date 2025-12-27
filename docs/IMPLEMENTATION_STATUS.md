@@ -189,13 +189,13 @@
 
 ---
 
-### 6. ⚠️ UI компоненты
+### 6. ✅ UI компоненты (Web)
 
-**Статус:** ⚠️ **Частично реализовано** (~25%)
+**Статус:** ✅ **Реализовано** (~70%)
 
 **Что есть:**
 
-#### Веб-интерфейс (Web UI)
+#### Веб-интерфейс (Web UI) ✅
 - ✅ Конфигурация Next.js (`server/web/next.config.js`)
 - ✅ `package.json` с зависимостями (React, Material-UI, Redux Toolkit, TypeScript)
 - ✅ TypeScript конфигурация
@@ -203,25 +203,31 @@
   - ✅ `src/app/layout.tsx` - корневой layout
   - ✅ `src/app/page.tsx` - главная страница (редирект)
   - ✅ `src/app/login/page.tsx` - страница входа
-  - ✅ `src/app/dashboard/page.tsx` - главная панель
-  - ✅ `src/app/cameras/page.tsx` - список камер
-  - ✅ `src/app/cameras/[id]/page.tsx` - детали камеры
-  - ⚠️ `src/app/events/page.tsx` - страница событий (заглушка)
-  - ⚠️ `src/app/recordings/page.tsx` - страница записей (заглушка)
-  - ⚠️ `src/app/settings/page.tsx` - страница настроек (заглушка)
+  - ✅ `src/app/dashboard/page.tsx` - главная панель со статистикой
+  - ✅ `src/app/cameras/page.tsx` - список камер с добавлением и удалением
+  - ✅ `src/app/cameras/[id]/page.tsx` - детали камеры с тестированием подключения
+  - ✅ `src/app/events/page.tsx` - страница событий с фильтрацией, подтверждением, массовыми операциями и статистикой
+  - ✅ `src/app/recordings/page.tsx` - страница записей с фильтрацией, скачиванием и экспортом
+  - ✅ `src/app/settings/page.tsx` - страница настроек с управлением, импортом/экспортом и сбросом
 - ✅ **React компоненты:**
   - ✅ `src/components/Layout/` - Layout с навигацией
   - ✅ `src/components/CameraCard/` - карточка камеры
-  - ⚠️ `src/components/VideoPlayer/` - видеоплеер (базовая структура)
+  - ⚠️ `src/components/VideoPlayer/` - видеоплеер (базовая структура, требует интеграции с RTSP)
   - ✅ `src/components/ProtectedRoute/` - защита маршрутов
 - ✅ **Redux store:**
-  - ✅ `src/store/slices/authSlice.ts` - аутентификация
-  - ✅ `src/store/slices/camerasSlice.ts` - управление камерами
+  - ✅ `src/store/slices/authSlice.ts` - аутентификация (login, logout, fetchCurrentUser)
+  - ✅ `src/store/slices/camerasSlice.ts` - управление камерами (CRUD, testConnection, discoverCameras)
+  - ✅ `src/store/slices/eventsSlice.ts` - управление событиями (CRUD, acknowledge, statistics)
+  - ✅ `src/store/slices/recordingsSlice.ts` - управление записями (CRUD, download, export)
+  - ✅ `src/store/slices/settingsSlice.ts` - управление настройками (CRUD, import/export, reset)
 - ✅ **API сервисы:**
   - ✅ `src/services/authService.ts` - сервис аутентификации
   - ✅ `src/services/cameraService.ts` - сервис камер
+  - ✅ `src/services/eventService.ts` - сервис событий
+  - ✅ `src/services/recordingService.ts` - сервис записей
+  - ✅ `src/services/settingsService.ts` - сервис настроек
 - ✅ **Утилиты:**
-  - ✅ `src/utils/api.ts` - Axios конфигурация
+  - ✅ `src/utils/api.ts` - Axios конфигурация с interceptors
 - ✅ `src/middleware.ts` - Next.js middleware для защиты маршрутов
 - ✅ Типы TypeScript (`src/types/index.ts`)
 
@@ -235,11 +241,8 @@
 - ❌ iOS UI (SwiftUI экраны)
 - ❌ Desktop UI (Compose Desktop экраны)
 - ⚠️ Web UI:
-  - ❌ Видеоплеер (требует интеграции с медиа-сервером)
-  - ❌ Страница событий (полная реализация)
-  - ❌ Страница записей (полная реализация)
-  - ❌ Страница настроек (полная реализация)
-  - ❌ WebSocket интеграция для real-time обновлений
+  - ❌ Видеоплеер (требует интеграции с RTSP клиентом)
+  - ⚠️ WebSocket интеграция для real-time обновлений (сервер готов, клиент требует интеграции)
   - ❌ Обнаружение камер в сети (UI часть)
 
 **Рекомендации:**
@@ -288,47 +291,59 @@
 
 ---
 
-### 8. ⚠️ Серверная часть
+### 8. ✅ Серверная часть
 
-**Статус:** ⚠️ **Частично реализовано** (~30%)
+**Статус:** ✅ **Реализовано** (~80%)
 
 **Что есть:**
 - ✅ Структура модулей в `settings.gradle.kts`:
   - `:server:api` - реализован
-  - `:server:web` - веб-интерфейс частично реализован
+  - `:server:web` - веб-интерфейс реализован
   - `:server:nas` - планируется
-- ✅ **Ktor сервер** (`server/api/`) - базовая структура:
+- ✅ **Ktor сервер** (`server/api/`) - полная реализация:
   - ✅ Application.kt с настройкой Ktor (CORS, Content Negotiation, Logging)
   - ✅ DI с Koin
-  - ✅ Базовые REST endpoints для камер:
-    - `GET /api/v1/cameras` - список камер
-    - `GET /api/v1/cameras/{id}` - получение камеры
-    - `POST /api/v1/cameras` - создание камеры
-    - `PUT /api/v1/cameras/{id}` - обновление камеры
-    - `DELETE /api/v1/cameras/{id}` - удаление камеры
-    - `POST /api/v1/cameras/{id}/test` - тест подключения
-    - `GET /api/v1/cameras/discover` - обнаружение камер
+  - ✅ **REST endpoints для всех сущностей:**
+    - ✅ Камеры: `GET`, `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}`, `POST /{id}/test`, `GET /discover`
+    - ✅ Записи: `GET`, `GET /{id}`, `DELETE /{id}`, `GET /{id}/download`, `POST /{id}/export`
+    - ✅ События: `GET`, `GET /{id}`, `DELETE /{id}`, `POST /{id}/acknowledge`, `POST /acknowledge`, `GET /statistics`
+    - ✅ Пользователи: `GET /me`, `GET`, `POST`, `GET /{id}`, `PUT /{id}`, `DELETE /{id}` (только для администраторов)
+    - ✅ Настройки: `GET`, `PUT`, `GET /{key}`, `PUT /{key}`, `DELETE /{key}`, `GET /system`, `POST /export`, `POST /import`, `POST /reset`
   - ✅ `GET /api/v1/health` - health check endpoint
-  - ✅ DTO модели (ApiResponse, CameraDto)
-  - ✅ Интеграция с CameraRepository
-- ✅ Конфигурация веб-интерфейса (Next.js) - частично реализован
+  - ✅ DTO модели для всех сущностей (ApiResponse, CameraDto, RecordingDto, EventDto, UserDto, SettingsDto)
+  - ✅ Интеграция с репозиториями
+- ✅ **Аутентификация и авторизация:**
+  - ✅ JWT токены (access + refresh) через JwtConfig
+  - ✅ Endpoints аутентификации (`POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`)
+  - ✅ JWT middleware для защиты маршрутов
+  - ✅ AuthorizationMiddleware для проверки прав доступа
+  - ✅ Rate limiting для login endpoint (RateLimitMiddleware)
+  - ✅ Хеширование паролей (BCrypt через PasswordService)
+  - ✅ ServerUserRepository с in-memory хранилищем
+  - ✅ Логирование попыток входа
+- ✅ **WebSocket сервер:**
+  - ✅ WebSocket endpoint (`/api/v1/ws`)
+  - ✅ JWT аутентификация для WebSocket
+  - ✅ Подписки на каналы (cameras, events, recordings, notifications)
+  - ✅ Broadcast событий в каналы
+  - ✅ Менеджер сессий (WebSocketSessionManager)
+  - ✅ Обработка отключений и переподключений
+- ✅ Серверные репозитории (in-memory для MVP):
+  - ✅ ServerUserRepository - управление пользователями
+  - ✅ ServerRecordingRepository - управление записями
+  - ✅ ServerEventRepository - управление событиями
+  - ✅ ServerSettingsRepository - управление настройками
+- ✅ Конфигурация веб-интерфейса (Next.js) - реализован
 - ✅ Docker Compose конфигурация (`docker-compose.yml`)
 
 **Что отсутствует:**
-- ❌ WebSocket сервер для real-time коммуникации
 - ❌ Лицензионный сервер
-- ❌ Аутентификация и авторизация (JWT, OAuth)
 - ❌ API документация (Swagger/OpenAPI)
-- ❌ REST endpoints для других сущностей:
-  - `/api/recordings` - управление записями
-  - `/api/events` - события
-  - `/api/users` - управление пользователями
-  - `/api/license` - лицензирование
-  - `/api/settings` - настройки
+- ❌ REST endpoints для лицензий (`/api/license`)
 - ❌ Сервисы для обработки видео
-- ❌ Middleware для валидации запросов
-- ❌ Rate limiting
-- ❌ Логирование запросов/ответов (частично есть CallLogging)
+- ❌ Расширенная валидация запросов (базовая есть через DTO)
+- ❌ Миграция репозиториев на SQLDelight/PostgreSQL (сейчас in-memory для MVP)
+- ❌ Миграция rate limiter на Redis для распределенных систем
 
 **Рекомендации:**
 - Реализовать аутентификацию и авторизацию (JWT)
@@ -427,14 +442,16 @@
 | База данных | ✅ Частично | ~50% |
 | Сетевые клиенты | ⚠️ Частично | ~40% |
 | Платформо-специфичные реализации | ⚠️ Частично | ~30% |
-| UI компоненты | ⚠️ Частично | ~25% |
+| UI компоненты (Web) | ✅ Реализовано | ~70% |
+| UI компоненты (Mobile/Desktop) | ❌ Не реализовано | ~0% |
 | Нативные библиотеки | ⚠️ Частично | ~5% |
-| Серверная часть | ⚠️ Частично | ~30% |
+| Серверная часть | ✅ Реализовано | ~80% |
+| Безопасность | ✅ Частично | ~50% |
 | Тесты | ⚠️ Частично | ~15% |
 | Скрипты | ⚠️ Частично | ~10% |
 | NAS поддержка | ❌ Не реализовано | ~0% |
 
-**Общий прогресс проекта:** ~20%
+**Общий прогресс проекта:** ~50%
 
 ---
 
