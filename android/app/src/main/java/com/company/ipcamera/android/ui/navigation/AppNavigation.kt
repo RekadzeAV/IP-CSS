@@ -10,7 +10,7 @@ import com.company.ipcamera.android.ui.screens.camera.*
 import com.company.ipcamera.android.ui.screens.events.*
 import com.company.ipcamera.android.ui.screens.recordings.RecordingsScreen
 import com.company.ipcamera.android.ui.screens.settings.SettingsScreen
-import com.company.ipcamera.android.ui.screens.license.LicenseScreen
+// import com.company.ipcamera.android.ui.screens.license.LicenseScreen // Отложено: лицензирование вынесено за рамки проекта
 import com.company.ipcamera.android.ui.screens.video.VideoViewScreen
 
 @Composable
@@ -129,13 +129,13 @@ fun AppNavigation() {
             )
         }
 
-        composable("license") {
-            LicenseScreen(
-                onBackClick = {
-                    navController.popBackStack()
-                }
-            )
-        }
+        // composable("license") { // Отложено: лицензирование вынесено за рамки проекта
+        //     LicenseScreen(
+        //         onBackClick = {
+        //             navController.popBackStack()
+        //         }
+        //     )
+        // }
     }
 }
 

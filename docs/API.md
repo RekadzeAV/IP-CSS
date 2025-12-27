@@ -490,118 +490,9 @@ Content-Type: application/json
 DELETE /api/v1/users/{id}
 ```
 
-### Лицензии (`/api/v1/license`)
-
-#### Получить информацию о лицензии
-```http
-GET /api/v1/license
-```
-
-**Ответ:**
-```json
-{
-  "id": "lic-001",
-  "licenseKey": "ENT-1234-5678-9012",
-  "type": "ENTERPRISE",
-  "status": "ACTIVE",
-  "features": ["recording", "analytics", "cloud_sync"],
-  "maxCameras": 100,
-  "maxUsers": 50,
-  "expiresAt": 1735689600000,
-  "activatedAt": 1642683600000,
-  "deviceId": "device-001",
-  "isValid": true
-}
-```
-
-#### Активировать лицензию
-```http
-POST /api/v1/license/activate
-Content-Type: application/json
-
-{
-  "licenseKey": "ENT-1234-5678-9012",
-  "deviceId": "device-001"
-}
-```
-
-**Ответ:**
-```json
-{
-  "success": true,
-  "license": {
-    "id": "lic-001",
-    "licenseKey": "ENT-1234-5678-9012",
-    "type": "ENTERPRISE",
-    "status": "ACTIVE",
-    "isValid": true
-  },
-  "message": "Лицензия успешно активирована"
-}
-```
-
-#### Валидировать лицензию
-```http
-GET /api/v1/license/validate
-```
-
-**Ответ:**
-```json
-{
-  "isValid": true,
-  "license": {
-    "id": "lic-001",
-    "status": "ACTIVE",
-    "expiresAt": 1735689600000
-  },
-  "error": null
-}
-```
-
-#### Деактивировать лицензию
-```http
-POST /api/v1/license/deactivate
-```
-
-#### Перенести лицензию на другое устройство
-```http
-POST /api/v1/license/transfer
-Content-Type: application/json
-
-{
-  "newDeviceId": "device-002"
-}
-```
-
-#### Получить доступные функции лицензии
-```http
-GET /api/v1/license/features
-```
-
-**Ответ:**
-```json
-{
-  "success": true,
-  "data": ["recording", "analytics", "cloud_sync", "ptz_control"]
-}
-```
-
-#### Проверить доступность функции
-```http
-GET /api/v1/license/features/{featureName}
-```
-
-**Ответ:**
-```json
-{
-  "success": true,
-  "data": {
-    "analytics": true
-  }
-}
-```
-
 ### Настройки (`/api/v1/settings`)
+
+> **⚠️ Примечание:** API для управления лицензиями временно отключен. Функционал лицензирования вынесен за рамки проекта и будет реализован в отдельной доработке.
 
 #### Получить все настройки
 ```http
@@ -1010,4 +901,5 @@ X-RateLimit-Reset: 1642683600
 ---
 
 **Последнее обновление:** Декабрь 2025
+
 

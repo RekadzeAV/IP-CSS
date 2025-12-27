@@ -309,6 +309,9 @@ kotlin {
             dependsOn(jvmMain)
             dependencies {
                 implementation(libs.ktor.client.java)
+                // JavaCV для декодирования H.264/H.265 через FFmpeg
+                implementation("org.bytedeco:javacv:1.5.9")
+                implementation("org.bytedeco:ffmpeg-platform:6.0-1.5.9")
             }
         }
 

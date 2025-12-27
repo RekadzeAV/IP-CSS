@@ -1,0 +1,130 @@
+#!/bin/sh
+
+# Post-installation script for Asustor ADM (ARM)
+
+INSTALL_DIR="/usr/local/AppCentral/ip-css"
+DATA_DIR="/volume1/.@plugins/AppCentral/ip-css/data"
+CONFIG_DIR="/usr/local/AppCentral/ip-css/config"
+
+# Create necessary directories
+mkdir -p "$DATA_DIR/db"
+mkdir -p "$DATA_DIR/recordings"
+mkdir -p "$DATA_DIR/logs"
+mkdir -p "$CONFIG_DIR"
+
+# Set permissions
+chmod -R 755 "$DATA_DIR"
+chmod -R 755 "$CONFIG_DIR"
+
+# Create default configuration if not exists
+if [ ! -f "$CONFIG_DIR/config.yaml" ]; then
+    cat > "$CONFIG_DIR/config.yaml" <<EOF
+server:
+  port: 8081
+  host: 0.0.0.0
+
+web:
+  port: 8080
+  host: 0.0.0.0
+
+database:
+  path: $DATA_DIR/db/ip-css.db
+
+storage:
+  recordings_path: $DATA_DIR/recordings
+
+logging:
+  level: INFO
+  file: $DATA_DIR/logs/ip-css.log
+EOF
+    chmod 644 "$CONFIG_DIR/config.yaml"
+fi
+
+# Create systemd service file (if using systemd)
+if [ -d "/etc/systemd/system" ]; then
+    cat > "/etc/systemd/system/ip-css.service" <<EOF
+[Unit]
+Description=IP Camera Surveillance System
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=$INSTALL_DIR
+ExecStart=$INSTALL_DIR/package/bin/start.sh
+ExecStop=$INSTALL_DIR/package/bin/stop.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable ip-css.service
+fi
+
+# Create init.d script for older systems (if systemd is not available)
+if [ ! -d "/etc/systemd/system" ] && [ -d "/etc/init.d" ]; then
+    cat > "/etc/init.d/ip-css" <<EOF
+#!/bin/sh
+# IP Camera Surveillance System init script
+# chkconfig: 2345 90 10
+# description: IP Camera Surveillance System
+
+INSTALL_DIR="$INSTALL_DIR"
+PID_FILE="$DATA_DIR/ip-css.pid"
+
+case "\$1" in
+    start)
+        echo "Starting IP-CSS..."
+        \$INSTALL_DIR/package/bin/start.sh
+        ;;
+    stop)
+        echo "Stopping IP-CSS..."
+        \$INSTALL_DIR/package/bin/stop.sh
+        ;;
+    restart)
+        echo "Restarting IP-CSS..."
+        \$INSTALL_DIR/package/bin/stop.sh
+        sleep 2
+        \$INSTALL_DIR/package/bin/start.sh
+        ;;
+    status)
+        if [ -f "\$PID_FILE" ]; then
+            PID=\$(cat "\$PID_FILE")
+            if ps -p "\$PID" > /dev/null 2>&1; then
+                echo "IP-CSS is running (PID: \$PID)"
+                exit 0
+            else
+                echo "IP-CSS is not running"
+                exit 1
+            fi
+        else
+            echo "IP-CSS is not running"
+            exit 1
+        fi
+        ;;
+    *)
+        echo "Usage: \$0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
+EOF
+    chmod +x "/etc/init.d/ip-css"
+    # Enable autostart on boot (for systems with chkconfig)
+    if command -v chkconfig > /dev/null 2>&1; then
+        chkconfig --add ip-css
+        chkconfig ip-css on
+    fi
+    # Enable autostart on boot (for systems with update-rc.d)
+    if command -v update-rc.d > /dev/null 2>&1; then
+        update-rc.d ip-css defaults
+    fi
+fi
+
+# Start the service
+"$INSTALL_DIR/package/bin/start.sh"
+
+exit 0
+

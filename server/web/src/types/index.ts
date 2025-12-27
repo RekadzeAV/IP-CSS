@@ -37,20 +37,21 @@ export enum EventSeverity {
   CRITICAL = 'CRITICAL'
 }
 
-export enum LicenseType {
-  TRIAL = 'TRIAL',
-  BASIC = 'BASIC',
-  PROFESSIONAL = 'PROFESSIONAL',
-  ENTERPRISE = 'ENTERPRISE'
-}
+// Отложено: лицензирование вынесено за рамки проекта
+// export enum LicenseType {
+//   TRIAL = 'TRIAL',
+//   BASIC = 'BASIC',
+//   PROFESSIONAL = 'PROFESSIONAL',
+//   ENTERPRISE = 'ENTERPRISE'
+// }
 
-export enum LicenseStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-  EXPIRED = 'EXPIRED',
-  REVOKED = 'REVOKED',
-  PENDING = 'PENDING'
-}
+// export enum LicenseStatus {
+//   ACTIVE = 'ACTIVE',
+//   INACTIVE = 'INACTIVE',
+//   EXPIRED = 'EXPIRED',
+//   REVOKED = 'REVOKED',
+//   PENDING = 'PENDING'
+// }
 
 export interface Resolution {
   width: number;
@@ -215,19 +216,20 @@ export interface User {
   isActive: boolean;
 }
 
-export interface License {
-  id: string;
-  licenseKey: string;
-  type: LicenseType;
-  status: LicenseStatus;
-  features: string[];
-  maxCameras?: number;
-  maxUsers?: number;
-  expiresAt?: number;
-  activatedAt?: number;
-  deviceId?: string;
-  isValid: boolean;
-}
+// Отложено: лицензирование вынесено за рамки проекта
+// export interface License {
+//   id: string;
+//   licenseKey: string;
+//   type: LicenseType;
+//   status: LicenseStatus;
+//   features: string[];
+//   maxCameras?: number;
+//   maxUsers?: number;
+//   expiresAt?: number;
+//   activatedAt?: number;
+//   deviceId?: string;
+//   isValid: boolean;
+// }
 
 export interface SystemSettings {
   recording?: RecordingSystemSettings;
