@@ -6,39 +6,41 @@
 > 
 > Для изменения структуры проекта редактируйте файлы проекта, а затем запустите скрипт генерации.
 
-**Дата генерации:** 2025-12-27 18:24:32
+**Дата генерации:** 2025-12-27 20:40:09
 
 ## Статистика проекта
 
-- **Всего файлов:** 652
-- **Всего директорий:** 352
-- **Модулей:** 14
+- **Всего файлов:** 1392
+- **Всего директорий:** 741
+- **Модулей:** 28
 
 ### Статистика по типам файлов
 
-- `.kt`: 253 файлов
-- `.md`: 227 файлов
-- `.ts`: 25 файлов
-- `.sh`: 23 файлов
-- `.tsx`: 16 файлов
-- `.cpp`: 14 файлов
-- `.h`: 14 файлов
-- `.ps1`: 13 файлов
-- `.yml`: 8 файлов
-- `.yaml`: 4 файлов
-- `.txt`: 4 файлов
-- `.xml`: 3 файлов
-- `.json`: 2 файлов
+- `.kt`: 575 файлов
+- `.md`: 442 файлов
+- `.ts`: 67 файлов
+- `.sh`: 48 файлов
+- `.tsx`: 47 файлов
+- `.cpp`: 30 файлов
+- `.h`: 28 файлов
+- `.ps1`: 27 файлов
+- `.yml`: 15 файлов
+- `.txt`: 9 файлов
+- `.yaml`: 8 файлов
+- `.xml`: 6 файлов
+- `.json`: 4 файлов
+- `.js`: 3 файлов
+- `.sq`: 2 файлов
+- `.py`: 2 файлов
 - `.bat`: 1 файлов
-- `.js`: 1 файлов
-- `.py`: 1 файлов
-- `.sq`: 1 файлов
 
 ## Дерево структуры проекта
 
 ```
 IP-CSS/
 ├── .github/
+│   ├── .github/
+│   │   └── workflows/
 │   ├── pull_request_template.md
 │   └── workflows/
 ├── BUILD_NATIVE_LIBRARY.md
@@ -46,6 +48,13 @@ IP-CSS/
 ├── CONTRIBUTING.md
 ├── CRITICAL_BLOCKERS_REMEDIATION_PLAN.md
 ├── CURRENT_STATUS.md
+├── DATA_LAYER_ANALYSIS_AND_PLAN.md
+├── DATA_LAYER_IMPLEMENTATION_DETAILS.md
+├── DATA_LAYER_IMPLEMENTATION_FINAL_SUMMARY.md
+├── DATA_LAYER_IMPLEMENTATION_PROGRESS.md
+├── DATA_LAYER_IMPLEMENTATION_SUMMARY.md
+├── DATA_LAYER_REFACTORING_COMPLETE.md
+├── DETAILED_DEVELOPMENT_PLAN.md
 ├── DEVELOPMENT_MAP.md
 ├── DEVELOPMENT_ROADMAP.md
 ├── DOCUMENTATION_ANALYSIS_TABLE.md
@@ -57,21 +66,30 @@ IP-CSS/
 ├── INSTALL_INSTRUCTIONS.md
 ├── Inf-pipeline/
 │   ├── INFRASTRUCTURE_ANALYSIS.md
+│   ├── Inf-pipeline/
+│   │   ├── README.md
 │   ├── RASPBERRY_PI_JENKINS_ANALYSIS.md
 │   ├── README.md
 │   └── SYNOLOGY_GIT_MIRROR_ANALYSIS.md
 ├── LICENSE
 ├── LOCAL_BUILD_REQUIREMENTS.md
 ├── Log-server/
+│   ├── Log-server/
+│   │   └── README.md
 │   ├── RASPBERRY_PI_4_ANALYSIS.md
 │   └── README.md
 ├── NAS_PLATFORM_STATUS_TABLE.md
 ├── NATIVE_LIBRARIES_ANALYSIS.md
 ├── NATIVE_LIBRARIES_BUILD_COMPLETE.md
+├── NATIVE_LIBRARIES_BUILD_INSTRUCTIONS.md
 ├── NATIVE_LIBRARIES_BUILD_STATUS.md
+├── NATIVE_LIBRARIES_DEEP_ANALYSIS.md
 ├── NATIVE_LIBRARIES_FIXES_SUMMARY.md
+├── NATIVE_LIBRARIES_IMPLEMENTATION_COMPLETE.md
 ├── NATIVE_LIBRARIES_INTEGRATION_COMPLETE.md
 ├── OLD-DOC-2025-01-27/
+│   ├── OLD-DOC-2025-01-27/
+│   │   └── README.md
 │   └── README.md
 ├── PLATFORM_STRUCTURE.md
 ├── PROJECT_DOCUMENTATION_ANALYSIS.md
@@ -86,6 +104,11 @@ IP-CSS/
 ├── README.md
 ├── RECOMMENDATIONS_COMPLETED.md
 ├── android/
+│   ├── android/
+│   │   └── app/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
 │   └── app/
 │       ├── build.gradle.kts
 │       └── src/
@@ -106,6 +129,32 @@ IP-CSS/
 │   │       │   └── kotlin/
 │   │       └── iosMain/
 │   │           └── kotlin/
+│   ├── core/
+│   │   ├── common/
+│   │   │   ├── README.md
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── androidMain/
+│   │   │       ├── commonMain/
+│   │   │       ├── desktopMain/
+│   │   │       └── iosMain/
+│   │   ├── license/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── androidMain/
+│   │   │       ├── commonMain/
+│   │   │       ├── commonTest/
+│   │   │       └── iosMain/
+│   │   └── network/
+│   │       ├── README.md
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           ├── androidMain/
+│   │           ├── commonMain/
+│   │           ├── iosMain/
+│   │           ├── jvmMain/
+│   │           ├── nativeInterop/
+│   │           └── nativeMain/
 │   ├── license/
 │   │   ├── build.gradle.kts
 │   │   └── src/
@@ -125,6 +174,8 @@ IP-CSS/
 │           ├── androidMain/
 │           │   └── kotlin/
 │           ├── commonMain/
+│           │   └── kotlin/
+│           ├── commonTest/
 │           │   └── kotlin/
 │           ├── iosMain/
 │           │   └── kotlin/
@@ -236,6 +287,16 @@ IP-CSS/
 │   │   ├── OLD-DOC-2025-01-27/
 │   │   │   ├── README.md
 │   │   └── README.md
+│   ├── docs/
+│   │   ├── README.md
+│   │   ├── archive/
+│   │   │   ├── 2025-12-27/
+│   │   │   │   └── README.md
+│   │   │   ├── OLD-DOC-2025-01-27/
+│   │   │   │   ├── README.md
+│   │   │   └── README.md
+│   │   ├── reports/
+│   │   └── rtsp/
 │   ├── reports/
 │   └── rtsp/
 ├── gradle.properties
@@ -270,6 +331,52 @@ IP-CSS/
 │   │       ├── h264_codec.cpp
 │   │       ├── h265_codec.cpp
 │   │       └── mjpeg_codec.cpp
+│   ├── native/
+│   │   ├── CMakeLists.txt
+│   │   ├── analytics/
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── include/
+│   │   │   │   ├── anpr_engine.h
+│   │   │   │   ├── face_detector.h
+│   │   │   │   ├── motion_detector.h
+│   │   │   │   ├── object_detector.h
+│   │   │   │   └── object_tracker.h
+│   │   │   └── src/
+│   │   │       ├── anpr_engine.cpp
+│   │   │       ├── face_detector.cpp
+│   │   │       ├── motion_detector.cpp
+│   │   │       ├── object_detector.cpp
+│   │   │       └── object_tracker.cpp
+│   │   ├── codecs/
+│   │   │   ├── CMakeLists.txt
+│   │   │   ├── include/
+│   │   │   │   ├── codec_manager.h
+│   │   │   │   ├── h264_codec.h
+│   │   │   │   ├── h265_codec.h
+│   │   │   │   └── mjpeg_codec.h
+│   │   │   └── src/
+│   │   │       ├── codec_manager.cpp
+│   │   │       ├── h264_codec.cpp
+│   │   │       ├── h265_codec.cpp
+│   │   │       └── mjpeg_codec.cpp
+│   │   └── video-processing/
+│   │       ├── CMakeLists.txt
+│   │       ├── README.md
+│   │       ├── include/
+│   │       │   ├── frame_processor.h
+│   │       │   ├── rtsp_client.h
+│   │       │   ├── stream_manager.h
+│   │       │   ├── video_decoder.h
+│   │       │   └── video_encoder.h
+│   │       └── src/
+│   │           ├── frame_processor.cpp
+│   │           ├── rtsp_client.cpp
+│   │           ├── stream_manager.cpp
+│   │           ├── video_decoder.cpp
+│   │           └── video_encoder.cpp
+│   ├── tests/
+│   │   ├── CMakeLists.txt
+│   │   └── test_codecs.cpp
 │   └── video-processing/
 │       ├── CMakeLists.txt
 │       ├── README.md
@@ -281,6 +388,8 @@ IP-CSS/
 │       │   └── video_encoder.h
 │       └── src/
 │           ├── frame_processor.cpp
+│           ├── jni/
+│           │   └── rtsp_client_jni.cpp
 │           ├── rtsp_client.cpp
 │           ├── stream_manager.cpp
 │           ├── video_decoder.cpp
@@ -347,6 +456,54 @@ IP-CSS/
 │   │   │       └── kubernetes/
 │   │   └── server/
 │   │       ├── README.md
+│   ├── platforms/
+│   │   ├── client-android/
+│   │   │   └── README.md
+│   │   ├── client-desktop-arm/
+│   │   │   ├── README.md
+│   │   │   └── app/
+│   │   │       ├── README.md
+│   │   │       ├── build.gradle.kts
+│   │   │       └── src/
+│   │   ├── client-desktop-x86_64/
+│   │   │   ├── README.md
+│   │   │   └── app/
+│   │   │       ├── README.md
+│   │   │       ├── build.gradle.kts
+│   │   │       └── src/
+│   │   ├── client-ios/
+│   │   │   └── README.md
+│   │   ├── nas-arm/
+│   │   │   ├── README.md
+│   │   │   ├── docker/
+│   │   │   │   ├── README.md
+│   │   │   │   └── docker-compose.yml
+│   │   │   ├── packages/
+│   │   │   │   ├── README.md
+│   │   │   │   ├── asustor/
+│   │   │   │   ├── qnap/
+│   │   │   │   ├── synology/
+│   │   │   │   └── truenas/
+│   │   │   └── server/
+│   │   │       ├── README.md
+│   │   ├── nas-x86_64/
+│   │   │   ├── README.md
+│   │   │   ├── docker/
+│   │   │   │   ├── Dockerfile
+│   │   │   │   ├── README.md
+│   │   │   │   └── docker-compose.yml
+│   │   │   ├── packages/
+│   │   │   │   ├── README.md
+│   │   │   │   ├── asustor/
+│   │   │   │   ├── qnap/
+│   │   │   │   ├── synology/
+│   │   │   │   └── truenas/
+│   │   │   └── server/
+│   │   │       ├── README.md
+│   │   ├── sbc-arm/
+│   │   │   └── README.md
+│   │   └── server-x86_64/
+│   │       └── README.md
 │   ├── sbc-arm/
 │   │   └── README.md
 │   └── server-x86_64/
@@ -360,6 +517,9 @@ IP-CSS/
 │   ├── build-all-native-libs.ps1
 │   ├── build-all-native-libs.sh
 │   ├── build-all-platforms.sh
+│   ├── build-android-native-libs.ps1
+│   ├── build-android-native-libs.sh
+│   ├── build-ios-native-libs.sh
 │   ├── build-nas-package.sh
 │   ├── build-native-lib.sh
 │   ├── build-video-processing-lib.ps1
@@ -381,6 +541,8 @@ IP-CSS/
 │   ├── monitor-ffmpeg-performance.sh
 │   ├── publish-local.sh
 │   ├── quick-install.ps1
+│   ├── scripts/
+│   │   ├── README.md
 │   └── setup-git-hooks.sh
 ├── server/
 │   ├── api/
@@ -390,10 +552,30 @@ IP-CSS/
 │   │       │   └── kotlin/
 │   │       └── test/
 │   │           └── kotlin/
+│   ├── server/
+│   │   ├── api/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       └── test/
+│   │   └── web/
+│   │       ├── README.md
+│   │       ├── next.config.js
+│   │       ├── package.json
+│   │       ├── src/
+│   │       │   ├── app/
+│   │       │   ├── components/
+│   │       │   ├── hooks/
+│   │       │   ├── services/
+│   │       │   ├── store/
+│   │       │   ├── types/
+│   │       │   └── utils/
+│   │       └── tsconfig.json
 │   └── web/
 │       ├── README.md
 │       ├── next.config.js
 │       ├── package.json
+│       ├── public/
 │       ├── src/
 │       │   ├── app/
 │       │   │   ├── cameras/
@@ -401,14 +583,26 @@ IP-CSS/
 │       │   │   ├── events/
 │       │   │   ├── layout.tsx
 │       │   │   ├── login/
+│       │   │   ├── notifications/
 │       │   │   ├── page.tsx
 │       │   │   ├── providers.tsx
 │       │   │   ├── recordings/
-│       │   │   └── settings/
+│       │   │   ├── settings/
+│       │   │   └── users/
 │       │   ├── components/
 │       │   │   ├── CameraCard/
+│       │   │   ├── CameraDiscoveryDialog/
+│       │   │   ├── CameraEditDialog/
+│       │   │   ├── Charts/
+│       │   │   ├── EventTimeline/
 │       │   │   ├── Layout/
+│       │   │   ├── MotionZoneEditor/
+│       │   │   ├── PTZControls/
+│       │   │   ├── Pagination/
 │       │   │   ├── ProtectedRoute/
+│       │   │   ├── RecordingPlayer/
+│       │   │   ├── SearchBar/
+│       │   │   ├── ThemeSwitcher/
 │       │   │   ├── VideoPlayer/
 │       │   │   ├── WebSocketNotificationHandler/
 │       │   │   └── WebSocketProvider/
@@ -418,9 +612,12 @@ IP-CSS/
 │       │   │   ├── authService.ts
 │       │   │   ├── cameraService.ts
 │       │   │   ├── eventService.ts
+│       │   │   ├── notificationService.ts
+│       │   │   ├── ptzService.ts
 │       │   │   ├── recordingService.ts
 │       │   │   ├── settingsService.ts
-│       │   │   └── streamService.ts
+│       │   │   ├── streamService.ts
+│       │   │   └── userService.ts
 │       │   ├── store/
 │       │   │   ├── hooks.ts
 │       │   │   ├── index.ts
@@ -430,11 +627,29 @@ IP-CSS/
 │       │   │   └── index.ts
 │       │   └── utils/
 │       │       ├── api.ts
+│       │       ├── certificatePinning.ts
+│       │       ├── export.ts
+│       │       ├── webrtc.ts
 │       │       └── websocket.ts
 │       └── tsconfig.json
 ├── settings.gradle.kts
 └── shared/
     ├── build.gradle.kts
+    ├── shared/
+    │   ├── build.gradle.kts
+    │   └── src/
+    │       ├── androidMain/
+    │       │   └── kotlin/
+    │       ├── commonMain/
+    │       │   ├── kotlin/
+    │       │   └── sqldelight/
+    │       ├── commonTest/
+    │       │   ├── README.md
+    │       │   └── kotlin/
+    │       ├── desktopMain/
+    │       │   └── kotlin/
+    │       └── iosMain/
+    │           └── kotlin/
     └── src/
         ├── androidMain/
         │   └── kotlin/
@@ -462,10 +677,18 @@ IP-CSS/
 
 - **`.`**
   - Build file: `build.gradle.kts`
+- **`android/android/app`**
+  - Build file: `android/android/app/build.gradle.kts`
 - **`android/app`**
   - Build file: `android/app/build.gradle.kts`
 - **`core/common`**
   - Build file: `core/common/build.gradle.kts`
+- **`core/core/common`**
+  - Build file: `core/core/common/build.gradle.kts`
+- **`core/core/license`**
+  - Build file: `core/core/license/build.gradle.kts`
+- **`core/core/network`**
+  - Build file: `core/core/network/build.gradle.kts`
 - **`core/license`**
   - Build file: `core/license/build.gradle.kts`
 - **`core/network`**
@@ -474,10 +697,18 @@ IP-CSS/
   - Build file: `platforms/client-desktop-arm/app/build.gradle.kts`
 - **`platforms/client-desktop-x86_64/app`**
   - Build file: `platforms/client-desktop-x86_64/app/build.gradle.kts`
+- **`platforms/platforms/client-desktop-arm/app`**
+  - Build file: `platforms/platforms/client-desktop-arm/app/build.gradle.kts`
+- **`platforms/platforms/client-desktop-x86_64/app`**
+  - Build file: `platforms/platforms/client-desktop-x86_64/app/build.gradle.kts`
 - **`server/api`**
   - Build file: `server/api/build.gradle.kts`
+- **`server/server/api`**
+  - Build file: `server/server/api/build.gradle.kts`
 - **`shared`**
   - Build file: `shared/build.gradle.kts`
+- **`shared/shared`**
+  - Build file: `shared/shared/build.gradle.kts`
 
 ### CMake модули (C++ нативные библиотеки)
 
@@ -487,11 +718,23 @@ IP-CSS/
   - Build file: `native/analytics/CMakeLists.txt`
 - **`native/codecs`**
   - Build file: `native/codecs/CMakeLists.txt`
+- **`native/native`**
+  - Build file: `native/native/CMakeLists.txt`
+- **`native/native/analytics`**
+  - Build file: `native/native/analytics/CMakeLists.txt`
+- **`native/native/codecs`**
+  - Build file: `native/native/codecs/CMakeLists.txt`
+- **`native/native/video-processing`**
+  - Build file: `native/native/video-processing/CMakeLists.txt`
+- **`native/tests`**
+  - Build file: `native/tests/CMakeLists.txt`
 - **`native/video-processing`**
   - Build file: `native/video-processing/CMakeLists.txt`
 
 ### Node.js модули
 
+- **`server/server/web`**
+  - Build file: `server/server/web/package.json`
 - **`server/web`**
   - Build file: `server/web/package.json`
 
