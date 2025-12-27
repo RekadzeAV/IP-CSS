@@ -68,14 +68,14 @@ export default function VideoPlayer({
             if (mounted) {
               setLoading(false);
               if (autoPlay) {
-                video.play().catch((e) => {
+                video.play().catch((e: unknown) => {
                   console.error('Error auto-playing video:', e);
                 });
               }
             }
           });
 
-          hls.on(Hls.Events.ERROR, (event, data) => {
+          hls.on(Hls.Events.ERROR, (_event: string, data: any) => {
             if (data.fatal) {
               switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
@@ -106,7 +106,7 @@ export default function VideoPlayer({
             if (mounted) {
               setLoading(false);
               if (autoPlay) {
-                video.play().catch((e) => {
+                video.play().catch((e: unknown) => {
                   console.error('Error auto-playing video:', e);
                 });
               }
@@ -175,7 +175,7 @@ export default function VideoPlayer({
   const handlePlay = useCallback(() => {
     const video = videoRef.current;
     if (video) {
-      video.play().catch((err) => {
+      video.play().catch((err: unknown) => {
         console.error('Error playing video:', err);
         setError('Ошибка воспроизведения');
       });
@@ -208,11 +208,11 @@ export default function VideoPlayer({
     if (!video) return;
 
     if (!document.fullscreenElement) {
-      video.requestFullscreen().then(() => setIsFullscreen(true)).catch((err) => {
+      video.requestFullscreen().then(() => setIsFullscreen(true)).catch((err: unknown) => {
         console.error('Error entering fullscreen:', err);
       });
     } else {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch((err) => {
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch((err: unknown) => {
         console.error('Error exiting fullscreen:', err);
       });
     }
@@ -372,7 +372,7 @@ export default function VideoPlayer({
               <Tooltip title="Quality">
                 <IconButton
                   color="primary"
-                  onClick={(e) => setQualityMenuAnchor(e.currentTarget)}
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) => setQualityMenuAnchor(e.currentTarget)}
                 >
                   <Settings />
                 </IconButton>
