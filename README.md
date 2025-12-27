@@ -117,24 +117,32 @@ cd server/web && npm run dev
 
 ## Статус проекта
 
-**Текущий прогресс:** ~55%
+**Текущий прогресс:** ~60% (обновлено: декабрь 2025)
 **📊 Детальная карта разработки:** [DEVELOPMENT_MAP.md](DEVELOPMENT_MAP.md)
 **🚨 Критические блокеры:** [CRITICAL_BLOCKERS_REMEDIATION_PLAN.md](CRITICAL_BLOCKERS_REMEDIATION_PLAN.md) (3/6 завершено)
 
 ### Реализовано:
 - ✅ Базовая структура проекта и конфигурация
-- ✅ Модели данных (Camera, Event, Recording, User, Settings)
-- ✅ CameraRepositoryImpl с SQLDelight (полностью, включая discoverCameras и testConnection)
-- ✅ 5 Use Cases для управления камерами
-- ✅ База данных SQLDelight со схемой для камер
-- ✅ Мапперы между DB entity и domain model
+- ✅ Модели данных (Camera, Event, Recording, User, Settings, License, Notification)
+- ✅ **15 Use Cases:**
+  - ✅ 5 Use Cases для управления камерами
+  - ✅ 4 Use Cases для обнаружения камер
+  - ✅ 6 Use Cases для управления записями
+- ✅ **SQLDelight репозитории:**
+  - ✅ CameraRepositoryImpl (полностью, включая discoverCameras и testConnection)
+  - ✅ RecordingRepositoryImplSqlDelight (полный CRUD с пагинацией)
+  - ✅ EventRepositoryImplSqlDelight (полный CRUD с фильтрацией)
+  - ✅ UserRepositoryImplSqlDelight, SettingsRepositoryImplSqlDelight, NotificationRepositoryImplSqlDelight
+- ✅ Мапперы между DB entity и domain model для всех сущностей
 - ✅ Платформо-специфичные DatabaseFactory для Android, iOS и Desktop
-- ✅ **REST API сервер на Ktor с полным набором endpoints:**
+- ✅ **REST API сервер на Ktor с полным набором endpoints (~85%):**
   - ✅ Камеры (cameras) - полный CRUD + обнаружение + тест подключения
-  - ✅ Записи (recordings) - CRUD + скачивание + экспорт
-  - ✅ События (events) - CRUD + подтверждение + статистика
-  - ✅ Пользователи (users) - CRUD + управление
-  - ✅ Настройки (settings) - CRUD + импорт/экспорт + сброс
+  - ✅ Записи (recordings) - CRUD + скачивание + экспорт + управление записью (start/stop/pause/resume)
+  - ✅ События (events) - CRUD + подтверждение + статистика + массовые операции
+  - ✅ Пользователи (users) - CRUD + управление + /me endpoint
+  - ✅ Настройки (settings) - CRUD + импорт/экспорт + сброс + системные настройки
+  - ✅ Потоки (streams) - start/stop/status + HLS плейлисты + RTSP потоки
+  - ✅ Скриншоты (screenshots) - создание и получение снимков
 - ✅ **Аутентификация и авторизация:**
   - ✅ JWT токены (access + refresh)
   - ✅ Rate limiting для защиты от брутфорса
@@ -145,11 +153,13 @@ cd server/web && npm run dev
   - ✅ Подписки на каналы (cameras, events, recordings, notifications)
   - ✅ Broadcast событий в каналы
   - ✅ Менеджер сессий
-- ✅ **Веб-интерфейс на Next.js:**
+- ✅ **Веб-интерфейс на Next.js (~70%):**
   - ✅ Страницы: Dashboard, Cameras, Events, Recordings, Settings
-  - ✅ Redux store со slices для всех сущностей (auth, cameras, events, recordings, settings)
-  - ✅ API интеграция через сервисы
+  - ✅ Redux store со slices для всех сущностей (auth, cameras, events, recordings, settings, websocket)
+  - ✅ API интеграция через сервисы (authService, cameraService, eventService, recordingService, settingsService, streamService)
   - ✅ Аутентификация и защита маршрутов
+  - ✅ WebSocket интеграция (useWebSocket hook, WebSocketProvider)
+  - ⚠️ Видеоплеер (требуется интеграция с RTSP клиентом)
 
 ### В разработке:
 - 🟡 Android UI (базовая структура и экраны ~30%)
@@ -157,7 +167,7 @@ cd server/web && npm run dev
 - ⚠️ ONVIF клиент для обнаружения камер (~40%, WS-Discovery частично реализован)
 - ⚠️ RTSP клиент (~10%, структура готова, требуется интеграция)
 - ⚠️ Видеоплеер в веб-интерфейсе (требует интеграции с RTSP клиентом)
-- ⚠️ Запись видео (~40%, базовая реализация завершена, требуется интеграция FFmpeg для кодирования)
+- 🟡 Запись видео (~60%, VideoRecordingService реализован, Use Cases готовы, API endpoints работают)
 - ⚠️ AI-аналитика (~5%, базовая структура готова)
 
 ### Планируется:
@@ -182,20 +192,22 @@ cd server/web && npm run dev
 - 📊 **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** - Статус реализации компонентов
 - 📋 **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Текущее состояние проекта
 
+> **📚 Версия документации:** 2.1 (27 декабря 2025)
+> **📦 Архивная документация:** Старые версии сохранены в `docs/archive/`
+> **🔄 Версионирование:** Процесс описан в [docs/DOCUMENTATION_VERSIONING.md](docs/DOCUMENTATION_VERSIONING.md)
+> **Предыдущая версия:** 2.0 (архивирована: 27 декабря 2025)
+
 ### Основная документация
 - [PROJECT_PROMPT.md](PROJECT_PROMPT.md) - Комплексный промпт проекта
-- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Структура проекта
-- [PROJECT_STRUCTURE_ANALYSIS.md](PROJECT_STRUCTURE_ANALYSIS.md) - Полный анализ структуры проекта
-- [PROJECT_STRUCTURE_VISUAL.md](PROJECT_STRUCTURE_VISUAL.md) - Визуальная схема структуры проекта
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Структура проекта ⭐ ВЕРСИЯ 2.1
 - [PLATFORM_STRUCTURE.md](PLATFORM_STRUCTURE.md) - Структура платформ и веток Git
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - Архитектура системы
-- [PLATFORMS.md](docs/PLATFORMS.md) - Разделение разработки по платформам
-- [DEVELOPMENT.md](docs/DEVELOPMENT.md) - Руководство по разработке
-- [DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) - План дальнейшей разработки
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - Архитектура системы
+- [docs/PLATFORMS.md](docs/PLATFORMS.md) - Разделение разработки по платформам
+- [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) - Руководство по разработке
+- [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md) - План дальнейшей разработки
 
 ### Статус и планирование
-- [TIMELINE.md](TIMELINE.md) - Временная шкала проекта (прошлое, настоящее, будущее) ⭐ НОВОЕ
-- [CURRENT_STATUS.md](CURRENT_STATUS.md) - Текущее состояние проекта (~55% прогресса)
+- [CURRENT_STATUS.md](CURRENT_STATUS.md) - Текущее состояние проекта (~60% прогресса)
 - [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) - Детальный статус реализации всех компонентов
 - [MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md) - Детальный анализ нереализованного функционала
 - [PROJECT_ROADMAP.md](PROJECT_ROADMAP.md) - Карта выполнения проекта (детальный статус по компонентам)
@@ -214,6 +226,9 @@ cd server/web && npm run dev
 ### Клиенты и протоколы
 - [ONVIF_CLIENT.md](docs/ONVIF_CLIENT.md) - Документация ONVIF клиента
 - [RTSP_CLIENT.md](docs/RTSP_CLIENT.md) - Документация RTSP клиента
+- [docs/rtsp/ACTIVATION.md](docs/rtsp/ACTIVATION.md) - Руководство по активации RTSP клиента ⭐ ВЕРСИЯ 3.0
+- [docs/rtsp/INSTALLATION.md](docs/rtsp/INSTALLATION.md) - Установка зависимостей для RTSP клиента ⭐ ВЕРСИЯ 2.0
+- [docs/rtsp/IMPLEMENTATION.md](docs/rtsp/IMPLEMENTATION.md) - Статус реализации RTSP клиента ⭐ ВЕРСИЯ 2.0
 - [WEBSOCKET_CLIENT.md](docs/WEBSOCKET_CLIENT.md) - Документация WebSocket клиента
 
 ### Инструменты и тестирование
@@ -225,6 +240,11 @@ cd server/web && npm run dev
 - [LOCAL_BUILD.md](docs/LOCAL_BUILD.md) - Локальная сборка и публикация пакетов
 - [BUILD_ORGANIZATION.md](docs/BUILD_ORGANIZATION.md) - Организация процесса сборки
 - [BUILD_TROUBLESHOOTING.md](docs/BUILD_TROUBLESHOOTING.md) - Устранение проблем при сборке
+
+### CI/CD инфраструктура
+- [Inf-pipeline/README.md](Inf-pipeline/README.md) - Обзор документации по CI/CD инфраструктуре
+- [Inf-pipeline/RASPBERRY_PI_JENKINS_ANALYSIS.md](Inf-pipeline/RASPBERRY_PI_JENKINS_ANALYSIS.md) - Настройка Jenkins на Raspberry Pi
+- [Inf-pipeline/SYNOLOGY_GIT_MIRROR_ANALYSIS.md](Inf-pipeline/SYNOLOGY_GIT_MIRROR_ANALYSIS.md) - Настройка Git зеркала на Synology
 
 ## Лицензия
 

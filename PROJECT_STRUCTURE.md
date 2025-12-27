@@ -1,7 +1,11 @@
 # Структура проекта IP Camera Surveillance System
 
-**Версия проекта:** Alfa-0.0.1  
-**Последнее обновление:** Декабрь 2025
+**Версия документации:** 2.1
+**Версия проекта:** Alfa-0.0.1
+**Дата последнего обновления:** 27 декабря 2025
+**Предыдущая версия:** 2.0 (архивирована: 27 декабря 2025)
+
+> **📚 Архивная документация:** Старые версии документов сохранены в `docs/archive/`
 
 > **📚 Полный индекс документации:** [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)
 
@@ -127,6 +131,33 @@ IP-CSS/
 │   │   ├── src/main/kotlin/
 │   │   │   ├── Application.kt  # Ktor приложение
 │   │   │   ├── routes/         # API маршруты
+│   │   │   │   ├── AuthRoutes.kt
+│   │   │   │   ├── CameraRoutes.kt
+│   │   │   │   ├── EventRoutes.kt
+│   │   │   │   ├── RecordingRoutes.kt
+│   │   │   │   ├── UserRoutes.kt
+│   │   │   │   ├── SettingsRoutes.kt
+│   │   │   │   ├── StreamRoutes.kt
+│   │   │   │   ├── HlsRoutes.kt
+│   │   │   │   ├── ScreenshotRoutes.kt
+│   │   │   │   ├── HealthRoutes.kt
+│   │   │   │   └── Routing.kt
+│   │   │   ├── service/        # Сервисы
+│   │   │   │   ├── VideoRecordingService.kt
+│   │   │   │   ├── VideoStreamService.kt
+│   │   │   │   ├── FfmpegService.kt
+│   │   │   │   ├── HlsGeneratorService.kt
+│   │   │   │   ├── ScreenshotService.kt
+│   │   │   │   ├── StorageService.kt
+│   │   │   │   ├── PasswordService.kt
+│   │   │   │   └── StreamQuality.kt
+│   │   │   ├── middleware/     # Middleware
+│   │   │   │   ├── AuthorizationMiddleware.kt
+│   │   │   │   ├── CookieAuthMiddleware.kt
+│   │   │   │   ├── RateLimitMiddleware.kt
+│   │   │   │   └── ValidationMiddleware.kt
+│   │   │   ├── websocket/       # WebSocket сервер
+│   │   │   │   └── WebSocketServer.kt
 │   │   │   └── di/             # Dependency Injection (Koin)
 │   │   └── build.gradle.kts
 │   └── web/                    # Веб-приложение (Next.js)
@@ -173,24 +204,44 @@ IP-CSS/
 │   │   │   │   │   │   ├── RecordingRepository.kt
 │   │   │   │   │   │   ├── SettingsRepository.kt
 │   │   │   │   │   │   └── UserRepository.kt
-│   │   │   │   │   └── usecase/ # Use Cases (бизнес-логика)
+│   │   │   │   │   └── usecase/ # Use Cases (бизнес-логика) - 15 реализовано
 │   │   │   │   │       ├── AddCameraUseCase.kt
 │   │   │   │   │       ├── DeleteCameraUseCase.kt
 │   │   │   │   │       ├── GetCameraByIdUseCase.kt
 │   │   │   │   │       ├── GetCamerasUseCase.kt
-│   │   │   │   │       └── UpdateCameraUseCase.kt
+│   │   │   │   │       ├── UpdateCameraUseCase.kt
+│   │   │   │   │       ├── DiscoverCamerasUseCase.kt
+│   │   │   │   │       ├── DiscoverAndAddCameraUseCase.kt
+│   │   │   │   │       ├── AddDiscoveredCameraUseCase.kt
+│   │   │   │   │       ├── TestDiscoveredCameraUseCase.kt
+│   │   │   │   │       ├── StartRecordingUseCase.kt
+│   │   │   │   │       ├── StopRecordingUseCase.kt
+│   │   │   │   │       ├── PauseRecordingUseCase.kt
+│   │   │   │   │       ├── ResumeRecordingUseCase.kt
+│   │   │   │   │       ├── GetRecordingsUseCase.kt
+│   │   │   │   │       └── DeleteRecordingUseCase.kt
 │   │   │   │   └── data/      # Слой данных
 │   │   │   │       ├── local/ # Локальные источники данных
 │   │   │   │       │   ├── CameraEntityMapper.kt
+│   │   │   │       │   ├── RecordingEntityMapper.kt
+│   │   │   │       │   ├── EventEntityMapper.kt
+│   │   │   │       │   ├── UserEntityMapper.kt
+│   │   │   │       │   ├── SettingsEntityMapper.kt
+│   │   │   │       │   ├── NotificationEntityMapper.kt
 │   │   │   │       │   └── DatabaseFactory.kt
 │   │   │   │       └── repository/ # Реализации репозиториев
-│   │   │   │           ├── CameraRepositoryImpl.kt
-│   │   │   │           ├── EventRepositoryImpl.kt
+│   │   │   │           ├── CameraRepositoryImpl.kt (SQLDelight)
+│   │   │   │           ├── EventRepositoryImpl.kt (API-based)
+│   │   │   │           ├── EventRepositoryImplSqlDelight.kt (SQLDelight)
 │   │   │   │           ├── LicenseRepositoryImpl.kt
-│   │   │   │           ├── NotificationRepositoryImpl.kt
-│   │   │   │           ├── RecordingRepositoryImpl.kt
-│   │   │   │           ├── SettingsRepositoryImpl.kt
-│   │   │   │           └── UserRepositoryImpl.kt
+│   │   │   │           ├── NotificationRepositoryImpl.kt (API-based)
+│   │   │   │           ├── NotificationRepositoryImplSqlDelight.kt (SQLDelight)
+│   │   │   │           ├── RecordingRepositoryImpl.kt (API-based)
+│   │   │   │           ├── RecordingRepositoryImplSqlDelight.kt (SQLDelight)
+│   │   │   │           ├── SettingsRepositoryImpl.kt (API-based)
+│   │   │   │           ├── SettingsRepositoryImplSqlDelight.kt (SQLDelight)
+│   │   │   │           ├── UserRepositoryImpl.kt (API-based)
+│   │   │   │           └── UserRepositoryImplSqlDelight.kt (SQLDelight)
 │   │   │   └── sqldelight/    # SQLDelight схемы
 │   │   │       └── com/company/ipcamera/shared/database/
 │   │   │           └── CameraDatabase.sq

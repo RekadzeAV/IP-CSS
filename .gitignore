@@ -236,6 +236,7 @@ temp/
 *.backup
 *.swp
 *~
+*.prepared
 
 # Docker
 .dockerignore
@@ -245,10 +246,16 @@ docker-compose.override.yml
 docs/_build/
 docs/.doctrees/
 
+# Auto-generated files
+PROJECT_STRUCTURE_AUTO.md
+
 # Local configuration
 local.properties
 local_config.yaml
 config.local.yaml
+.gitconfig
+.gitconfig.backup
+.kdiff3rc
 
 # License files (не коммитить лицензии)
 license.xml

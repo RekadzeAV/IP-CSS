@@ -1,7 +1,11 @@
 # Полный индекс документации проекта IP-CSS
 
+**Версия документации:** 2.0
 **Версия проекта:** Alfa-0.0.1
-**Последнее обновление:** Декабрь 2025
+**Последнее обновление:** 27 января 2025
+
+> **📚 Архивная документация:** Старые версии документов сохранены в `docs/archive/`
+> **🔄 Версионирование:** Процесс версионирования описан в [docs/DOCUMENTATION_VERSIONING.md](docs/DOCUMENTATION_VERSIONING.md)
 
 ---
 
@@ -79,6 +83,9 @@
 
 - **[docs/ONVIF_CLIENT.md](docs/ONVIF_CLIENT.md)** - Документация ONVIF клиента (использование, API, статус реализации)
 - **[docs/RTSP_CLIENT.md](docs/RTSP_CLIENT.md)** - Документация RTSP клиента (использование, API, статус реализации)
+- **[docs/rtsp/ACTIVATION.md](docs/rtsp/ACTIVATION.md)** - Руководство по активации RTSP клиента ⭐ ВЕРСИЯ 2.0
+- **[docs/rtsp/INSTALLATION.md](docs/rtsp/INSTALLATION.md)** - Установка зависимостей для RTSP клиента ⭐ ВЕРСИЯ 2.0
+- **[docs/rtsp/IMPLEMENTATION.md](docs/rtsp/IMPLEMENTATION.md)** - Статус реализации RTSP клиента ⭐ ВЕРСИЯ 2.0
 - **[docs/WEBSOCKET_CLIENT.md](docs/WEBSOCKET_CLIENT.md)** - Документация WebSocket клиента (использование, API, статус реализации)
 
 ### Системные компоненты
@@ -150,6 +157,17 @@
 - **[docker-compose.yml](docker-compose.yml)** - Docker Compose конфигурация
 - **[Dockerfile](Dockerfile)** - Docker образ для сервера
 
+### Сервер логирования
+
+- **[Log-server/README.md](Log-server/README.md)** - Обзор сервера логирования для IP-CSS ⭐ НОВОЕ
+- **[Log-server/RASPBERRY_PI_4_ANALYSIS.md](Log-server/RASPBERRY_PI_4_ANALYSIS.md)** - Анализ создания сервера сбора, хранения и анализа логов на Raspberry Pi 4 ⭐ НОВОЕ
+
+### CI/CD инфраструктура
+
+- **[Inf-pipeline/README.md](Inf-pipeline/README.md)** - Обзор документации по CI/CD инфраструктуре ⭐ НОВОЕ
+- **[Inf-pipeline/RASPBERRY_PI_JENKINS_ANALYSIS.md](Inf-pipeline/RASPBERRY_PI_JENKINS_ANALYSIS.md)** - Анализ установки Jenkins + Blue Ocean на Raspberry Pi 4 и Pi 5 ⭐ НОВОЕ
+- **[Inf-pipeline/SYNOLOGY_GIT_MIRROR_ANALYSIS.md](Inf-pipeline/SYNOLOGY_GIT_MIRROR_ANALYSIS.md)** - Анализ создания зеркала репозитория GitHub на Synology RS2416+ (DSM 7.2) ⭐ НОВОЕ
+
 ---
 
 ## Документация для пользователей
@@ -190,7 +208,12 @@
 
 ## Дополнительные документы
 
+### Управление документацией
+
+- **[docs/DOCUMENTATION_VERSIONING.md](docs/DOCUMENTATION_VERSIONING.md)** - Процесс версионирования документации ⭐ НОВОЕ
 - **[docs/DOCUMENTATION_GAPS.md](docs/DOCUMENTATION_GAPS.md)** - Анализ недостающей документации
+- **[docs/DOCUMENTATION_OPTIMIZATION_PROPOSALS.md](docs/DOCUMENTATION_OPTIMIZATION_PROPOSALS.md)** - Предложения по оптимизации документации ⭐ НОВОЕ
+- **[docs/archive/README.md](docs/archive/README.md)** - Описание архива документации ⭐ НОВОЕ
 
 ### Безопасность и аутентификация
 
@@ -228,9 +251,10 @@
 - **Узнать текущий статус** → [DEVELOPMENT_MAP.md](DEVELOPMENT_MAP.md) ⭐ НОВОЕ | [CURRENT_STATUS.md](CURRENT_STATUS.md) | [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 - **Начать разработку** → [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)
 - **Работать с ONVIF** → [docs/ONVIF_CLIENT.md](docs/ONVIF_CLIENT.md)
-- **Работать с RTSP** → [docs/RTSP_CLIENT.md](docs/RTSP_CLIENT.md)
+- **Работать с RTSP** → [docs/RTSP_CLIENT.md](docs/RTSP_CLIENT.md) | [docs/rtsp/ACTIVATION.md](docs/rtsp/ACTIVATION.md) ⭐ ВЕРСИЯ 2.0 | [docs/rtsp/INSTALLATION.md](docs/rtsp/INSTALLATION.md) ⭐ ВЕРСИЯ 2.0
 - **Развернуть систему** → [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
 - **Развернуть на NAS** → [docs/NAS_PLATFORMS_ANALYSIS.md](docs/NAS_PLATFORMS_ANALYSIS.md) | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md)
+- **Настроить сервер логов на Raspberry Pi** → [Log-server/RASPBERRY_PI_4_ANALYSIS.md](Log-server/RASPBERRY_PI_4_ANALYSIS.md) ⭐ НОВОЕ
 - **Настроить систему** → [docs/CONFIGURATION.md](docs/CONFIGURATION.md) ⭐ НОВОЕ
 - **Посмотреть API** → [docs/API.md](docs/API.md)
 - **Изучить тесты** → [docs/TESTING.md](docs/TESTING.md) | [docs/TESTS_SUMMARY.md](docs/TESTS_SUMMARY.md)
@@ -287,7 +311,11 @@ README.md (корневой)
 
 ---
 
-**Версия документации:** 1.2
-**Последнее обновление:** Декабрь 2025
-**Обновлено:** Добавлена документация для пользователей (администраторы, операторы, пользователи) с учетом всех платформ и архитектур
+**Версия документации:** 2.0
+**Последнее обновление:** 27 января 2025
+**Обновлено:**
+- Реорганизация документации: созданы подкаталоги docs/rtsp/, docs/reports/, docs/status/, docs/analysis/, docs/security/
+- Объединены RTSP документы в 3 файла (ACTIVATION.md, INSTALLATION.md, IMPLEMENTATION.md)
+- Старая документация сохранена в OLD-DOC-2025-01-27/
+- Добавлена документация для пользователей (администраторы, операторы, пользователи) с учетом всех платформ и архитектур
 
