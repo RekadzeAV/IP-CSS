@@ -165,5 +165,40 @@ class ServerUserRepository {
     suspend fun getAllUsers(): List<User> = mutex.withLock {
         return users.values.toList()
     }
+    
+    /**
+     * Обновление пользователя
+     */
+    suspend fun updateUser(user: User): Result<User> = mutex.withLock {
+        try {
+            if (!users.containsKey(user.id)) {
+                return Result.failure(IllegalArgumentException("User not found: ${user.id}"))
+            }
+            users[user.id] = user
+            logger.info { "User updated: ${user.username} (id: ${user.id})" }
+            Result.success(user)
+        } catch (e: Exception) {
+            logger.error(e) { "Error updating user: ${user.id}" }
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Удаление пользователя
+     */
+    suspend fun deleteUser(id: String): Result<Unit> = mutex.withLock {
+        try {
+            if (!users.containsKey(id)) {
+                return Result.failure(IllegalArgumentException("User not found: $id"))
+            }
+            users.remove(id)
+            passwordHashes.remove(id)
+            logger.info { "User deleted: $id" }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            logger.error(e) { "Error deleting user: $id" }
+            Result.failure(e)
+        }
+    }
 }
 

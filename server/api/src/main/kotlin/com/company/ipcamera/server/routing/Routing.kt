@@ -12,6 +12,10 @@ fun Application.configureRouting() {
             
             // Защищенные маршруты (требуют аутентификации)
             cameraRoutes()
+            recordingRoutes()
+            eventRoutes()
+            userRoutes()
+            settingsRoutes()
         }
     }
 }

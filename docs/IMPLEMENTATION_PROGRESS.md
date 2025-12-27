@@ -240,6 +240,73 @@
 
 ---
 
+### 6. Реализация REST API endpoints для всех сущностей
+
+**Статус:** ✅ Завершено
+
+**Реализовано:**
+- ✅ **Endpoints для записей (Recordings):**
+  - GET /api/v1/recordings - список записей с фильтрацией и пагинацией
+  - GET /api/v1/recordings/{id} - получение записи по ID
+  - DELETE /api/v1/recordings/{id} - удаление записи
+  - GET /api/v1/recordings/{id}/download - получение URL для скачивания
+  - POST /api/v1/recordings/{id}/export - экспорт записи
+  
+- ✅ **Endpoints для событий (Events):**
+  - GET /api/v1/events - список событий с фильтрацией и пагинацией
+  - GET /api/v1/events/{id} - получение события по ID
+  - DELETE /api/v1/events/{id} - удаление события
+  - POST /api/v1/events/{id}/acknowledge - подтверждение события
+  - POST /api/v1/events/acknowledge - массовое подтверждение событий
+  - GET /api/v1/events/statistics - статистика событий
+  
+- ✅ **Endpoints для пользователей (Users):**
+  - GET /api/v1/users/me - получение текущего пользователя
+  - GET /api/v1/users - список пользователей (только для администраторов)
+  - POST /api/v1/users - создание пользователя (только для администраторов)
+  - GET /api/v1/users/{id} - получение пользователя по ID (только для администраторов)
+  - PUT /api/v1/users/{id} - обновление пользователя (только для администраторов)
+  - DELETE /api/v1/users/{id} - удаление пользователя (только для администраторов)
+  
+- ✅ **Endpoints для настроек (Settings):**
+  - GET /api/v1/settings - получение всех настроек
+  - PUT /api/v1/settings - обновление настроек (только для администраторов)
+  - GET /api/v1/settings/{key} - получение настройки по ключу
+  - PUT /api/v1/settings/{key} - обновление настройки (только для администраторов)
+  - DELETE /api/v1/settings/{key} - удаление настройки (только для администраторов)
+  - GET /api/v1/settings/system - получение системных настроек
+  - POST /api/v1/settings/export - экспорт настроек (только для администраторов)
+  - POST /api/v1/settings/import - импорт настроек (только для администраторов)
+  - POST /api/v1/settings/reset - сброс настроек (только для администраторов)
+
+**Серверные репозитории (in-memory для MVP):**
+- ✅ ServerRecordingRepository - управление записями
+- ✅ ServerEventRepository - управление событиями
+- ✅ ServerSettingsRepository - управление настройками
+- ✅ ServerUserRepository - расширен (добавлены updateUser, deleteUser)
+
+**Файлы:**
+- `server/api/src/main/kotlin/com/company/ipcamera/server/repository/ServerRecordingRepository.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/repository/ServerEventRepository.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/repository/ServerSettingsRepository.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/dto/RecordingDto.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/dto/EventDto.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/dto/UserDto.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/dto/SettingsDto.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/routing/RecordingRoutes.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/routing/EventRoutes.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/routing/UserRoutes.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/routing/SettingsRoutes.kt` (создан)
+
+**Требует доработки:**
+- ⚠️ Миграция всех репозиториев на SQLDelight/PostgreSQL для продакшена
+- ⚠️ Реализация getSystemSettings() и updateSystemSettings() в ServerSettingsRepository
+- ⚠️ Добавление валидации входных данных для всех endpoints
+
+**Прогресс REST API:** ~80% (базовые CRUD операции для всех сущностей реализованы)
+
+---
+
 **Последнее обновление:** Декабрь 2025  
-**Следующий пересмотр:** После завершения REST API endpoints
+**Следующий пересмотр:** После реализации WebSocket сервера
 
