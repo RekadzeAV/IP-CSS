@@ -1,6 +1,8 @@
 package com.company.ipcamera.core.network
 
 import com.company.ipcamera.core.common.model.Resolution
+import com.company.ipcamera.core.network.rtsp.NativeRtspClient
+import com.company.ipcamera.core.network.rtsp.NativeRtspClientHandle
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import mu.KotlinLogging
@@ -83,6 +85,9 @@ data class RtspClientConfig(
 class RtspClient(
     private val config: RtspClientConfig
 ) {
+    private val nativeClient = NativeRtspClient()
+    private var nativeHandle: NativeRtspClientHandle? = null
+
     private var status = MutableStateFlow<RtspClientStatus>(RtspClientStatus.DISCONNECTED)
     private val videoFrameFlow = MutableSharedFlow<RtspFrame>(extraBufferCapacity = 10)
     private val audioFrameFlow = MutableSharedFlow<RtspFrame>(extraBufferCapacity = 10)
@@ -125,48 +130,94 @@ class RtspClient(
 
         connectionJob = CoroutineScope(Dispatchers.IO).launch {
             try {
-                // TODO: Вызов нативной функции rtsp_client_connect()
-                // val nativeClient = rtsp_client_create()
-                // val success = rtsp_client_connect(nativeClient, config.url, ...)
+                // Создание нативного клиента
+                val handle = nativeClient.create()
+                nativeHandle = handle
 
-                // Временная заглушка для демонстрации структуры
-                delay(1000) // Имитация подключения
-
-                // Инициализация потоков
-                streams.clear()
-                if (config.enableVideo) {
-                    streams.add(
-                        RtspStreamInfo(
-                            index = 0,
-                            type = RtspStreamType.VIDEO,
-                            resolution = Resolution(1920, 1080),
-                            fps = 25,
-                            codec = "H.264"
-                        )
-                    )
+                // Установка callbacks
+                nativeClient.setStatusCallback(handle) { newStatus, message ->
+                    status.value = newStatus
+                    statusCallback?.invoke(newStatus, message)
                 }
 
-                if (config.enableAudio) {
-                    streams.add(
-                        RtspStreamInfo(
-                            index = streams.size,
-                            type = RtspStreamType.AUDIO,
-                            resolution = null,
-                            fps = 0,
-                            codec = "AAC"
-                        )
-                    )
+                nativeClient.setFrameCallback(handle, RtspStreamType.VIDEO) { frame ->
+                    try {
+                        videoFrameFlow.tryEmit(frame)
+                        videoCallback?.invoke(frame)
+                    } catch (e: Exception) {
+                        logger.error(e) { "Error emitting video frame" }
+                    }
                 }
 
-                status.value = RtspClientStatus.CONNECTED
-                statusCallback?.invoke(RtspClientStatus.CONNECTED, "Connected successfully")
+                nativeClient.setFrameCallback(handle, RtspStreamType.AUDIO) { frame ->
+                    try {
+                        audioFrameFlow.tryEmit(frame)
+                        audioCallback?.invoke(frame)
+                    } catch (e: Exception) {
+                        logger.error(e) { "Error emitting audio frame" }
+                    }
+                }
 
-                logger.info { "RTSP client connected to ${config.url}" }
+                // Подключение к серверу
+                val success = nativeClient.connect(
+                    handle = handle,
+                    url = config.url,
+                    username = config.username,
+                    password = config.password,
+                    timeoutMs = config.timeoutMillis.toInt()
+                )
+
+                if (success) {
+                    // Получение информации о потоках
+                    streams.clear()
+                    val streamCount = nativeClient.getStreamCount(handle)
+                    
+                    for (i in 0 until streamCount) {
+                        val streamInfo = nativeClient.getStreamInfo(handle, i)
+                        if (streamInfo != null) {
+                            streams.add(streamInfo)
+                        }
+                    }
+
+                    // Если потоки не получены, создаем базовые
+                    if (streams.isEmpty()) {
+                        if (config.enableVideo) {
+                            streams.add(
+                                RtspStreamInfo(
+                                    index = 0,
+                                    type = RtspStreamType.VIDEO,
+                                    resolution = Resolution(1920, 1080),
+                                    fps = 25,
+                                    codec = "H.264"
+                                )
+                            )
+                        }
+                        if (config.enableAudio) {
+                            streams.add(
+                                RtspStreamInfo(
+                                    index = streams.size,
+                                    type = RtspStreamType.AUDIO,
+                                    resolution = null,
+                                    fps = 0,
+                                    codec = "AAC"
+                                )
+                            )
+                        }
+                    }
+
+                    status.value = RtspClientStatus.CONNECTED
+                    statusCallback?.invoke(RtspClientStatus.CONNECTED, "Connected successfully")
+                    logger.info { "RTSP client connected to ${config.url}" }
+                } else {
+                    throw Exception("Failed to connect to RTSP server")
+                }
 
             } catch (e: Exception) {
                 logger.error(e) { "Failed to connect to RTSP server" }
                 status.value = RtspClientStatus.ERROR
                 statusCallback?.invoke(RtspClientStatus.ERROR, e.message)
+                nativeHandle?.let { nativeClient.destroy(it) }
+                nativeHandle = null
             }
         }
     }
@@ -175,25 +226,34 @@ class RtspClient(
      * Начать воспроизведение
      */
     suspend fun play() = withContext(Dispatchers.IO) {
+        val handle = nativeHandle ?: run {
+            logger.warn { "Cannot play: not connected" }
+            return@withContext
+        }
+
         if (status.value != RtspClientStatus.CONNECTED) {
             logger.warn { "Cannot play: not connected" }
             return@withContext
         }
 
-        // TODO: Вызов нативной функции rtsp_client_play()
-        status.value = RtspClientStatus.PLAYING
-        statusCallback?.invoke(RtspClientStatus.PLAYING, "Playing")
-
-        // Запуск приема кадров
-        startReceiving()
-
-        logger.info { "RTSP client started playing" }
+        val success = nativeClient.play(handle)
+        if (success) {
+            status.value = RtspClientStatus.PLAYING
+            statusCallback?.invoke(RtspClientStatus.PLAYING, "Playing")
+            logger.info { "RTSP client started playing" }
+        } else {
+            logger.error { "Failed to start playing" }
+            status.value = RtspClientStatus.ERROR
+            statusCallback?.invoke(RtspClientStatus.ERROR, "Failed to start playing")
+        }
     }
 
     /**
      * Остановить воспроизведение
      */
     suspend fun stop() = withContext(Dispatchers.IO) {
+        val handle = nativeHandle ?: return@withContext
+        
         if (status.value != RtspClientStatus.PLAYING) {
             return@withContext
         }
@@ -201,8 +261,8 @@ class RtspClient(
         receiveJob?.cancel()
         receiveJob = null
 
-        // TODO: Вызов нативной функции rtsp_client_stop()
-        if (status.value == RtspClientStatus.PLAYING) {
+        val success = nativeClient.stop(handle)
+        if (success || status.value == RtspClientStatus.PLAYING) {
             status.value = RtspClientStatus.CONNECTED
             statusCallback?.invoke(RtspClientStatus.CONNECTED, "Stopped")
         }
@@ -237,7 +297,12 @@ class RtspClient(
         connectionJob?.cancel()
         connectionJob = null
 
-        // TODO: Вызов нативной функции rtsp_client_disconnect()
+        nativeHandle?.let { handle ->
+            nativeClient.disconnect(handle)
+            nativeClient.destroy(handle)
+            nativeHandle = null
+        }
+
         status.value = RtspClientStatus.DISCONNECTED
         statusCallback?.invoke(RtspClientStatus.DISCONNECTED, "Disconnected")
 
@@ -280,66 +345,13 @@ class RtspClient(
 
     /**
      * Начать прием кадров
+     * Примечание: Callbacks уже установлены в connect(), поэтому
+     * кадры будут приходить автоматически через нативные callbacks
      */
     private fun startReceiving() {
-        receiveJob?.cancel()
-
-        receiveJob = CoroutineScope(Dispatchers.IO).launch {
-            // TODO: Интеграция с нативной библиотекой для получения кадров
-            // val nativeClient = getNativeClient()
-            // rtsp_client_set_frame_callback(nativeClient, RTSP_STREAM_VIDEO) { frame, userData ->
-            //     val kotlinFrame = convertFrame(frame)
-            //     videoFrameFlow.emit(kotlinFrame)
-            //     videoCallback?.invoke(kotlinFrame)
-            // }
-
-            // Временная заглушка: генерация тестовых кадров
-            if (config.enableVideo) {
-                launch {
-                    var frameNumber = 0
-                    while (isActive && status.value == RtspClientStatus.PLAYING) {
-                        val frame = RtspFrame(
-                            data = ByteArray(100), // Заглушка
-                            timestamp = System.currentTimeMillis(),
-                            streamType = RtspStreamType.VIDEO,
-                            width = 1920,
-                            height = 1080
-                        )
-
-                        try {
-                            videoFrameFlow.emit(frame)
-                            videoCallback?.invoke(frame)
-                        } catch (e: Exception) {
-                            logger.error(e) { "Error emitting video frame" }
-                        }
-
-                        delay(40) // ~25 FPS
-                        frameNumber++
-                    }
-                }
-            }
-
-            if (config.enableAudio) {
-                launch {
-                    while (isActive && status.value == RtspClientStatus.PLAYING) {
-                        val frame = RtspFrame(
-                            data = ByteArray(1024), // Заглушка
-                            timestamp = System.currentTimeMillis(),
-                            streamType = RtspStreamType.AUDIO
-                        )
-
-                        try {
-                            audioFrameFlow.emit(frame)
-                            audioCallback?.invoke(frame)
-                        } catch (e: Exception) {
-                            logger.error(e) { "Error emitting audio frame" }
-                        }
-
-                        delay(20) // Аудио частота зависит от формата
-                    }
-                }
-            }
-        }
+        // Callbacks установлены в connect(), поэтому дополнительная логика не требуется
+        // Нативная библиотека будет вызывать callbacks автоматически
+        logger.debug { "Frame receiving started via native callbacks" }
     }
 
     /**
@@ -348,6 +360,16 @@ class RtspClient(
     fun close() {
         connectionJob?.cancel()
         receiveJob?.cancel()
+        
+        nativeHandle?.let { handle ->
+            try {
+                nativeClient.destroy(handle)
+            } catch (e: Exception) {
+                logger.error(e) { "Error destroying native client" }
+            }
+            nativeHandle = null
+        }
+        
         streams.clear()
         status.value = RtspClientStatus.DISCONNECTED
     }

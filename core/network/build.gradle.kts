@@ -19,6 +19,19 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
+    // Native targets для cinterop
+    linuxX64("native") {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                }
+            }
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -81,6 +94,10 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.java)
             }
+        }
+
+        val nativeMain by creating {
+            dependsOn(commonMain)
         }
     }
 }

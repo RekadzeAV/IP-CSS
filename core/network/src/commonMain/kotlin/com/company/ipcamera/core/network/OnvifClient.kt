@@ -11,6 +11,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.xml.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.xml.*
@@ -467,27 +468,59 @@ class OnvifClient(
         url: String,
         soapBody: String,
         username: String? = null,
-        password: String? = null
+        password: String? = null,
+        retries: Int = 2
     ): String {
-        val response = client.post(url) {
-            contentType(ContentType.Text.Xml.withCharset(Charsets.UTF_8))
-            header("SOAPAction", "")
+        var lastException: Exception? = null
+        
+        repeat(retries + 1) { attempt ->
+            try {
+                val response = client.post(url) {
+                    contentType(ContentType.Text.Xml.withCharset(Charsets.UTF_8))
+                    header("SOAPAction", "")
 
-            // Basic Auth если предоставлены учетные данные
-            if (username != null && password != null) {
-                val credentials = "$username:$password"
-                val encoded = java.util.Base64.getEncoder().encodeToString(credentials.toByteArray())
-                header("Authorization", "Basic $encoded")
+                    // Basic Auth если предоставлены учетные данные
+                    if (username != null && password != null) {
+                        val credentials = "$username:$password"
+                        val encoded = java.util.Base64.getEncoder().encodeToString(credentials.toByteArray())
+                        header("Authorization", "Basic $encoded")
+                    }
+
+                    setBody(soapBody)
+                }
+
+                // Проверка статуса ответа
+                if (response.status.value in 200..299) {
+                    val responseBody = response.body<String>()
+                    logger.debug { "SOAP request successful to $url (attempt ${attempt + 1})" }
+                    return responseBody
+                } else {
+                    val errorMsg = "HTTP ${response.status.value}: ${response.status.description}"
+                    logger.warn { "SOAP request failed: $errorMsg (attempt ${attempt + 1})" }
+                    if (attempt < retries) {
+                        kotlinx.coroutines.delay(500 * (attempt + 1).toLong()) // Exponential backoff
+                    } else {
+                        throw Exception(errorMsg)
+                    }
+                }
+            } catch (e: java.net.SocketTimeoutException) {
+                lastException = e
+                logger.warn(e) { "SOAP request timeout (attempt ${attempt + 1})" }
+                if (attempt < retries) {
+                    kotlinx.coroutines.delay(500 * (attempt + 1).toLong())
+                }
+            } catch (e: Exception) {
+                lastException = e
+                logger.warn(e) { "SOAP request error (attempt ${attempt + 1}): ${e.message}" }
+                if (attempt < retries) {
+                    kotlinx.coroutines.delay(500 * (attempt + 1).toLong())
+                } else {
+                    throw e
+                }
             }
-
-            setBody(soapBody)
         }
-
-        val responseBody = response.body<String>()
-
-        // Санитизация ответа от сервера для предотвращения XSS/инъекций при парсинге
-        // Примечание: SOAP запросы генерируются нами, поэтому не требуют санитизации
-        return responseBody
+        
+        throw lastException ?: Exception("SOAP request failed after $retries retries")
     }
 
     private fun parseCapabilities(xml: String): OnvifCapabilities? {
@@ -496,6 +529,7 @@ class OnvifClient(
             val xmlParser = Xml {
                 ignoreUnknownChildren = true
                 coerceInputValues = true
+                isCoerceInputValues = true
             }
 
             // Пытаемся распарсить как SOAP Envelope
@@ -511,6 +545,7 @@ class OnvifClient(
                     )
                 } else {
                     // Fallback на упрощенный парсинг
+                    logger.debug { "Capabilities not found in SOAP body, using fallback parsing" }
                     val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
                     val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
                     val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
@@ -521,9 +556,21 @@ class OnvifClient(
                         ptzServiceUrl = ptzUrl
                     )
                 }
+            } catch (e: kotlinx.serialization.SerializationException) {
+                // Fallback на упрощенный парсинг если XML парсинг не удался
+                logger.debug(e) { "XML serialization failed, using fallback regex parsing" }
+                val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
+                val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
+                val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
+
+                OnvifCapabilities(
+                    deviceServiceUrl = deviceUrl,
+                    mediaServiceUrl = mediaUrl,
+                    ptzServiceUrl = ptzUrl
+                )
             } catch (e: Exception) {
                 // Fallback на упрощенный парсинг если XML парсинг не удался
-                logger.debug(e) { "XML parsing failed, using fallback" }
+                logger.debug(e) { "XML parsing failed with unexpected error, using fallback" }
                 val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
                 val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
                 val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
@@ -535,7 +582,7 @@ class OnvifClient(
                 )
             }
         } catch (e: Exception) {
-            logger.error(e) { "Error parsing capabilities" }
+            logger.error(e) { "Error parsing capabilities XML" }
             null
         }
     }
@@ -615,16 +662,28 @@ class OnvifClient(
     }
 
     // Упрощенная функция для извлечения значений из XML
+    // Используется как fallback когда XML парсинг не удается
     private fun extractXmlValue(xml: String, tagName: String, attribute: String? = null): String? {
         return try {
             if (attribute != null) {
-                val regex = Regex("<[^:]*:$tagName[^>]*$attribute=\"([^\"]+)\"")
-                regex.find(xml)?.groupValues?.get(1)
+                // Поиск атрибута в теге (например, <tds:Device XAddr="http://...")
+                val patterns = listOf(
+                    Regex("<[^:]*:$tagName[^>]*$attribute=\"([^\"]+)\""),
+                    Regex("<$tagName[^>]*$attribute=\"([^\"]+)\""),
+                    Regex("<[^>]*:$tagName[^>]*$attribute=\"([^\"]+)\"")
+                )
+                patterns.firstNotNullOfOrNull { it.find(xml)?.groupValues?.get(1) }
             } else {
-                val regex = Regex("<[^>]*:$tagName[^>]*>([^<]+)</[^>]*:$tagName>")
-                regex.find(xml)?.groupValues?.get(1)
+                // Поиск значения между тегами (например, <tds:Manufacturer>Hikvision</tds:Manufacturer>)
+                val patterns = listOf(
+                    Regex("<[^>]*:$tagName[^>]*>([^<]+)</[^>]*:$tagName>"),
+                    Regex("<$tagName[^>]*>([^<]+)</$tagName>"),
+                    Regex("<[^>]*:$tagName>([^<]+)</[^>]*:$tagName>")
+                )
+                patterns.firstNotNullOfOrNull { it.find(xml)?.groupValues?.get(1) }?.trim()
             }
         } catch (e: Exception) {
+            logger.debug(e) { "Error extracting XML value for tag: $tagName, attribute: $attribute" }
             null
         }
     }
