@@ -7,13 +7,25 @@ interface SettingsState {
   systemSettings: SystemSettings | null;
   loading: boolean;
   error: string | null;
+  themeMode: 'light' | 'dark';
 }
+
+const getInitialThemeMode = (): 'light' | 'dark' => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('themeMode');
+    if (saved === 'light' || saved === 'dark') {
+      return saved;
+    }
+  }
+  return 'dark';
+};
 
 const initialState: SettingsState = {
   settings: [],
   systemSettings: null,
   loading: false,
   error: null,
+  themeMode: getInitialThemeMode(),
 };
 
 // Async thunks
@@ -126,6 +138,12 @@ const settingsSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    toggleTheme: (state) => {
+      state.themeMode = state.themeMode === 'light' ? 'dark' : 'light';
+    },
+    setThemeMode: (state, action: PayloadAction<'light' | 'dark'>) => {
+      state.themeMode = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -183,6 +201,6 @@ const settingsSlice = createSlice({
   },
 });
 
-export const { clearError } = settingsSlice.actions;
+export const { clearError, toggleTheme, setThemeMode } = settingsSlice.actions;
 export default settingsSlice.reducer;
 

@@ -89,3 +89,15 @@ data class StartRecordingResponse(
     val estimatedEndTime: Long? = null
 )
 
+/**
+ * DTO для запроса экспорта записи
+ */
+@Serializable
+data class ExportRecordingRequest(
+    val format: String? = "mp4", // mp4, mkv, avi, mov, flv
+    val quality: String? = "medium", // low, medium, high, ultra
+    val startTime: Long? = null, // Начало обрезки в миллисекундах (опционально)
+    val endTime: Long? = null, // Конец обрезки в миллисекундах (опционально)
+    val useH265: Boolean = false // Использовать H.265 кодек
+)
+

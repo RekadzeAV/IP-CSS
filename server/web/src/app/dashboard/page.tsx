@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import Layout from '@/components/Layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute/ProtectedRoute';
+import { EventsChart, CamerasChart } from '@/components/Charts';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { fetchCameras } from '@/store/slices/camerasSlice';
 import { fetchEvents, fetchStatistics } from '@/store/slices/eventsSlice';
@@ -111,6 +112,15 @@ function DashboardContent() {
                 </Card>
               </Grid>
             ))}
+          </Grid>
+
+          <Grid container spacing={3} sx={{ mt: 2 }}>
+            <Grid item xs={12} md={6}>
+              <EventsChart events={events} />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <CamerasChart cameras={cameras} />
+            </Grid>
           </Grid>
 
           <Paper sx={{ p: 3, mt: 3 }}>

@@ -89,6 +89,26 @@ export const cameraService = {
     }
     throw new Error(response.data.message || 'Failed to discover cameras');
   },
+
+  /**
+   * Сохранить зоны детекции движения
+   */
+  async saveDetectionZones(
+    id: string,
+    zones: Array<{
+      id: string;
+      name: string;
+      points: Array<{ x: number; y: number }>;
+      enabled: boolean;
+      sensitivity?: number;
+    }>
+  ): Promise<void> {
+    const response = await apiClient.put<ApiResponse<null>>(`/cameras/${id}/zones`, { zones });
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to save detection zones');
+    }
+  },
 };
+
 
 

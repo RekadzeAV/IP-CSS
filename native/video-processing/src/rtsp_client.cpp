@@ -14,6 +14,7 @@
 #include <iomanip>
 #include <regex>
 #include <cstdint>
+#include <chrono>
 
 // Платформо-специфичные заголовки для сокетов
 #ifdef _WIN32
@@ -104,6 +105,13 @@ struct RTSPClient {
     std::mutex mutex;
     std::thread receiveThread;
     std::thread rtpThread;
+    std::thread reconnectThread;
+
+    // Параметры автоматического переподключения
+    RTSPReconnectParams reconnectParams;
+    std::atomic<bool> reconnectEnabled;
+    std::atomic<int> reconnectAttempts;
+    std::atomic<bool> isReconnecting;
 
     // RTSP протокол
     RTSPUrl rtspUrl;
@@ -125,7 +133,8 @@ struct RTSPClient {
     RTSPClient() : status(RTSP_STATUS_DISCONNECTED), connected(false), playing(false),
                    shouldStop(false), videoCallback(nullptr), audioCallback(nullptr),
                    statusCallback(nullptr), videoUserData(nullptr), audioUserData(nullptr),
-                   statusUserData(nullptr), rtspSocket(INVALID_SOCKET), cseq(1)
+                   statusUserData(nullptr), rtspSocket(INVALID_SOCKET), cseq(1),
+                   reconnectEnabled(false), reconnectAttempts(0), isReconnecting(false)
 #ifdef ENABLE_FFMPEG
                    , formatContext(nullptr), videoCodecContext(nullptr), audioCodecContext(nullptr),
                    swsContext(nullptr), videoStreamIndex(-1), audioStreamIndex(-1)
@@ -138,7 +147,19 @@ struct RTSPClient {
     }
 
     ~RTSPClient() {
-        disconnect();
+        shouldStop = true;
+        reconnectEnabled = false;
+
+        // Ожидание завершения потока переподключения
+        if (reconnectThread.joinable()) {
+            reconnectThread.join();
+        }
+
+        // Отключение от сервера
+        if (rtspSocket != INVALID_SOCKET) {
+            close(rtspSocket);
+            rtspSocket = INVALID_SOCKET;
+        }
         for (auto* stream : streams) {
             delete stream;
         }
@@ -1298,6 +1319,89 @@ void rtsp_frame_release(RTSPFrame* frame) {
         delete frame;
     }
 }
+
+// Функция для установки параметров автоматического переподключения
+void rtsp_client_set_reconnect_params(RTSPClient* client, const RTSPReconnectParams* params) {
+    if (!client) return;
+
+    std::lock_guard<std::mutex> lock(client->mutex);
+
+    if (params) {
+        client->reconnectParams = *params;
+        client->reconnectEnabled = params->enabled;
+    } else {
+        // Параметры по умолчанию
+        client->reconnectParams.enabled = false;
+        client->reconnectParams.maxRetries = 5;
+        client->reconnectParams.initialDelayMs = 1000;
+        client->reconnectParams.maxDelayMs = 30000;
+        client->reconnectParams.backoffMultiplier = 2.0f;
+        client->reconnectEnabled = false;
+    }
+}
+
+// Вспомогательная функция для автоматического переподключения
+static void reconnect_thread_func(RTSPClient* client) {
+    if (!client || !client->reconnectEnabled) return;
+
+    int attempt = 0;
+    int delay = client->reconnectParams.initialDelayMs;
+
+    while (!client->shouldStop && client->reconnectEnabled) {
+        // Проверяем, нужно ли переподключение
+        if (client->connected && client->status != RTSP_STATUS_ERROR) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            continue;
+        }
+
+        // Проверяем лимит попыток
+        if (client->reconnectParams.maxRetries > 0 && attempt >= client->reconnectParams.maxRetries) {
+            if (client->statusCallback) {
+                client->statusCallback(RTSP_STATUS_ERROR, "Max reconnection attempts reached", client->statusUserData);
+            }
+            client->reconnectEnabled = false;
+            break;
+        }
+
+        client->isReconnecting = true;
+        attempt++;
+
+        if (client->statusCallback) {
+            std::string msg = "Reconnecting (attempt " + std::to_string(attempt) + ")...";
+            client->statusCallback(RTSP_STATUS_CONNECTING, msg.c_str(), client->statusUserData);
+        }
+
+        // Попытка переподключения
+        bool success = rtsp_client_connect(client, client->url.c_str(),
+                                          client->username.c_str(),
+                                          client->password.c_str(),
+                                          5000);
+
+        if (success && client->playing) {
+            // Если было воспроизведение, возобновляем
+            rtsp_client_play(client);
+        }
+
+        client->isReconnecting = false;
+
+        if (success) {
+            // Успешное переподключение
+            attempt = 0;
+            delay = client->reconnectParams.initialDelayMs;
+            continue;
+        }
+
+        // Ожидание перед следующей попыткой с экспоненциальной задержкой
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+        delay = std::min(static_cast<int>(delay * client->reconnectParams.backoffMultiplier),
+                        client->reconnectParams.maxDelayMs);
+    }
+
+    client->isReconnecting = false;
+}
+
+// Модифицируем rtsp_client_connect для запуска потока переподключения
+// Это будет сделано через проверку в существующей функции connect
 
 } // extern "C"
 

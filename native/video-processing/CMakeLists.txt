@@ -11,6 +11,12 @@ set(SOURCES
     src/stream_manager.cpp
 )
 
+# JNI обертки для Android
+if(ANDROID)
+    list(APPEND SOURCES src/jni/rtsp_client_jni.cpp)
+    message(STATUS "JNI support enabled for Android")
+endif()
+
 set(HEADERS
     include/video_decoder.h
     include/video_encoder.h
@@ -19,8 +25,20 @@ set(HEADERS
     include/stream_manager.h
 )
 
+# Включение заголовочных файлов (до создания target)
+include_directories(
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 # Создание shared библиотеки для динамической загрузки
 add_library(video_processing SHARED ${SOURCES} ${HEADERS})
+
+# Включение заголовочных файлов (для экспорта)
+target_include_directories(video_processing
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
 
 # Установка visibility символов (для правильного экспорта)
 set_target_properties(video_processing PROPERTIES
@@ -47,20 +65,60 @@ target_link_libraries(video_processing
         Threads::Threads
 )
 
+# Windows sockets
+if(WIN32)
+    target_link_libraries(video_processing PRIVATE ws2_32)
+endif()
+
+# Android специфичные настройки
+if(ANDROID)
+    # Логирование для Android
+    target_link_libraries(video_processing PRIVATE log)
+    # JNI
+    find_library(ANDROID_JNI_LIB jni PATHS ${ANDROID_NDK}/platforms/${ANDROID_PLATFORM}/arch-${ANDROID_ARCH}/usr/lib)
+    if(ANDROID_JNI_LIB)
+        target_link_libraries(video_processing PRIVATE ${ANDROID_JNI_LIB})
+    endif()
+    message(STATUS "Android-specific libraries linked")
+endif()
+
+# iOS специфичные настройки
+if(IOS)
+    # iOS использует встроенные фреймворки
+    find_library(VIDEOTOOLBOX VideoToolbox)
+    find_library(AVFOUNDATION AVFoundation)
+    find_library(COREMEDIA CoreMedia)
+    find_library(COREVIDEO CoreVideo)
+
+    if(VIDEOTOOLBOX)
+        target_link_libraries(video_processing PRIVATE ${VIDEOTOOLBOX})
+    endif()
+    if(AVFOUNDATION)
+        target_link_libraries(video_processing PRIVATE ${AVFOUNDATION})
+    endif()
+    if(COREMEDIA)
+        target_link_libraries(video_processing PRIVATE ${COREMEDIA})
+    endif()
+    if(COREVIDEO)
+        target_link_libraries(video_processing PRIVATE ${COREVIDEO})
+    endif()
+    message(STATUS "iOS-specific frameworks linked")
+endif()
+
 # FFmpeg для RTSP, декодирования и кодирования видео
 option(ENABLE_FFMPEG "Enable FFmpeg" ON)
 if(ENABLE_FFMPEG)
     find_package(PkgConfig REQUIRED)
     if(PkgConfig_FOUND)
-        pkg_check_modules(FFMPEG REQUIRED 
-            libavformat 
-            libavcodec 
-            libavutil 
+        pkg_check_modules(FFMPEG REQUIRED
+            libavformat
+            libavcodec
+            libavutil
             libswscale
             libswresample
         )
     endif()
-    
+
     if(FFMPEG_FOUND)
         target_include_directories(video_processing
             PUBLIC
@@ -86,7 +144,7 @@ if(ENABLE_OPENCV)
         message(STATUS "OpenCV version: ${OpenCV_VERSION}")
         message(STATUS "OpenCV libraries: ${OpenCV_LIBS}")
         message(STATUS "OpenCV include dirs: ${OpenCV_INCLUDE_DIRS}")
-        
+
         target_link_libraries(video_processing PRIVATE ${OpenCV_LIBS})
         target_include_directories(video_processing
             PUBLIC
@@ -113,7 +171,21 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
     if(MSVC)
         target_compile_options(video_processing PRIVATE /O2)
     else()
-        target_compile_options(video_processing PRIVATE -O3 -march=native)
+        # Для Android и iOS не используем -march=native (кросс-компиляция)
+        if(ANDROID OR IOS)
+            target_compile_options(video_processing PRIVATE -O3)
+        else()
+            target_compile_options(video_processing PRIVATE -O3 -march=native)
+        endif()
     endif()
+endif()
+
+# Android и iOS специфичные определения
+if(ANDROID)
+    target_compile_definitions(video_processing PRIVATE ANDROID __ANDROID_API__=${ANDROID_PLATFORM_LEVEL})
+endif()
+
+if(IOS)
+    target_compile_definitions(video_processing PRIVATE IOS TARGET_OS_IPHONE=1)
 endif()
 

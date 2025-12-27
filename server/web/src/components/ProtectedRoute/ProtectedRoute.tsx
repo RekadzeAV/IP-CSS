@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Box, CircularProgress } from '@mui/material';
-import { authService } from '@/services/authService';
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { fetchCurrentUser } from '@/store/slices/authSlice';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -11,17 +12,24 @@ interface ProtectedRouteProps {
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+  const dispatch = useAppDispatch();
+  const { isAuthenticated, loading } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
-    if (!authService.isAuthenticated()) {
-      router.push('/login');
-    } else {
-      setIsLoading(false);
+    // Проверяем аутентификацию через Redux
+    if (!isAuthenticated && !loading) {
+      // Пытаемся получить текущего пользователя
+      dispatch(fetchCurrentUser()).then((result) => {
+        if (fetchCurrentUser.rejected.match(result)) {
+          // Если не удалось получить пользователя, перенаправляем на логин
+          router.push('/login');
+        }
+      });
     }
-  }, [router]);
+  }, [isAuthenticated, loading, dispatch, router]);
 
-  if (isLoading) {
+  // Показываем загрузку пока проверяем аутентификацию
+  if (loading || (!isAuthenticated && !loading)) {
     return (
       <Box
         sx={{
@@ -36,7 +44,13 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
+  // Если не аутентифицирован, не показываем контент (будет редирект)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return <>{children}</>;
 }
+
 
 

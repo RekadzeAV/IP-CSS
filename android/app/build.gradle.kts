@@ -15,6 +15,11 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0.0"
+
+        // NDK фильтры (опционально, если нужны только определенные архитектуры)
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
     }
 
     compileOptions {
@@ -32,6 +37,13 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion = "1.7.0"
+    }
+
+    // Конфигурация для нативных библиотек (JNI)
+    sourceSets {
+        getByName("main") {
+            jniLibs.srcDirs("src/main/jniLibs", "../native/video-processing/lib/android")
+        }
     }
 }
 
@@ -65,7 +77,7 @@ dependencies {
     // Logging
     implementation(libs.kotlin.logging)
     implementation("ch.qos.logback:logback-classic:1.5.9")
-    
+
     // ExoPlayer (Media3) for video playback
     val media3Version = "1.2.1"
     implementation("androidx.media3:media3-exoplayer:$media3Version")

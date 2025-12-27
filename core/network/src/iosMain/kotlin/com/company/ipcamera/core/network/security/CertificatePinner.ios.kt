@@ -2,6 +2,9 @@ package com.company.ipcamera.core.network.security
 
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
+import io.ktor.client.engine.darwin.DarwinEngineConfig
+import platform.Foundation.NSURLSession
+import platform.Foundation.NSURLSessionConfiguration
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -16,6 +19,9 @@ private val logger = KotlinLogging.logger {}
  */
 actual class CertificatePinner(private val config: CertificatePinningConfig) {
 
+    // Храним delegate для предотвращения сборки мусора
+    private var delegate: CertificatePinningDelegate? = null
+
     actual fun applyToEngine(engine: HttpClientEngine): HttpClientEngine {
         // Ktor Darwin engine не поддерживает прямое изменение NSURLSession после создания
         // Certificate pinning должен быть настроен при создании engine
@@ -26,9 +32,12 @@ actual class CertificatePinner(private val config: CertificatePinningConfig) {
     /**
      * Создает Darwin engine с настроенным certificate pinning
      *
-     * Примечание: Полная реализация certificate pinning на iOS требует использования
-     * URLSessionDelegate методов для проверки сертификатов. Это может потребовать
-     * создания кастомного NSURLSession с delegate, что сложнее интегрировать с Ktor.
+     * Реализация использует CertificatePinningEngineWrapper, который создает
+     * кастомный NSURLSession с CertificatePinningDelegate для полной поддержки
+     * certificate pinning на iOS.
+     *
+     * Альтернативно можно использовать стандартный Darwin engine, но тогда
+     * certificate pinning будет работать только через Network Security Config.
      */
     fun createEngineWithPinning(): HttpClientEngine {
         if (!config.enablePinning || config.pinnedCertificates.isEmpty()) {
@@ -36,26 +45,32 @@ actual class CertificatePinner(private val config: CertificatePinningConfig) {
             return Darwin.create()
         }
 
-        logger.info { "Certificate pinning configuration provided for iOS (${config.pinnedCertificates.size} hosts)" }
-
-        // На iOS certificate pinning требует использования URLSessionDelegate
-        // Для полной реализации потребуется:
-        // 1. Создать кастомный NSURLSession с delegate
-        // 2. Реализовать URLSessionDelegate методы для проверки сертификатов
-        // 3. Интегрировать с Ktor Darwin engine
-
-        // Временное решение: возвращаем стандартный engine
-        // TODO: Реализовать полную интеграцию с URLSessionDelegate
-        return Darwin.create {
-            // Конфигурация Darwin engine
-            // Certificate pinning будет реализован через delegate методы
-            logger.debug { "Creating Darwin engine (certificate pinning to be implemented via URLSessionDelegate)" }
+        logger.info {
+            "Certificate pinning configured for iOS engine " +
+            "(${config.pinnedCertificates.size} hosts, enforce: ${config.enforcePinning})"
         }
+
+        // Создаем delegate для проверки certificate pins
+        delegate = CertificatePinningDelegate(config)
+
+        // Используем кастомный engine wrapper для полной поддержки certificate pinning
+        // Это обеспечивает полный контроль над NSURLSession и delegate
+        return CertificatePinningEngineWrapper(config)
+    }
+
+    /**
+     * Получить delegate для использования в кастомном NSURLSession
+     *
+     * Этот метод можно использовать для создания кастомного NSURLSession
+     * с certificate pinning delegate, если Ktor не поддерживает это напрямую.
+     */
+    fun getDelegate(): CertificatePinningDelegate? {
+        return delegate
     }
 
     actual fun isSupported(): Boolean {
-        // Certificate pinning поддерживается на iOS, но требует дополнительной реализации
         return true
     }
 }
+
 

@@ -13,7 +13,7 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Сервис для генерации HLS потоков через FFmpeg
- * 
+ *
  * Генерирует HLS сегменты из RTSP потоков для веб-воспроизведения
  */
 class HlsGeneratorService(
@@ -21,14 +21,14 @@ class HlsGeneratorService(
     private val hlsOutputDirectory: String = "streams/hls"
 ) {
     private val activeHlsProcesses = mutableMapOf<String, Process>()
-    
+
     init {
         ensureDirectoriesExist()
     }
-    
+
     /**
      * Начать генерацию HLS потока из RTSP источника
-     * 
+     *
      * @param streamId ID стрима
      * @param rtspUrl URL RTSP потока
      * @param quality Качество потока
@@ -45,14 +45,14 @@ class HlsGeneratorService(
                 logger.warn { "HLS generation already running for stream: $streamId" }
                 return getPlaylistPath(streamId)
             }
-            
+
             // Создаем директорию для HLS сегментов
             val streamDir = Paths.get(hlsOutputDirectory, streamId)
             Files.createDirectories(streamDir)
-            
+
             val playlistPath = getPlaylistPath(streamId)
             val segmentPath = streamDir.resolve("segment_%03d.ts").toString()
-            
+
             // Параметры FFmpeg для генерации HLS
             val args = mutableListOf<String>(
                 "ffmpeg",
@@ -67,7 +67,7 @@ class HlsGeneratorService(
                 "-f", "hls",
                 playlistPath
             )
-            
+
             // Настройки качества
             when (quality) {
                 StreamQuality.LOW -> {
@@ -83,22 +83,22 @@ class HlsGeneratorService(
                     args.addAll(listOf("-b:v", "6000k", "-s", "1920x1080", "-r", "30", "-preset", "fast"))
                 }
             }
-            
+
             logger.info { "Starting HLS generation for stream: $streamId, command: ${args.joinToString(" ")}" }
-            
+
             val process = ProcessBuilder(args)
                 .directory(File(hlsOutputDirectory))
                 .redirectErrorStream(true)
                 .start()
-            
+
             activeHlsProcesses[streamId] = process
-            
+
             // Запускаем мониторинг процесса в фоне
             monitorProcess(streamId, process)
-            
+
             // Ждем немного, чтобы убедиться, что процесс запустился
             Thread.sleep(1000)
-            
+
             if (process.isAlive && File(playlistPath).exists()) {
                 logger.info { "HLS generation started successfully for stream: $streamId" }
                 return playlistPath
@@ -107,14 +107,14 @@ class HlsGeneratorService(
                 stopHlsGeneration(streamId)
                 return null
             }
-            
+
         } catch (e: Exception) {
             logger.error(e) { "Error starting HLS generation for stream: $streamId" }
             activeHlsProcesses.remove(streamId)
             return null
         }
     }
-    
+
     /**
      * Остановить генерацию HLS потока
      */
@@ -128,33 +128,33 @@ class HlsGeneratorService(
                 }
                 logger.info { "Stopped HLS generation for stream: $streamId" }
             }
-            
+
             // Удаляем директорию со старыми сегментами (опционально)
             // Можно оставить для кэширования или удалить сразу
             // val streamDir = Paths.get(hlsOutputDirectory, streamId)
             // if (Files.exists(streamDir)) {
             //     Files.walk(streamDir).sorted(Comparator.reverseOrder()).forEach { Files.delete(it) }
             // }
-            
+
         } catch (e: Exception) {
             logger.error(e) { "Error stopping HLS generation for stream: $streamId" }
         }
     }
-    
+
     /**
      * Получить путь к HLS плейлисту
      */
     fun getPlaylistPath(streamId: String): String {
         return Paths.get(hlsOutputDirectory, streamId, "playlist.m3u8").toString()
     }
-    
+
     /**
      * Получить относительный URL для плейлиста
      */
     fun getPlaylistUrl(streamId: String): String {
         return "/api/v1/cameras/streams/$streamId/hls/playlist.m3u8"
     }
-    
+
     /**
      * Проверить, активна ли генерация HLS
      */
@@ -162,7 +162,7 @@ class HlsGeneratorService(
         val process = activeHlsProcesses[streamId]
         return process != null && process.isAlive
     }
-    
+
     /**
      * Мониторинг процесса FFmpeg
      */
@@ -178,7 +178,7 @@ class HlsGeneratorService(
             }
         }.start()
     }
-    
+
     /**
      * Убедиться, что директории существуют
      */
@@ -190,7 +190,116 @@ class HlsGeneratorService(
             logger.error(e) { "Error creating HLS output directory" }
         }
     }
-    
+
+    /**
+     * Начать генерацию HLS из записанного видео файла
+     *
+     * @param recordingId ID записи
+     * @param videoFilePath Путь к видео файлу
+     * @param quality Качество потока
+     * @return путь к HLS плейлисту или null при ошибке
+     */
+    fun startHlsFromRecording(
+        recordingId: String,
+        videoFilePath: String,
+        quality: StreamQuality = StreamQuality.MEDIUM
+    ): String? {
+        try {
+            val videoFile = File(videoFilePath)
+            if (!videoFile.exists()) {
+                logger.error { "Video file not found: $videoFilePath" }
+                return null
+            }
+
+            // Проверяем, не идет ли уже генерация для этого recordingId
+            if (activeHlsProcesses.containsKey(recordingId)) {
+                logger.warn { "HLS generation already running for recording: $recordingId" }
+                return getRecordingPlaylistPath(recordingId)
+            }
+
+            // Создаем директорию для HLS сегментов
+            val streamDir = Paths.get(hlsOutputDirectory, "recordings", recordingId)
+            Files.createDirectories(streamDir)
+
+            val playlistPath = getRecordingPlaylistPath(recordingId)
+            val segmentPath = streamDir.resolve("segment_%03d.ts").toString()
+
+            // Параметры FFmpeg для генерации HLS из файла
+            val args = mutableListOf<String>(
+                "ffmpeg",
+                "-i", videoFilePath,
+                "-c:v", "libx264",
+                "-c:a", "aac",
+                "-hls_time", "4", // Длительность сегмента в секундах
+                "-hls_list_size", "0", // Все сегменты в плейлисте (для записей)
+                "-hls_flags", "delete_segments", // Удалять старые сегменты
+                "-hls_segment_filename", segmentPath,
+                "-hls_allow_cache", "1", // Разрешить кэширование для записей
+                "-f", "hls",
+                playlistPath
+            )
+
+            // Настройки качества
+            when (quality) {
+                StreamQuality.LOW -> {
+                    args.addAll(listOf("-b:v", "500k", "-s", "640x360", "-r", "15"))
+                }
+                StreamQuality.MEDIUM -> {
+                    args.addAll(listOf("-b:v", "1500k", "-s", "1280x720", "-r", "25"))
+                }
+                StreamQuality.HIGH -> {
+                    args.addAll(listOf("-b:v", "3000k", "-s", "1920x1080", "-r", "30"))
+                }
+                StreamQuality.ULTRA -> {
+                    args.addAll(listOf("-b:v", "6000k", "-s", "1920x1080", "-r", "30", "-preset", "fast"))
+                }
+            }
+
+            logger.info { "Starting HLS generation from recording: $recordingId, command: ${args.joinToString(" ")}" }
+
+            val process = ProcessBuilder(args)
+                .directory(File(hlsOutputDirectory))
+                .redirectErrorStream(true)
+                .start()
+
+            activeHlsProcesses[recordingId] = process
+
+            // Запускаем мониторинг процесса в фоне
+            monitorProcess(recordingId, process)
+
+            // Ждем немного, чтобы убедиться, что процесс запустился
+            Thread.sleep(2000)
+
+            if (process.isAlive && File(playlistPath).exists()) {
+                logger.info { "HLS generation started successfully for recording: $recordingId" }
+                return playlistPath
+            } else {
+                logger.error { "Failed to start HLS generation for recording: $recordingId" }
+                stopHlsGeneration(recordingId)
+                return null
+            }
+
+        } catch (e: Exception) {
+            logger.error(e) { "Error starting HLS generation for recording: $recordingId" }
+            activeHlsProcesses.remove(recordingId)
+            return null
+        }
+    }
+
+    /**
+     * Получить путь к HLS плейлисту для записи
+     */
+    fun getRecordingPlaylistPath(recordingId: String): String {
+        return Paths.get(hlsOutputDirectory, "recordings", recordingId, "playlist.m3u8").toString()
+    }
+
+    /**
+     * Получить относительный URL для плейлиста записи
+     */
+    fun getRecordingPlaylistUrl(recordingId: String): String {
+        return "/api/v1/recordings/$recordingId/hls/playlist.m3u8"
+    }
+
     /**
      * Очистить все активные процессы
      */

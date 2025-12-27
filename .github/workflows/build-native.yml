@@ -1,0 +1,80 @@
+name: Build Native Libraries
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'native/**'
+      - '.github/workflows/build-native.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'native/**'
+      - '.github/workflows/build-native.yml'
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential pkg-config
+          sudo apt-get install -y libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
+          sudo apt-get install -y libopencv-dev
+
+      - name: Build native libraries
+        run: |
+          chmod +x scripts/build-all-native-libs.sh
+          ./scripts/build-all-native-libs.sh linux
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-libs-linux-x64
+          path: native/*/lib/linux/x64/*.so
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install cmake pkg-config ffmpeg opencv
+
+      - name: Build native libraries
+        run: |
+          chmod +x scripts/build-all-native-libs.sh
+          ./scripts/build-all-native-libs.sh macos
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-libs-macos
+          path: native/*/lib/macos/**/*.dylib
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          choco install cmake -y
+          choco install mingw -y
+
+      - name: Build native libraries
+        shell: pwsh
+        run: |
+          .\scripts\build-all-native-libs.ps1
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-libs-windows-x64
+          path: native/*/lib/windows/x64/*.dll
+

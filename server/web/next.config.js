@@ -61,17 +61,33 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // unsafe-eval для Next.js в dev режиме
-              "style-src 'self' 'unsafe-inline'", // unsafe-inline для styled-components и т.д.
-              "img-src 'self' data: https:",
-              "font-src 'self' data:",
-              "connect-src 'self' http://localhost:8080 https:",
+              // Scripts - используем nonce в production для большей безопасности
+              ...(isProduction
+                ? ["script-src 'self' 'strict-dynamic'"]
+                : ["script-src 'self' 'unsafe-eval' 'unsafe-inline'"]), // unsafe-eval только для dev
+              // Styles
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // unsafe-inline для MUI
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "img-src 'self' data: https: blob:",
+              "media-src 'self' blob: http://localhost:8080 https:",
+              "connect-src 'self' http://localhost:8080 https: ws: wss:",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
-              "upgrade-insecure-requests",
+              "object-src 'none'",
+              "worker-src 'self' blob:",
+              ...(isProduction ? ["upgrade-insecure-requests"] : []),
             ].join('; '),
           },
+          // Expect-CT (Certificate Transparency)
+          ...(isProduction
+            ? [
+                {
+                  key: 'Expect-CT',
+                  value: 'max-age=86400, enforce',
+                },
+              ]
+            : []),
         ],
       },
     ];

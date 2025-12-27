@@ -1,0 +1,108 @@
+-- Migration 1: Add tables for Recording, Event, User, Settings, and Notification
+-- This migration adds the new tables to an existing database that only has the camera table
+
+-- Таблица записей (Recordings)
+CREATE TABLE IF NOT EXISTS recording (
+    id TEXT NOT NULL PRIMARY KEY,
+    camera_id TEXT NOT NULL,
+    camera_name TEXT,
+    start_time INTEGER NOT NULL,
+    end_time INTEGER,
+    duration INTEGER NOT NULL,
+    file_path TEXT,
+    file_size INTEGER,
+    format TEXT NOT NULL DEFAULT 'MP4',
+    quality TEXT NOT NULL DEFAULT 'HIGH',
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    thumbnail_url TEXT,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS recording_camera_id_index ON recording(camera_id);
+CREATE INDEX IF NOT EXISTS recording_start_time_index ON recording(start_time);
+CREATE INDEX IF NOT EXISTS recording_status_index ON recording(status);
+CREATE INDEX IF NOT EXISTS recording_created_at_index ON recording(created_at);
+
+-- Таблица событий (Events)
+CREATE TABLE IF NOT EXISTS event (
+    id TEXT NOT NULL PRIMARY KEY,
+    camera_id TEXT NOT NULL,
+    camera_name TEXT,
+    type TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'INFO',
+    timestamp INTEGER NOT NULL,
+    description TEXT,
+    metadata TEXT,
+    acknowledged INTEGER NOT NULL DEFAULT 0,
+    acknowledged_at INTEGER,
+    acknowledged_by TEXT,
+    thumbnail_url TEXT,
+    video_url TEXT
+);
+
+CREATE INDEX IF NOT EXISTS event_camera_id_index ON event(camera_id);
+CREATE INDEX IF NOT EXISTS event_type_index ON event(type);
+CREATE INDEX IF NOT EXISTS event_severity_index ON event(severity);
+CREATE INDEX IF NOT EXISTS event_timestamp_index ON event(timestamp);
+CREATE INDEX IF NOT EXISTS event_acknowledged_index ON event(acknowledged);
+
+-- Таблица пользователей (Users)
+CREATE TABLE IF NOT EXISTS user (
+    id TEXT NOT NULL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT,
+    full_name TEXT,
+    role TEXT NOT NULL,
+    permissions TEXT,
+    created_at INTEGER NOT NULL,
+    last_login_at INTEGER,
+    is_active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS user_username_index ON user(username);
+CREATE INDEX IF NOT EXISTS user_role_index ON user(role);
+CREATE INDEX IF NOT EXISTS user_is_active_index ON user(is_active);
+
+-- Таблица настроек (Settings)
+CREATE TABLE IF NOT EXISTS setting (
+    id TEXT NOT NULL PRIMARY KEY,
+    category TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'STRING',
+    description TEXT,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(category, key)
+);
+
+CREATE INDEX IF NOT EXISTS setting_category_index ON setting(category);
+CREATE INDEX IF NOT EXISTS setting_key_index ON setting(key);
+CREATE INDEX IF NOT EXISTS setting_category_key_index ON setting(category, key);
+
+-- Таблица уведомлений (Notifications)
+CREATE TABLE IF NOT EXISTS notification (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'NORMAL',
+    camera_id TEXT,
+    event_id TEXT,
+    recording_id TEXT,
+    channel_id TEXT,
+    icon TEXT,
+    sound INTEGER NOT NULL DEFAULT 1,
+    vibration INTEGER NOT NULL DEFAULT 0,
+    read INTEGER NOT NULL DEFAULT 0,
+    read_at INTEGER,
+    timestamp INTEGER NOT NULL,
+    extras TEXT
+);
+
+CREATE INDEX IF NOT EXISTS notification_type_index ON notification(type);
+CREATE INDEX IF NOT EXISTS notification_priority_index ON notification(priority);
+CREATE INDEX IF NOT EXISTS notification_read_index ON notification(read);
+CREATE INDEX IF NOT EXISTS notification_timestamp_index ON notification(timestamp);
+CREATE INDEX IF NOT EXISTS notification_camera_id_index ON notification(camera_id);
+CREATE INDEX IF NOT EXISTS notification_event_id_index ON notification(event_id);
+

@@ -16,6 +16,7 @@ import {
   ListItemText,
   useTheme,
   useMediaQuery,
+  Badge,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -26,11 +27,14 @@ import {
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   Circle as CircleIcon,
+  Notifications as NotificationsIcon,
+  People as PeopleIcon,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
-import { Box, Tooltip } from '@mui/material';
+import ThemeSwitcher from '@/components/ThemeSwitcher/ThemeSwitcher';
+import SearchBar from '@/components/SearchBar/SearchBar';
 
 const DRAWER_WIDTH = 240;
 
@@ -38,11 +42,13 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const menuItems = [
+const getMenuItems = (isAdmin: boolean) => [
   { text: 'Главная', icon: <DashboardIcon />, path: '/dashboard' },
   { text: 'Камеры', icon: <VideocamIcon />, path: '/cameras' },
   { text: 'События', icon: <EventIcon />, path: '/events' },
   { text: 'Записи', icon: <VideoLibraryIcon />, path: '/recordings' },
+  { text: 'Уведомления', icon: <NotificationsIcon />, path: '/notifications' },
+  ...(isAdmin ? [{ text: 'Пользователи', icon: <PeopleIcon />, path: '/users' }] : []),
   { text: 'Настройки', icon: <SettingsIcon />, path: '/settings' },
 ];
 
@@ -54,6 +60,8 @@ export default function Layout({ children }: LayoutProps) {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const { connected, connecting } = useAppSelector((state) => state.websocket);
+  const { unreadCount } = useAppSelector((state) => state.notifications);
+  const { user } = useAppSelector((state) => state.auth);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -73,7 +81,7 @@ export default function Layout({ children }: LayoutProps) {
       </Toolbar>
       <Divider />
       <List>
-        {menuItems.map((item) => (
+        {getMenuItems(user?.role === 'ADMIN').map((item) => (
           <ListItem key={item.path} disablePadding>
             <ListItemButton
               selected={pathname === item.path}
@@ -82,7 +90,15 @@ export default function Layout({ children }: LayoutProps) {
                 if (isMobile) setMobileOpen(false);
               }}
             >
-              <ListItemIcon>{item.icon}</ListItemIcon>
+              <ListItemIcon>
+                {item.path === '/notifications' ? (
+                  <Badge badgeContent={unreadCount} color="error">
+                    {item.icon}
+                  </Badge>
+                ) : (
+                  item.icon
+                )}
+              </ListItemIcon>
               <ListItemText primary={item.text} />
             </ListItemButton>
           </ListItem>
@@ -124,6 +140,10 @@ export default function Layout({ children }: LayoutProps) {
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Система видеонаблюдения
           </Typography>
+          <Box sx={{ flexGrow: 1, maxWidth: 400, mx: 2, display: { xs: 'none', md: 'block' } }}>
+            <SearchBar placeholder="Поиск камер, событий, записей..." />
+          </Box>
+          <ThemeSwitcher />
           <Tooltip
             title={
               connecting

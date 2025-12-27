@@ -1,5 +1,7 @@
 package com.company.ipcamera.server.repository
 
+import com.company.ipcamera.server.websocket.WebSocketManager
+import com.company.ipcamera.server.websocket.WebSocketChannel
 import com.company.ipcamera.shared.data.local.DatabaseFactory
 import com.company.ipcamera.shared.data.local.createDatabase
 import com.company.ipcamera.shared.data.local.RecordingEntityMapper
@@ -11,22 +13,23 @@ import com.company.ipcamera.shared.domain.repository.PaginatedResult
 import com.company.ipcamera.shared.domain.repository.RecordingRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 
 /**
  * Серверная реализация RecordingRepository с использованием SQLDelight
- * 
+ *
  * Использует SQLDelight для персистентного хранения записей
  */
 class ServerRecordingRepositorySqlDelight(
     private val databaseFactory: DatabaseFactory
 ) : RecordingRepository {
-    
+
     private val database = createDatabase(databaseFactory.createDriver())
     private val mapper = RecordingEntityMapper()
-    
+
     override suspend fun getRecordings(
         cameraId: String?,
         startTime: Long?,
@@ -35,24 +38,26 @@ class ServerRecordingRepositorySqlDelight(
         limit: Int
     ): PaginatedResult<Recording> = withContext(Dispatchers.IO) {
         try {
+            // Оптимизированные запросы с использованием индексов БД
             val allRecordings = when {
                 cameraId != null && startTime != null && endTime != null -> {
-                    // Фильтр по камере и диапазону времени
-                    database.cameraDatabaseQueries.selectRecordingsByDateRange(
-                        startTime = startTime,
-                        endTime = endTime
-                    ).executeAsList()
-                        .filter { it.camera_id == cameraId }
+                    // Фильтр по камере и диапазону времени - используем индекс по camera_id и start_time
+                    database.cameraDatabaseQueries.selectRecordingsByCameraId(cameraId)
+                        .executeAsList()
+                        .filter {
+                            it.start_time >= startTime &&
+                            (it.end_time == null || it.end_time <= endTime)
+                        }
                         .map { mapper.toDomain(it) }
                 }
                 cameraId != null -> {
-                    // Фильтр только по камере
+                    // Фильтр только по камере - используем индекс по camera_id
                     database.cameraDatabaseQueries.selectRecordingsByCameraId(cameraId)
                         .executeAsList()
                         .map { mapper.toDomain(it) }
                 }
                 startTime != null && endTime != null -> {
-                    // Фильтр только по диапазону времени
+                    // Фильтр только по диапазону времени - используем индекс по start_time
                     database.cameraDatabaseQueries.selectRecordingsByDateRange(
                         startTime = startTime,
                         endTime = endTime
@@ -60,33 +65,23 @@ class ServerRecordingRepositorySqlDelight(
                         .map { mapper.toDomain(it) }
                 }
                 else -> {
-                    // Все записи
+                    // Все записи - используем индекс по created_at для сортировки
                     database.cameraDatabaseQueries.selectAllRecordings()
                         .executeAsList()
                         .map { mapper.toDomain(it) }
                 }
             }
-            
-            // Дополнительная фильтрация по времени (если не использовали запрос)
-            val filteredRecordings = allRecordings.filter { recording ->
-                var matches = true
-                if (startTime != null && recording.startTime < startTime) {
-                    matches = false
-                }
-                if (endTime != null && (recording.endTime == null || recording.endTime > endTime)) {
-                    matches = false
-                }
-                matches
-            }
-            
+
             // Сортировка по времени создания (новые сначала)
-            val sortedRecordings = filteredRecordings.sortedByDescending { it.createdAt }
-            
+            // SQLDelight уже сортирует в запросе, но убеждаемся что сортировка правильная
+            val sortedRecordings = allRecordings.sortedByDescending { it.createdAt }
+
+            // Пагинация
             val total = sortedRecordings.size
             val offset = (page - 1) * limit
             val paginatedItems = sortedRecordings.drop(offset).take(limit)
             val hasMore = offset + limit < total
-            
+
             PaginatedResult(
                 items = paginatedItems,
                 total = total,
@@ -95,11 +90,12 @@ class ServerRecordingRepositorySqlDelight(
                 hasMore = hasMore
             )
         } catch (e: Exception) {
-            logger.error(e) { "Error getting recordings" }
+            logger.error(e) { "Error getting recordings from PostgreSQL" }
+            // Возвращаем пустой результат вместо падения
             PaginatedResult(emptyList(), 0, page, limit, false)
         }
     }
-    
+
     override suspend fun getRecordingById(id: String): Recording? = withContext(Dispatchers.IO) {
         try {
             database.cameraDatabaseQueries.selectRecordingById(id)
@@ -110,7 +106,7 @@ class ServerRecordingRepositorySqlDelight(
             null
         }
     }
-    
+
     override suspend fun addRecording(recording: Recording): Result<Recording> = withContext(Dispatchers.IO) {
         try {
             val dbRecording = mapper.toDatabase(recording)
@@ -130,22 +126,44 @@ class ServerRecordingRepositorySqlDelight(
                 created_at = dbRecording.created_at
             )
             logger.info { "Recording added: ${recording.id} for camera ${recording.cameraId}" }
+
+            // Отправляем WebSocket событие о новой записи
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.RECORDINGS,
+                    "recording_created",
+                    jsonObject {
+                        put("recordingId", recording.id)
+                        put("cameraId", recording.cameraId)
+                        put("status", recording.status.name)
+                        put("format", recording.format.name)
+                        put("quality", recording.quality.name)
+                        put("startTime", recording.startTime)
+                        put("filePath", recording.filePath ?: "")
+                        put("fileSize", recording.fileSize ?: 0L)
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for new recording" }
+            }
+
             Result.success(recording)
         } catch (e: Exception) {
             logger.error(e) { "Error adding recording: ${recording.id}" }
             Result.failure(e)
         }
     }
-    
+
     override suspend fun updateRecording(recording: Recording): Result<Recording> = withContext(Dispatchers.IO) {
         try {
             val existing = database.cameraDatabaseQueries.selectRecordingById(recording.id)
                 .executeAsOneOrNull()
-            
+
             if (existing == null) {
                 return@withContext Result.failure(IllegalArgumentException("Recording not found: ${recording.id}"))
             }
-            
+
+            val oldStatus = mapper.toDomain(existing).status
             val dbRecording = mapper.toDatabase(recording)
             database.cameraDatabaseQueries.updateRecording(
                 camera_id = dbRecording.camera_id,
@@ -162,45 +180,82 @@ class ServerRecordingRepositorySqlDelight(
                 id = dbRecording.id
             )
             logger.info { "Recording updated: ${recording.id}" }
+
+            // Отправляем WebSocket событие об обновлении записи
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.RECORDINGS,
+                    "recording_updated",
+                    jsonObject {
+                        put("recordingId", recording.id)
+                        put("cameraId", recording.cameraId)
+                        put("status", recording.status.name)
+                        put("oldStatus", oldStatus.name)
+                        put("endTime", recording.endTime ?: 0L)
+                        put("fileSize", recording.fileSize ?: 0L)
+                        put("timestamp", System.currentTimeMillis())
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for recording update" }
+            }
+
             Result.success(recording)
         } catch (e: Exception) {
             logger.error(e) { "Error updating recording: ${recording.id}" }
             Result.failure(e)
         }
     }
-    
+
     override suspend fun deleteRecording(id: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val existing = database.cameraDatabaseQueries.selectRecordingById(id)
                 .executeAsOneOrNull()
-            
+
             if (existing == null) {
                 return@withContext Result.failure(IllegalArgumentException("Recording not found: $id"))
             }
-            
+
+            val recording = mapper.toDomain(existing)
             database.cameraDatabaseQueries.deleteRecording(id)
             logger.info { "Recording deleted: $id" }
+
+            // Отправляем WebSocket событие об удалении записи
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.RECORDINGS,
+                    "recording_deleted",
+                    jsonObject {
+                        put("recordingId", id)
+                        put("cameraId", recording.cameraId)
+                        put("timestamp", System.currentTimeMillis())
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for recording deletion" }
+            }
+
             Result.success(Unit)
         } catch (e: Exception) {
             logger.error(e) { "Error deleting recording: $id" }
             Result.failure(e)
         }
     }
-    
+
     override suspend fun getDownloadUrl(id: String): Result<String> = withContext(Dispatchers.IO) {
         try {
             val recording = database.cameraDatabaseQueries.selectRecordingById(id)
                 .executeAsOneOrNull()
                 ?.let { mapper.toDomain(it) }
-            
+
             if (recording == null) {
                 return@withContext Result.failure(IllegalArgumentException("Recording not found: $id"))
             }
-            
+
             if (recording.filePath == null) {
                 return@withContext Result.failure(IllegalStateException("Recording file not available: $id"))
             }
-            
+
             // Генерируем временный URL для скачивания
             // TODO: Реализовать генерацию подписанных URL с истечением срока действия
             val downloadUrl = "/api/v1/recordings/$id/download/file"
@@ -210,19 +265,19 @@ class ServerRecordingRepositorySqlDelight(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun exportRecording(id: String, format: String, quality: String): Result<String> = withContext(Dispatchers.IO) {
         try {
             val recording = database.cameraDatabaseQueries.selectRecordingById(id)
                 .executeAsOneOrNull()
                 ?.let { mapper.toDomain(it) }
-            
+
             if (recording == null) {
                 return@withContext Result.failure(IllegalArgumentException("Recording not found: $id"))
             }
-            
-            // TODO: Реализовать экспорт записи в указанном формате и качестве
-            // Пока возвращаем URL для скачивания
+
+            // Экспорт реализован в RecordingRoutes через FfmpegService
+            // Возвращаем URL для экспорта
             val exportUrl = "/api/v1/recordings/$id/export?format=$format&quality=$quality"
             logger.info { "Recording export requested: $id, format: $format, quality: $quality" }
             Result.success(exportUrl)

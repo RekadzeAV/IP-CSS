@@ -14,6 +14,7 @@ interface VideoPlayerProps {
   width?: string | number;
   height?: string | number;
   streamType?: 'hls' | 'webrtc' | 'rtsp'; // Тип стрима: HLS (по умолчанию), WebRTC для низкой задержки, или RTSP для прямой трансляции
+  onVideoElementReady?: (element: HTMLVideoElement | null) => void; // Callback для получения video элемента
 }
 
 type StreamQuality = 'low' | 'medium' | 'high' | 'ultra';
@@ -27,6 +28,7 @@ export default function VideoPlayer({
   width = '100%',
   height = 'auto',
   streamType = 'hls',
+  onVideoElementReady,
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -45,6 +47,18 @@ export default function VideoPlayer({
   const [qualityMenuAnchor, setQualityMenuAnchor] = useState<null | HTMLElement>(null);
   const [streamActive, setStreamActive] = useState(false); // Для отображения в UI
   const [reconnectTrigger, setReconnectTrigger] = useState(0); // Триггер для переподключения
+
+  // Уведомляем родительский компонент о готовности video элемента
+  useEffect(() => {
+    if (onVideoElementReady && videoRef.current) {
+      onVideoElementReady(videoRef.current);
+    }
+    return () => {
+      if (onVideoElementReady) {
+        onVideoElementReady(null);
+      }
+    };
+  }, [onVideoElementReady]);
 
   // Инициализация и управление потоком (HLS или WebRTC)
   useEffect(() => {
@@ -97,10 +111,66 @@ export default function VideoPlayer({
         }
 
         if (streamType === 'webrtc') {
-          // WebRTC реализация (если нужно добавить позже)
-          console.warn('WebRTC streaming not yet implemented, falling back to HLS');
-          // TODO: Реализовать WebRTC стриминг
-          return;
+          // WebRTC реализация
+          try {
+            const { initWebRTCConnection } = await import('@/utils/webrtc');
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
+
+            const stream = await initWebRTCConnection(camera.id, apiUrl, {
+              iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+              ],
+              onTrack: (event) => {
+                if (mounted && video) {
+                  video.srcObject = event.streams[0];
+                  setStreamStatus('connected');
+                }
+              },
+              onConnectionStateChange: (state) => {
+                if (mounted) {
+                  if (state === 'connected') {
+                    setStreamStatus('playing');
+                    setLoading(false);
+                  } else if (state === 'failed' || state === 'disconnected') {
+                    setStreamStatus('error');
+                    setError('WebRTC соединение потеряно');
+                  }
+                }
+              },
+            });
+
+            if (mounted && video) {
+              video.srcObject = stream;
+              setStreamActive(true);
+              setStreamStatus('connected');
+              setLoading(false);
+
+              if (autoPlay) {
+                video.play().catch((e: unknown) => {
+                  console.error('Error auto-playing video:', e);
+                  if (mounted) {
+                    setError('Не удалось автоматически начать воспроизведение');
+                  }
+                });
+              }
+            }
+          } catch (webrtcError) {
+            console.error('WebRTC error:', webrtcError);
+            if (mounted) {
+              setError('Ошибка WebRTC соединения. Переключение на HLS...');
+              // Fallback на HLS
+              streamType = 'hls';
+              // Продолжаем выполнение для HLS
+            } else {
+              return;
+            }
+          }
+
+          // Если WebRTC успешно инициализирован, не продолжаем дальше
+          if (streamType === 'webrtc') {
+            return;
+          }
         }
 
         if (streamType === 'rtsp') {
@@ -444,6 +514,13 @@ export default function VideoPlayer({
       pcRef.current = null;
     }
 
+    // Останавливаем WebRTC stream если активен
+    if (video.srcObject) {
+      const stream = video.srcObject as MediaStream;
+      stream.getTracks().forEach((track) => track.stop());
+      video.srcObject = null;
+    }
+
     try {
       await streamService.stopStream(camera.id);
       streamActiveRef.current = false;
@@ -529,14 +606,16 @@ export default function VideoPlayer({
     setQualityMenuAnchor(null);
 
     try {
-      // TODO: Добавить метод в streamService для изменения качества
-      // await streamService.setStreamQuality(camera.id, newQuality);
-      console.log(`Quality change requested to: ${newQuality}`);
+      await streamService.setStreamQuality(camera.id, newQuality);
+      // Перезапускаем поток с новым качеством
+      setReconnectTrigger((prev: number) => prev + 1);
     } catch (err) {
       console.error('Error changing stream quality:', err);
       setError('Ошибка изменения качества потока');
+      // Возвращаем предыдущее качество при ошибке
+      setQuality(quality);
     }
-  }, [camera.id]);
+  }, [camera.id, quality]);
 
   const getStatusColor = (status: StreamStatus): 'success' | 'error' | 'warning' | 'default' => {
     switch (status) {

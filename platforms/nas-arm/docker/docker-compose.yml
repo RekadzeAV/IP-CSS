@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  ip-css-api:
+    build:
+      context: ../..
+      dockerfile: platforms/nas-arm/docker/Dockerfile.arm64
+    image: ip-css-nas-arm64:Alfa-0.0.1
+    container_name: ip-css-nas-api
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-production}
+      - DATABASE_PATH=/app/data/db/ip-css.db
+      - RECORDINGS_PATH=/app/data/recordings
+      - SCREENSHOTS_PATH=/app/data/screenshots
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
+    volumes:
+      - ip-css-data:/app/data
+      - ip-css-logs:/app/logs
+    depends_on:
+      - redis
+    networks:
+      - ip-css-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  redis:
+    image: arm64v8/redis:7-alpine
+    container_name: ip-css-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - ip-css-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  ip-css-web:
+    build:
+      context: ../../server/web
+      dockerfile: Dockerfile.arm64
+    image: ip-css-web-arm64:Alfa-0.0.1
+    container_name: ip-css-nas-web
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8081
+    depends_on:
+      - ip-css-api
+    networks:
+      - ip-css-network
+
+volumes:
+  ip-css-data:
+    driver: local
+  ip-css-logs:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  ip-css-network:
+    driver: bridge

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { validateCertificatePinning } from './certificatePinning';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
@@ -11,6 +12,22 @@ const apiClient: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Request interceptor для certificate pinning (в production)
+if (process.env.NODE_ENV === 'production') {
+  apiClient.interceptors.request.use(
+    (config) => {
+      if (config.url && config.baseURL) {
+        const url = new URL(config.url, config.baseURL);
+        if (!validateCertificatePinning(url.hostname)) {
+          return Promise.reject(new Error('Certificate pinning validation failed'));
+        }
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+}
 
 // Request interceptor - токены теперь в httpOnly cookies, не нужно добавлять вручную
 // Cookies автоматически отправляются браузером с каждым запросом

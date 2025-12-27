@@ -65,7 +65,8 @@ class VideoStreamService(
         val startTime: Long,
         val lastActivityTime: Long = System.currentTimeMillis(),
         val hlsQuality: StreamQuality = StreamQuality.MEDIUM,
-        val hlsPlaylistPath: String? = null
+        val hlsPlaylistPath: String? = null,
+        val latestFrame: RtspFrame? = null // Последний кадр для снимков
     )
 
     /**
@@ -136,16 +137,17 @@ class VideoStreamService(
             )
 
             // Подписываемся на видеокадры и перенаправляем их в SharedFlow
-            // Обновляем время последней активности
+            // Обновляем время последней активности и сохраняем последний кадр
             val streamJob = streamScope.launch {
                 try {
                     rtspClient.getVideoFrames().collect { frame ->
                         try {
                             videoFrames.emit(frame)
-                            // Обновляем время последней активности в активном стриме
+                            // Обновляем время последней активности и сохраняем последний кадр
                             activeStreams[cameraId]?.let { stream ->
                                 activeStreams[cameraId] = stream.copy(
-                                    lastActivityTime = System.currentTimeMillis()
+                                    lastActivityTime = System.currentTimeMillis(),
+                                    latestFrame = frame // Сохраняем последний кадр
                                 )
                             }
                         } catch (e: Exception) {
@@ -192,7 +194,8 @@ class VideoStreamService(
                 startTime = startTime,
                 lastActivityTime = System.currentTimeMillis(),
                 hlsQuality = StreamQuality.MEDIUM,
-                hlsPlaylistPath = hlsPlaylistPath
+                hlsPlaylistPath = hlsPlaylistPath,
+                latestFrame = null // Инициализируем как null, будет обновляться при получении кадров
             )
 
             activeStreams[cameraId] = activeStream
@@ -276,14 +279,13 @@ class VideoStreamService(
 
     /**
      * Получить последний кадр из потока (для снимков)
-     * Внимание: это может не работать оптимально, так как SharedFlow не хранит последнее значение
-     * Для production рекомендуется использовать StateFlow или отдельный буфер последних кадров
+     *
+     * @param cameraId ID камеры
+     * @return Последний полученный кадр или null если поток не активен
      */
     fun getLatestFrame(cameraId: String): RtspFrame? {
-        // TODO: Реализовать хранение последнего кадра в ActiveStream
-        // Пока возвращаем null
-        logger.warn { "getLatestFrame not yet fully implemented" }
-        return null
+        val activeStream = activeStreams[cameraId]
+        return activeStream?.latestFrame
     }
 
     /**

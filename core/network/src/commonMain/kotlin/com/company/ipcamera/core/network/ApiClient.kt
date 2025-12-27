@@ -18,6 +18,13 @@ import mu.KotlinLogging
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
+import com.company.ipcamera.core.network.metrics.NetworkMetricsCollector
+import com.company.ipcamera.core.network.metrics.RequestMetrics
+import com.company.ipcamera.core.network.ratelimit.RateLimiter
+import com.company.ipcamera.core.network.interceptor.RequestInterceptor
+import com.company.ipcamera.core.network.interceptor.InterceptorChain
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 private val logger = KotlinLogging.logger {}
 
@@ -39,7 +46,10 @@ data class ApiClientConfig(
     val headers: Map<String, String> = emptyMap(),
     val apiKey: String? = null,
     val authToken: String? = null,
-    val certificatePinningConfig: com.company.ipcamera.core.network.security.CertificatePinningConfig? = null
+    val certificatePinningConfig: com.company.ipcamera.core.network.security.CertificatePinningConfig? = null,
+    val enableMetrics: Boolean = true,
+    val rateLimiter: RateLimiter? = null,
+    val interceptors: List<RequestInterceptor> = emptyList()
 ) {
     companion object {
         fun default(baseUrl: String) = ApiClientConfig(baseUrl = baseUrl)
@@ -150,6 +160,13 @@ class ApiClient private constructor(
     private val config: ApiClientConfig,
     private val cache: ResponseCache? = null
 ) {
+    private val metricsCollector = if (config.enableMetrics) {
+        NetworkMetricsCollector()
+    } else null
+
+    private val interceptorChain = if (config.interceptors.isNotEmpty()) {
+        InterceptorChain(config.interceptors)
+    } else null
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -386,6 +403,11 @@ class ApiClient private constructor(
     }
 
     /**
+     * Получить сборщик метрик
+     */
+    fun getMetricsCollector(): NetworkMetricsCollector? = metricsCollector
+
+    /**
      * Выполняет базовый HTTP запрос с поддержкой retry
      */
     private suspend inline fun <reified T> executeRequest(
@@ -395,6 +417,25 @@ class ApiClient private constructor(
         body: Any? = null,
         useCache: Boolean = true
     ): ApiResult<T> {
+        // Rate limiting
+        config.rateLimiter?.let { limiter ->
+            if (!limiter.acquire()) {
+                val waitTime = limiter.getWaitTime()
+                if (waitTime > Duration.ZERO) {
+                    delay(waitTime)
+                    // Повторная попытка
+                    if (!limiter.acquire()) {
+                        return ApiResult.Error(
+                            ApiError.TimeoutError("Rate limit exceeded. Please wait before retrying.")
+                        )
+                    }
+                } else {
+                    return ApiResult.Error(
+                        ApiError.TimeoutError("Rate limit exceeded. Please wait before retrying.")
+                    )
+                }
+            }
+        }
         // Проверяем кэш для GET запросов
         if (method == HttpMethod.Get && useCache && cache != null) {
             val cacheKey = buildCacheKey(path, queryParameters)
@@ -425,6 +466,10 @@ class ApiClient private constructor(
             }
 
             val result = try {
+                val startTime = TimeSource.Monotonic.markNow()
+                var requestSize = 0L
+                var responseSize = 0L
+
                 val response = httpClient.request(path) {
                     this.method = method
 
@@ -436,14 +481,64 @@ class ApiClient private constructor(
                     // Тело запроса
                     if (body != null) {
                         contentType(ContentType.Application.Json)
-                        setBody(body)
+                        val bodyBytes = json.encodeToString(body).toByteArray()
+                        requestSize = bodyBytes.size.toLong()
+                        setBody(bodyBytes)
                     }
+
+                    // Вызов интерцепторов перед запросом
+                    interceptorChain?.onRequest(this)
                 }
 
-                handleResponse<T>(response)
+                responseSize = response.headers["Content-Length"]?.toLongOrNull() ?: 0L
+                val duration = startTime.elapsedNow()
+
+                // Вызов интерцепторов после ответа
+                val finalResponse = interceptorChain?.onResponse(
+                    httpClient.request(path) { this.method = method },
+                    response
+                ) ?: response
+
+                // Запись метрик
+                metricsCollector?.recordMetric(
+                    RequestMetrics(
+                        url = path,
+                        method = method.value,
+                        statusCode = finalResponse.status.value,
+                        duration = duration,
+                        requestSize = requestSize,
+                        responseSize = responseSize,
+                        success = finalResponse.status.isSuccess()
+                    )
+                )
+
+                handleResponse<T>(finalResponse)
             } catch (e: Exception) {
                 val error = handleException(e)
                 lastError = error
+
+                // Вызов интерцепторов при ошибке
+                try {
+                    interceptorChain?.onError(
+                        httpClient.request(path) { this.method = method },
+                        e
+                    )
+                } catch (interceptorError: Exception) {
+                    logger.warn(interceptorError) { "Error in interceptor onError" }
+                }
+
+                // Запись метрик для ошибки
+                metricsCollector?.recordMetric(
+                    RequestMetrics(
+                        url = path,
+                        method = method.value,
+                        statusCode = (error as? ApiError.HttpError)?.statusCode,
+                        duration = Duration.ZERO, // Не измеряем время при ошибке
+                        requestSize = 0,
+                        responseSize = 0,
+                        success = false
+                    )
+                )
 
                 // Проверяем, нужно ли повторять попытку
                 val shouldRetry = config.enableRetry &&

@@ -9,15 +9,15 @@ fun Application.configureRouting() {
             // Публичные маршруты (не требуют аутентификации)
             authRoutes()
             healthRoutes()
-            
+
             // HLS маршруты (без аутентификации для доступа к сегментам)
             route("/cameras") {
                 hlsRoutes()
             }
-            
+
             // Маршруты для снимков (без аутентификации для простоты доступа)
             screenshotRoutes()
-            
+
             // Защищенные маршруты (требуют аутентификации)
             cameraRoutes()
             recordingRoutes()
@@ -25,8 +25,10 @@ fun Application.configureRouting() {
             userRoutes()
             settingsRoutes()
             streamRoutes()
+            notificationRoutes()
         }
     }
 }
+
 
 

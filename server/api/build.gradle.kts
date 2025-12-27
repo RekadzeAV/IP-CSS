@@ -51,6 +51,13 @@ dependencies {
     // Redis client (Lettuce - асинхронный клиент)
     implementation("io.lettuce:lettuce-core:6.3.2.RELEASE")
 
+    // PostgreSQL driver for SQLDelight
+    implementation("org.postgresql:postgresql:42.7.3")
+    implementation("app.cash.sqldelight:jdbc-driver:2.0.3")
+
+    // Connection pooling
+    implementation("com.zaxxer:HikariCP:5.1.0")
+
     // Testing
     testImplementation(kotlin("test"))
     testImplementation(libs.bundles.testing)

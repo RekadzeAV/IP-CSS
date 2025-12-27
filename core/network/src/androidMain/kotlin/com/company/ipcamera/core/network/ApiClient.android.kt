@@ -15,5 +15,8 @@ actual fun ApiClient.Companion.createDefaultEngine(): io.ktor.client.engine.Http
  */
 actual fun ApiClient.Companion.createEngineWithPinning(config: com.company.ipcamera.core.network.security.CertificatePinningConfig): io.ktor.client.engine.HttpClientEngine {
     val pinner = CertificatePinner(config)
-    return pinner.createEngineWithPinning()
+    val engine = pinner.createEngineWithPinning()
+
+    // Применяем certificate pinning к engine если возможно
+    return pinner.applyToEngine(engine)
 }

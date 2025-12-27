@@ -1,4 +1,7 @@
 #include "codec_manager.h"
+#include "h264_codec.h"
+#include "h265_codec.h"
+#include "mjpeg_codec.h"
 
 #ifdef ENABLE_FFMPEG
 extern "C" {
@@ -9,40 +12,42 @@ extern "C" {
 bool codec_get_info(CodecType type, CodecInfo* info) {
     if (!info) return false;
 
-#ifdef ENABLE_FFMPEG
-    const AVCodec* codec = nullptr;
+    bool supported = false;
+    int maxWidth = 0;
+    int maxHeight = 0;
+    bool hwAccel = false;
 
     switch (type) {
         case CODEC_TYPE_H264:
-            codec = avcodec_find_encoder(AV_CODEC_ID_H264);
-            if (codec) {
+            supported = h264_codec_get_info(&maxWidth, &maxHeight, &hwAccel);
+            if (supported) {
                 info->type = CODEC_TYPE_H264;
                 info->name = "H.264";
-                info->hardwareAccelerated = false; // TODO: проверка аппаратного ускорения
-                info->maxWidth = 7680;  // 8K
-                info->maxHeight = 4320;
+                info->hardwareAccelerated = hwAccel;
+                info->maxWidth = maxWidth;
+                info->maxHeight = maxHeight;
             }
             break;
 
         case CODEC_TYPE_H265:
-            codec = avcodec_find_encoder(AV_CODEC_ID_HEVC);
-            if (codec) {
+            supported = h265_codec_get_info(&maxWidth, &maxHeight, &hwAccel);
+            if (supported) {
                 info->type = CODEC_TYPE_H265;
                 info->name = "H.265/HEVC";
-                info->hardwareAccelerated = false; // TODO: проверка аппаратного ускорения
-                info->maxWidth = 7680;
-                info->maxHeight = 4320;
+                info->hardwareAccelerated = hwAccel;
+                info->maxWidth = maxWidth;
+                info->maxHeight = maxHeight;
             }
             break;
 
         case CODEC_TYPE_MJPEG:
-            codec = avcodec_find_encoder(AV_CODEC_ID_MJPEG);
-            if (codec) {
+            supported = mjpeg_codec_get_info(&maxWidth, &maxHeight, &hwAccel);
+            if (supported) {
                 info->type = CODEC_TYPE_MJPEG;
                 info->name = "MJPEG";
-                info->hardwareAccelerated = false;
-                info->maxWidth = 8192;
-                info->maxHeight = 8192;
+                info->hardwareAccelerated = hwAccel;
+                info->maxWidth = maxWidth;
+                info->maxHeight = maxHeight;
             }
             break;
 
@@ -50,66 +55,104 @@ bool codec_get_info(CodecType type, CodecInfo* info) {
             return false;
     }
 
-    return codec != nullptr;
-#else
-    // Заглушка без FFmpeg
-    switch (type) {
-        case CODEC_TYPE_H264:
-            info->type = CODEC_TYPE_H264;
-            info->name = "H.264";
-            info->hardwareAccelerated = false;
-            info->maxWidth = 1920;
-            info->maxHeight = 1080;
-            return true;
-
-        case CODEC_TYPE_H265:
-            info->type = CODEC_TYPE_H265;
-            info->name = "H.265/HEVC";
-            info->hardwareAccelerated = false;
-            info->maxWidth = 1920;
-            info->maxHeight = 1080;
-            return true;
-
-        case CODEC_TYPE_MJPEG:
-            info->type = CODEC_TYPE_MJPEG;
-            info->name = "MJPEG";
-            info->hardwareAccelerated = false;
-            info->maxWidth = 1920;
-            info->maxHeight = 1080;
-            return true;
-
-        default:
-            return false;
-    }
-#endif
+    return supported;
 }
 
 bool codec_is_supported(CodecType type) {
-#ifdef ENABLE_FFMPEG
-    const AVCodec* codec = nullptr;
-
     switch (type) {
         case CODEC_TYPE_H264:
-            codec = avcodec_find_encoder(AV_CODEC_ID_H264);
-            break;
+            return h264_codec_is_supported();
         case CODEC_TYPE_H265:
-            codec = avcodec_find_encoder(AV_CODEC_ID_HEVC);
-            break;
+            return h265_codec_is_supported();
         case CODEC_TYPE_MJPEG:
-            codec = avcodec_find_encoder(AV_CODEC_ID_MJPEG);
-            break;
+            return mjpeg_codec_is_supported();
         default:
             return false;
     }
-
-    return codec != nullptr;
-#else
-    return true; // Заглушка
-#endif
 }
 
 bool codec_has_hardware_acceleration(CodecType type) {
-    // TODO: Реализовать проверку аппаратного ускорения (CUDA, VideoToolbox, MediaCodec)
-    return false;
+    switch (type) {
+        case CODEC_TYPE_H264:
+            return h264_codec_has_hardware_acceleration();
+        case CODEC_TYPE_H265:
+            return h265_codec_has_hardware_acceleration();
+        case CODEC_TYPE_MJPEG:
+            return mjpeg_codec_has_hardware_acceleration();
+        default:
+            return false;
+    }
+}
+
+CodecType codec_select_best(CodecType preferredType, bool preferHardware) {
+    // Список кодеков для проверки в порядке приоритета
+    CodecType codecsToCheck[] = {
+        preferredType,
+        CODEC_TYPE_H264,
+        CODEC_TYPE_H265,
+        CODEC_TYPE_MJPEG
+    };
+
+    CodecType bestCodec = CODEC_TYPE_H264; // По умолчанию
+    bool bestHasHw = false;
+    bool foundPreferred = false;
+
+    // Сначала проверяем предпочтительный кодек
+    for (int i = 0; i < 4; i++) {
+        CodecType codec = codecsToCheck[i];
+
+        // Пропускаем дубликаты
+        if (i > 0 && codec == preferredType) {
+            continue;
+        }
+
+        if (!codec_is_supported(codec)) {
+            continue;
+        }
+
+        bool hasHw = codec_has_hardware_acceleration(codec);
+
+        // Если предпочитаем аппаратное ускорение
+        if (preferHardware) {
+            if (hasHw) {
+                // Нашли кодек с аппаратным ускорением
+                if (codec == preferredType || !foundPreferred) {
+                    bestCodec = codec;
+                    bestHasHw = true;
+                    if (codec == preferredType) {
+                        foundPreferred = true;
+                        break; // Предпочтительный с HW - идеально
+                    }
+                }
+            } else if (!bestHasHw && !foundPreferred) {
+                // Сохраняем как запасной вариант (без HW)
+                bestCodec = codec;
+            }
+        } else {
+            // Не предпочитаем аппаратное ускорение, выбираем первый поддерживаемый
+            if (codec == preferredType || !foundPreferred) {
+                bestCodec = codec;
+                bestHasHw = hasHw;
+                if (codec == preferredType) {
+                    foundPreferred = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    // Если предпочитаем HW, но не нашли, ищем любой с HW
+    if (preferHardware && !bestHasHw) {
+        for (int i = 0; i < 3; i++) {
+            CodecType codec = static_cast<CodecType>(i);
+            if (codec_is_supported(codec) && codec_has_hardware_acceleration(codec)) {
+                bestCodec = codec;
+                bestHasHw = true;
+                break;
+            }
+        }
+    }
+
+    return bestCodec;
 }
 

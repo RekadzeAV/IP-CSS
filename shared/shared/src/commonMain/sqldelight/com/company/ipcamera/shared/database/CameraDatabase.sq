@@ -1,0 +1,423 @@
+-- Таблица камер
+CREATE TABLE camera (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    username TEXT,
+    password TEXT,
+    model TEXT,
+    status TEXT NOT NULL,
+    resolution_width INTEGER,
+    resolution_height INTEGER,
+    fps INTEGER NOT NULL DEFAULT 25,
+    bitrate INTEGER NOT NULL DEFAULT 4096,
+    codec TEXT NOT NULL DEFAULT 'H.264',
+    audio INTEGER NOT NULL DEFAULT 0,
+    ptz_config TEXT,
+    streams TEXT,
+    settings TEXT,
+    statistics TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    last_seen INTEGER
+);
+
+CREATE INDEX camera_status_index ON camera(status);
+CREATE INDEX camera_created_at_index ON camera(created_at);
+
+-- Запросы для работы с камерами
+selectAll:
+SELECT * FROM camera ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM camera WHERE id = ?;
+
+insertCamera:
+INSERT OR REPLACE INTO camera(
+    id, name, url, username, password, model, status,
+    resolution_width, resolution_height, fps, bitrate, codec, audio,
+    ptz_config, streams, settings, statistics,
+    created_at, updated_at, last_seen
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteCamera:
+DELETE FROM camera WHERE id = ?;
+
+updateCameraStatus:
+UPDATE camera SET status = ?, last_seen = ?, updated_at = ? WHERE id = ?;
+
+updateCameraTimestamp:
+UPDATE camera SET updated_at = ? WHERE id = ?;
+
+updateCamera:
+UPDATE camera SET
+    name = ?,
+    url = ?,
+    username = ?,
+    password = ?,
+    model = ?,
+    status = ?,
+    resolution_width = ?,
+    resolution_height = ?,
+    fps = ?,
+    bitrate = ?,
+    codec = ?,
+    audio = ?,
+    ptz_config = ?,
+    streams = ?,
+    settings = ?,
+    statistics = ?,
+    updated_at = ?,
+    last_seen = ?
+WHERE id = ?;
+
+-- Таблица записей (Recordings)
+CREATE TABLE recording (
+    id TEXT NOT NULL PRIMARY KEY,
+    camera_id TEXT NOT NULL,
+    camera_name TEXT,
+    start_time INTEGER NOT NULL,
+    end_time INTEGER,
+    duration INTEGER NOT NULL,
+    file_path TEXT,
+    file_size INTEGER,
+    format TEXT NOT NULL DEFAULT 'MP4',
+    quality TEXT NOT NULL DEFAULT 'HIGH',
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    thumbnail_url TEXT,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX recording_camera_id_index ON recording(camera_id);
+CREATE INDEX recording_start_time_index ON recording(start_time);
+CREATE INDEX recording_status_index ON recording(status);
+CREATE INDEX recording_created_at_index ON recording(created_at);
+
+-- Запросы для работы с записями
+selectAllRecordings:
+SELECT * FROM recording ORDER BY start_time DESC;
+
+selectRecordingById:
+SELECT * FROM recording WHERE id = ?;
+
+selectRecordingsByCameraId:
+SELECT * FROM recording WHERE camera_id = ? ORDER BY start_time DESC;
+
+selectRecordingsByStatus:
+SELECT * FROM recording WHERE status = ? ORDER BY start_time DESC;
+
+selectRecordingsByDateRange:
+SELECT * FROM recording WHERE start_time >= ? AND start_time <= ? ORDER BY start_time DESC;
+
+insertRecording:
+INSERT OR REPLACE INTO recording(
+    id, camera_id, camera_name, start_time, end_time, duration,
+    file_path, file_size, format, quality, status, thumbnail_url, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteRecording:
+DELETE FROM recording WHERE id = ?;
+
+deleteRecordingsByCameraId:
+DELETE FROM recording WHERE camera_id = ?;
+
+updateRecording:
+UPDATE recording SET
+    camera_id = ?,
+    camera_name = ?,
+    start_time = ?,
+    end_time = ?,
+    duration = ?,
+    file_path = ?,
+    file_size = ?,
+    format = ?,
+    quality = ?,
+    status = ?,
+    thumbnail_url = ?
+WHERE id = ?;
+
+updateRecordingStatus:
+UPDATE recording SET status = ? WHERE id = ?;
+
+-- Таблица событий (Events)
+CREATE TABLE event (
+    id TEXT NOT NULL PRIMARY KEY,
+    camera_id TEXT NOT NULL,
+    camera_name TEXT,
+    type TEXT NOT NULL,
+    severity TEXT NOT NULL DEFAULT 'INFO',
+    timestamp INTEGER NOT NULL,
+    description TEXT,
+    metadata TEXT,
+    acknowledged INTEGER NOT NULL DEFAULT 0,
+    acknowledged_at INTEGER,
+    acknowledged_by TEXT,
+    thumbnail_url TEXT,
+    video_url TEXT
+);
+
+CREATE INDEX event_camera_id_index ON event(camera_id);
+CREATE INDEX event_type_index ON event(type);
+CREATE INDEX event_severity_index ON event(severity);
+CREATE INDEX event_timestamp_index ON event(timestamp);
+CREATE INDEX event_acknowledged_index ON event(acknowledged);
+
+-- Запросы для работы с событиями
+selectAllEvents:
+SELECT * FROM event ORDER BY timestamp DESC;
+
+selectEventById:
+SELECT * FROM event WHERE id = ?;
+
+selectEventsByCameraId:
+SELECT * FROM event WHERE camera_id = ? ORDER BY timestamp DESC;
+
+selectEventsByType:
+SELECT * FROM event WHERE type = ? ORDER BY timestamp DESC;
+
+selectEventsBySeverity:
+SELECT * FROM event WHERE severity = ? ORDER BY timestamp DESC;
+
+selectUnacknowledgedEvents:
+SELECT * FROM event WHERE acknowledged = 0 ORDER BY timestamp DESC;
+
+selectEventsByDateRange:
+SELECT * FROM event WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC;
+
+insertEvent:
+INSERT OR REPLACE INTO event(
+    id, camera_id, camera_name, type, severity, timestamp, description,
+    metadata, acknowledged, acknowledged_at, acknowledged_by, thumbnail_url, video_url
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteEvent:
+DELETE FROM event WHERE id = ?;
+
+deleteEventsByCameraId:
+DELETE FROM event WHERE camera_id = ?;
+
+deleteOldEvents:
+DELETE FROM event WHERE timestamp < ?;
+
+updateEvent:
+UPDATE event SET
+    camera_id = ?,
+    camera_name = ?,
+    type = ?,
+    severity = ?,
+    timestamp = ?,
+    description = ?,
+    metadata = ?,
+    acknowledged = ?,
+    acknowledged_at = ?,
+    acknowledged_by = ?,
+    thumbnail_url = ?,
+    video_url = ?
+WHERE id = ?;
+
+acknowledgeEvent:
+UPDATE event SET acknowledged = 1, acknowledged_at = ?, acknowledged_by = ? WHERE id = ?;
+
+-- Таблица пользователей (Users)
+CREATE TABLE user (
+    id TEXT NOT NULL PRIMARY KEY,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT,
+    full_name TEXT,
+    role TEXT NOT NULL,
+    permissions TEXT,
+    created_at INTEGER NOT NULL,
+    last_login_at INTEGER,
+    is_active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX user_username_index ON user(username);
+CREATE INDEX user_role_index ON user(role);
+CREATE INDEX user_is_active_index ON user(is_active);
+
+-- Запросы для работы с пользователями
+selectAllUsers:
+SELECT * FROM user ORDER BY created_at DESC;
+
+selectUserById:
+SELECT * FROM user WHERE id = ?;
+
+selectUserByUsername:
+SELECT * FROM user WHERE username = ?;
+
+selectUsersByRole:
+SELECT * FROM user WHERE role = ? ORDER BY created_at DESC;
+
+selectActiveUsers:
+SELECT * FROM user WHERE is_active = 1 ORDER BY created_at DESC;
+
+insertUser:
+INSERT OR REPLACE INTO user(
+    id, username, email, full_name, role, permissions, created_at, last_login_at, is_active
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteUser:
+DELETE FROM user WHERE id = ?;
+
+updateUser:
+UPDATE user SET
+    username = ?,
+    email = ?,
+    full_name = ?,
+    role = ?,
+    permissions = ?,
+    last_login_at = ?,
+    is_active = ?
+WHERE id = ?;
+
+updateUserLastLogin:
+UPDATE user SET last_login_at = ? WHERE id = ?;
+
+updateUserStatus:
+UPDATE user SET is_active = ? WHERE id = ?;
+
+-- Таблица настроек (Settings)
+CREATE TABLE setting (
+    id TEXT NOT NULL PRIMARY KEY,
+    category TEXT NOT NULL,
+    key TEXT NOT NULL,
+    value TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'STRING',
+    description TEXT,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(category, key)
+);
+
+CREATE INDEX setting_category_index ON setting(category);
+CREATE INDEX setting_key_index ON setting(key);
+CREATE INDEX setting_category_key_index ON setting(category, key);
+
+-- Запросы для работы с настройками
+selectAllSettings:
+SELECT * FROM setting ORDER BY category, key;
+
+selectSettingById:
+SELECT * FROM setting WHERE id = ?;
+
+selectSettingsByCategory:
+SELECT * FROM setting WHERE category = ? ORDER BY key;
+
+selectSettingByCategoryAndKey:
+SELECT * FROM setting WHERE category = ? AND key = ?;
+
+insertSetting:
+INSERT OR REPLACE INTO setting(
+    id, category, key, value, type, description, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+deleteSetting:
+DELETE FROM setting WHERE id = ?;
+
+deleteSettingByCategoryAndKey:
+DELETE FROM setting WHERE category = ? AND key = ?;
+
+deleteSettingsByCategory:
+DELETE FROM setting WHERE category = ?;
+
+updateSetting:
+UPDATE setting SET
+    category = ?,
+    key = ?,
+    value = ?,
+    type = ?,
+    description = ?,
+    updated_at = ?
+WHERE id = ?;
+
+updateSettingValue:
+UPDATE setting SET value = ?, updated_at = ? WHERE category = ? AND key = ?;
+
+-- Таблица уведомлений (Notifications)
+CREATE TABLE notification (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    type TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'NORMAL',
+    camera_id TEXT,
+    event_id TEXT,
+    recording_id TEXT,
+    channel_id TEXT,
+    icon TEXT,
+    sound INTEGER NOT NULL DEFAULT 1,
+    vibration INTEGER NOT NULL DEFAULT 0,
+    read INTEGER NOT NULL DEFAULT 0,
+    read_at INTEGER,
+    timestamp INTEGER NOT NULL,
+    extras TEXT
+);
+
+CREATE INDEX notification_type_index ON notification(type);
+CREATE INDEX notification_priority_index ON notification(priority);
+CREATE INDEX notification_read_index ON notification(read);
+CREATE INDEX notification_timestamp_index ON notification(timestamp);
+CREATE INDEX notification_camera_id_index ON notification(camera_id);
+CREATE INDEX notification_event_id_index ON notification(event_id);
+
+-- Запросы для работы с уведомлениями
+selectAllNotifications:
+SELECT * FROM notification ORDER BY timestamp DESC;
+
+selectNotificationById:
+SELECT * FROM notification WHERE id = ?;
+
+selectUnreadNotifications:
+SELECT * FROM notification WHERE read = 0 ORDER BY timestamp DESC;
+
+selectNotificationsByType:
+SELECT * FROM notification WHERE type = ? ORDER BY timestamp DESC;
+
+selectNotificationsByPriority:
+SELECT * FROM notification WHERE priority = ? ORDER BY timestamp DESC;
+
+selectNotificationsByCameraId:
+SELECT * FROM notification WHERE camera_id = ? ORDER BY timestamp DESC;
+
+selectNotificationsByDateRange:
+SELECT * FROM notification WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp DESC;
+
+insertNotification:
+INSERT OR REPLACE INTO notification(
+    id, title, message, type, priority, camera_id, event_id, recording_id,
+    channel_id, icon, sound, vibration, read, read_at, timestamp, extras
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteNotification:
+DELETE FROM notification WHERE id = ?;
+
+deleteOldNotifications:
+DELETE FROM notification WHERE timestamp < ?;
+
+deleteReadNotifications:
+DELETE FROM notification WHERE read = 1;
+
+updateNotification:
+UPDATE notification SET
+    title = ?,
+    message = ?,
+    type = ?,
+    priority = ?,
+    camera_id = ?,
+    event_id = ?,
+    recording_id = ?,
+    channel_id = ?,
+    icon = ?,
+    sound = ?,
+    vibration = ?,
+    read = ?,
+    read_at = ?,
+    timestamp = ?,
+    extras = ?
+WHERE id = ?;
+
+markNotificationAsRead:
+UPDATE notification SET read = 1, read_at = ? WHERE id = ?;
+
+markAllNotificationsAsRead:
+UPDATE notification SET read = 1, read_at = ? WHERE read = 0;
+

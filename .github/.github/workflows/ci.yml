@@ -1,0 +1,264 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        java-version: [17, 21]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ matrix.java-version }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.java-version }}
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build --no-daemon
+
+      - name: Run tests
+        run: ./gradlew test --no-daemon
+
+      - name: Run linting
+        run: ./gradlew detekt ktlintCheck --no-daemon
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.java-version }}
+          path: |
+            **/build/test-results/**/*.xml
+            **/build/reports/tests/**/*
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ matrix.java-version }}
+          path: |
+            **/build/libs/**/*.jar
+            **/build/libs/**/*.aar
+
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run Detekt
+        run: ./gradlew detekt --no-daemon
+
+      - name: Run KTLint
+        run: ./gradlew ktlintCheck --no-daemon
+
+      - name: Upload Detekt reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detekt-reports
+          path: '**/build/reports/detekt/**/*'
+
+  documentation:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check TIMELINE.md exists
+        run: |
+          if [ ! -f TIMELINE.md ]; then
+            echo "❌ TIMELINE.md не найден! Временная шкала обязательна для проекта."
+            echo "См. руководство: docs/TIMELINE_GUIDE.md"
+            exit 1
+          fi
+          echo "✅ TIMELINE.md найден"
+
+      - name: Check TIMELINE.md structure
+        run: |
+          if ! grep -q "Временная шкала проекта IP-CSS" TIMELINE.md; then
+            echo "❌ TIMELINE.md не содержит ожидаемую структуру"
+            exit 1
+          fi
+          if ! grep -q "Прошлое" TIMELINE.md; then
+            echo "❌ TIMELINE.md должен содержать раздел 'Прошлое'"
+            exit 1
+          fi
+          if ! grep -q "Настоящее" TIMELINE.md; then
+            echo "❌ TIMELINE.md должен содержать раздел 'Настоящее'"
+            exit 1
+          fi
+          if ! grep -q "Будущее" TIMELINE.md; then
+            echo "❌ TIMELINE.md должен содержать раздел 'Будущее'"
+            exit 1
+          fi
+          echo "✅ Структура TIMELINE.md корректна"
+
+      - name: Check TIMELINE.md last updated date
+        run: |
+          if ! grep -q "Последнее обновление.*Январь 2025\|Февраль 2025\|Март 2025\|Апрель 2025\|Май 2025\|Июнь 2025\|Июль 2025\|Август 2025\|Сентябрь 2025\|Октябрь 2025\|Ноябрь 2025\|Декабрь 2025" TIMELINE.md; then
+            echo "⚠️  Предупреждение: Дата 'Последнее обновление' в TIMELINE.md может быть устаревшей"
+            echo "Рекомендуется обновить дату при значимых изменениях"
+          else
+            echo "✅ Дата обновления TIMELINE.md актуальна"
+          fi
+
+  build-native:
+    name: Build Native Libraries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up CMake
+        uses: jwlawson/actions-setup-cmake@v1.14
+        with:
+          cmake-version: '3.20.0'
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake ../native
+
+      - name: Build native libraries
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      - name: Upload native artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-libs-${{ matrix.os }}
+          path: build/**/*.so,build/**/*.dylib,build/**/*.dll
+
+  build-web:
+    name: Build Web Interface
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: server/web/package.json
+
+      - name: Install dependencies
+        working-directory: server/web
+        run: npm ci
+
+      - name: Build Next.js
+        working-directory: server/web
+        run: npm run build
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: server/web/.next
+
+  update-structure:
+    name: Update Project Structure
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate project structure
+        run: |
+          python3 scripts/generate-project-structure.py
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain PROJECT_STRUCTURE_AUTO.md)" ]; then
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.has_changes == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add PROJECT_STRUCTURE_AUTO.md
+          git commit -m "chore: автоматическое обновление структуры проекта [skip ci]"
+          git push
+
+      - name: Create PR comment
+        if: steps.changes.outputs.has_changes == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const structure = fs.readFileSync('PROJECT_STRUCTURE_AUTO.md', 'utf8');
+            const comment = `## ⚠️ Структура проекта изменилась
+            
+            Структура проекта была обновлена. Пожалуйста, обновите файл \`PROJECT_STRUCTURE_AUTO.md\`:
+            
+            \`\`\`bash
+            python3 scripts/generate-project-structure.py
+            git add PROJECT_STRUCTURE_AUTO.md
+            git commit -m "chore: обновление структуры проекта"
+            \`\`\`
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

@@ -4,6 +4,8 @@ import com.auth0.jwt.JWT
 import com.company.ipcamera.server.config.JwtConfig
 import com.company.ipcamera.server.di.appModule
 import com.company.ipcamera.server.middleware.configureCookieAuth
+import com.company.ipcamera.server.middleware.configureSecurityHeaders
+import com.company.ipcamera.server.service.CameraService
 import com.company.ipcamera.server.websocket.configureWebSocket
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -15,6 +17,7 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
+import org.koin.ktor.ext.inject
 import org.koin.ktor.plugin.Koin
 import org.slf4j.event.Level
 
@@ -60,6 +63,9 @@ fun Application.module() {
         allowCredentials = true
     }
 
+    // Security Headers
+    configureSecurityHeaders()
+
     // Cookie Auth Middleware - читает токен из cookie и устанавливает в заголовок Authorization
     configureCookieAuth()
 
@@ -93,5 +99,9 @@ fun Application.module() {
 
     // WebSocket
     configureWebSocket()
+
+    // Start Camera Service monitoring
+    val cameraService: CameraService by inject()
+    cameraService.startMonitoring()
 }
 

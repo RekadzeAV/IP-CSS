@@ -62,37 +62,75 @@ actual class WSDiscovery {
             // Сбор ответов
             val responses = mutableListOf<DiscoveredDevice>()
             val startTime = System.currentTimeMillis()
+            var lastResponseTime = startTime
 
-            while (System.currentTimeMillis() - startTime < timeoutMillis) {
+            // Отправляем несколько Probe запросов
+            repeat(2) { attempt ->
+                if (attempt > 0) {
+                    kotlinx.coroutines.delay(500)
+                }
                 try {
-                    val buffer = ByteArray(8192) // Увеличенный буфер для больших ответов
+                    val probeBytes = createProbeMessage().toByteArray(StandardCharsets.UTF_8)
+                    val probePacket = DatagramPacket(probeBytes, probeBytes.size, multicastAddress, multicastPort)
+                    socket?.send(probePacket)
+                    logger.debug { "Probe message sent (attempt ${attempt + 1})" }
+                } catch (e: Exception) {
+                    logger.warn(e) { "Error sending probe on attempt ${attempt + 1}" }
+                }
+            }
+
+            val extendedTimeout = timeoutMillis + 1000
+
+            while (System.currentTimeMillis() - startTime < extendedTimeout) {
+                try {
+                    val buffer = ByteArray(16384)
                     val responsePacket = DatagramPacket(buffer, buffer.size)
 
-                    val remainingTime = timeoutMillis - (System.currentTimeMillis() - startTime)
+                    val elapsed = System.currentTimeMillis() - startTime
+                    val remainingTime = extendedTimeout - elapsed
                     if (remainingTime <= 0) break
 
-                    socket?.soTimeout = remainingTime.toInt().coerceAtLeast(100)
+                    socket?.soTimeout = remainingTime.toInt().coerceAtMost(1000).coerceAtLeast(100)
                     socket?.receive(responsePacket)
 
-                    val responseXml = String(responsePacket.data, 0, responsePacket.length, StandardCharsets.UTF_8)
-                    logger.debug { "Received response from ${responsePacket.address}:${responsePacket.port}" }
+                    val responseXml = String(
+                        responsePacket.data,
+                        0,
+                        responsePacket.length,
+                        StandardCharsets.UTF_8
+                    ).trim()
 
-                    // Парсинг всех ProbeMatch из ответа
+                    if (responseXml.isEmpty()) continue
+
+                    lastResponseTime = System.currentTimeMillis()
+                    logger.debug { "Received response (${responsePacket.length} bytes) from ${responsePacket.address}:${responsePacket.port}" }
+
                     val devices = parseProbeMatches(responseXml)
                     for (device in devices) {
-                        // Дедупликация по первому XAddr
-                        val key = device.xAddrs.firstOrNull() ?: ""
-                        if (key.isNotEmpty() && !discoveredDevices.contains(key)) {
-                            discoveredDevices.add(key)
+                        var found = false
+                        for (xAddr in device.xAddrs) {
+                            if (xAddr.isNotEmpty() && !discoveredDevices.contains(xAddr)) {
+                                discoveredDevices.add(xAddr)
+                                found = true
+                            }
+                        }
+
+                        if (found && device.xAddrs.isNotEmpty()) {
                             responses.add(device)
-                            logger.info { "Discovered device: ${device.xAddrs.firstOrNull()} (types: ${device.types.joinToString()})" }
+                            logger.info {
+                                "Discovered device: ${device.xAddrs.firstOrNull()} " +
+                                "(types: ${device.types.take(3).joinToString()}, " +
+                                "xAddrs: ${device.xAddrs.size})"
+                            }
                         }
                     }
                 } catch (e: SocketTimeoutException) {
-                    // Таймаут ожидания ответа - это нормально
-                    break
+                    val timeSinceLastResponse = System.currentTimeMillis() - lastResponseTime
+                    if (timeSinceLastResponse > 1000 || System.currentTimeMillis() - startTime >= timeoutMillis) {
+                        break
+                    }
                 } catch (e: Exception) {
-                    logger.warn(e) { "Error receiving response: ${e.message}" }
+                    logger.debug(e) { "Error receiving response: ${e.message}" }
                 }
             }
 
@@ -152,7 +190,7 @@ actual class WSDiscovery {
         <a:To s:mustUnderstand="1">urn:schemas-xmlsoap-org:ws:2005:04:discovery</a:To>
     </s:Header>
     <s:Body>
-        <d:Probe>
+        <d:Probe xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery">
             <d:Types>dn:NetworkVideoTransmitter</d:Types>
         </d:Probe>
     </s:Body>
@@ -164,41 +202,71 @@ actual class WSDiscovery {
      */
     private fun parseProbeMatches(xml: String): List<DiscoveredDevice> {
         return try {
+            // Нормализация XML - удаляем BOM и лишние пробелы
+            val normalizedXml = xml.trim().replace("\uFEFF", "")
+
             val factory = DocumentBuilderFactory.newInstance()
             factory.isNamespaceAware = true
             factory.isIgnoringElementContentWhitespace = true
+            factory.isValidating = false
+            factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
+
             val builder = factory.newDocumentBuilder()
-            val doc = builder.parse(java.io.ByteArrayInputStream(xml.toByteArray(StandardCharsets.UTF_8)))
+            val doc = builder.parse(java.io.ByteArrayInputStream(normalizedXml.toByteArray(StandardCharsets.UTF_8)))
 
-            val probeMatches = doc.getElementsByTagNameNS("http://schemas.xmlsoap.org/ws/2005/04/discovery", "ProbeMatches")
-            if (probeMatches.length == 0) {
-                // Попытка найти ProbeMatch напрямую
-                return parseProbeMatchesFallback(xml)
-            }
-
-            val probeMatchesElement = probeMatches.item(0)
-            val probeMatchNodes = probeMatchesElement.childNodes
             val devices = mutableListOf<DiscoveredDevice>()
 
-            // Парсинг каждого ProbeMatch
-            for (i in 0 until probeMatchNodes.length) {
-                val node = probeMatchNodes.item(i)
-                if (node.nodeType == org.w3c.dom.Node.ELEMENT_NODE &&
-                    (node.localName == "ProbeMatch" || node.nodeName.contains("ProbeMatch"))) {
-                    val device = parseProbeMatchNode(node)
-                    if (device != null) {
-                        devices.add(device)
+            // Попытка найти ProbeMatches с namespace
+            var probeMatches = doc.getElementsByTagNameNS("http://schemas.xmlsoap.org/ws/2005/04/discovery", "ProbeMatches")
+
+            // Если не нашли, пробуем без namespace
+            if (probeMatches.length == 0) {
+                probeMatches = doc.getElementsByTagName("ProbeMatches")
+            }
+
+            // Если нашли ProbeMatches
+            if (probeMatches.length > 0) {
+                val probeMatchesElement = probeMatches.item(0)
+                val probeMatchNodes = probeMatchesElement.childNodes
+
+                for (i in 0 until probeMatchNodes.length) {
+                    val node = probeMatchNodes.item(i)
+                    if (node.nodeType == org.w3c.dom.Node.ELEMENT_NODE &&
+                        (node.localName == "ProbeMatch" || node.nodeName.contains("ProbeMatch"))) {
+                        val device = parseProbeMatchNode(node)
+                        if (device != null) {
+                            devices.add(device)
+                        }
+                    }
+                }
+            }
+
+            // Если не нашли через ProbeMatches, ищем ProbeMatch напрямую
+            if (devices.isEmpty()) {
+                var probeMatchElements = doc.getElementsByTagNameNS("http://schemas.xmlsoap.org/ws/2005/04/discovery", "ProbeMatch")
+                if (probeMatchElements.length == 0) {
+                    probeMatchElements = doc.getElementsByTagName("ProbeMatch")
+                }
+
+                for (i in 0 until probeMatchElements.length) {
+                    val node = probeMatchElements.item(i)
+                    if (node.nodeType == org.w3c.dom.Node.ELEMENT_NODE) {
+                        val device = parseProbeMatchNode(node)
+                        if (device != null) {
+                            devices.add(device)
+                        }
                     }
                 }
             }
 
             if (devices.isEmpty()) {
-                parseProbeMatchesFallback(xml)
+                logger.debug { "No devices found via DOM parsing, trying fallback" }
+                parseProbeMatchesFallback(normalizedXml)
             } else {
                 devices
             }
         } catch (e: Exception) {
-            logger.warn(e) { "Error parsing ProbeMatches response, using fallback" }
+            logger.warn(e) { "Error parsing ProbeMatches response, using fallback: ${e.message}" }
             parseProbeMatchesFallback(xml)
         }
     }
@@ -211,38 +279,34 @@ actual class WSDiscovery {
         val types = mutableListOf<String>()
         val scopes = mutableListOf<String>()
 
-        val childNodes = probeMatchNode.childNodes
-        for (i in 0 until childNodes.length) {
-            val node = childNodes.item(i)
-            if (node.nodeType == org.w3c.dom.Node.ELEMENT_NODE) {
-                when {
-                    node.localName == "XAddrs" || node.nodeName.contains("XAddrs") -> {
+        // Рекурсивный поиск элементов
+        fun searchElement(parent: org.w3c.dom.Node, localName: String, resultList: MutableList<String>) {
+            val childNodes = parent.childNodes
+            for (i in 0 until childNodes.length) {
+                val node = childNodes.item(i)
+                if (node.nodeType == org.w3c.dom.Node.ELEMENT_NODE) {
+                    val nodeLocalName = node.localName ?: node.nodeName
+                    if (nodeLocalName == localName || nodeLocalName.endsWith(localName)) {
                         val text = node.textContent?.trim()
                         if (text != null && text.isNotEmpty()) {
-                            xAddrs.addAll(text.split(" ").filter { it.isNotEmpty() })
+                            val values = text.split(Regex("\\s+")).filter { it.isNotEmpty() }
+                            resultList.addAll(values)
                         }
                     }
-                    node.localName == "Types" || node.nodeName.contains("Types") -> {
-                        val text = node.textContent?.trim()
-                        if (text != null && text.isNotEmpty()) {
-                            types.addAll(text.split(" ").filter { it.isNotEmpty() })
-                        }
-                    }
-                    node.localName == "Scopes" || node.nodeName.contains("Scopes") -> {
-                        val text = node.textContent?.trim()
-                        if (text != null && text.isNotEmpty()) {
-                            scopes.addAll(text.split(" ").filter { it.isNotEmpty() })
-                        }
-                    }
+                    searchElement(node, localName, resultList)
                 }
             }
         }
 
+        searchElement(probeMatchNode, "XAddrs", xAddrs)
+        searchElement(probeMatchNode, "Types", types)
+        searchElement(probeMatchNode, "Scopes", scopes)
+
         return if (xAddrs.isNotEmpty()) {
             DiscoveredDevice(
-                xAddrs = xAddrs,
-                types = types,
-                scopes = scopes
+                xAddrs = xAddrs.distinct(),
+                types = types.distinct(),
+                scopes = scopes.distinct()
             )
         } else {
             null
@@ -250,69 +314,91 @@ actual class WSDiscovery {
     }
 
     /**
-     * Fallback парсинг через regex
+     * Fallback парсинг через regex (более надежный)
      */
     private fun parseProbeMatchesFallback(xml: String): List<DiscoveredDevice> {
         val devices = mutableListOf<DiscoveredDevice>()
 
-        // Поиск всех ProbeMatch блоков
-        val probeMatchRegex = Regex("<[^:]*:ProbeMatch[^>]*>(.*?)</[^:]*:ProbeMatch>", RegexOption.DOT_MATCHES_ALL)
-        val matches = probeMatchRegex.findAll(xml)
+        try {
+            // Улучшенный regex для поиска ProbeMatch блоков
+            val probeMatchRegex = Regex(
+                "<[^>]*:?ProbeMatch[^>]*>(.*?)</[^>]*:?ProbeMatch>",
+                setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.MULTILINE)
+            )
+            val matches = probeMatchRegex.findAll(xml)
 
-        for (match in matches) {
-            val probeMatchXml = match.groupValues[1]
-            val xAddrs = mutableListOf<String>()
-            val types = mutableListOf<String>()
-            val scopes = mutableListOf<String>()
+            for (match in matches) {
+                val probeMatchXml = match.groupValues.getOrNull(1) ?: continue
+                val xAddrs = mutableListOf<String>()
+                val types = mutableListOf<String>()
+                val scopes = mutableListOf<String>()
 
-            // Извлечение XAddrs
-            val xAddrsRegex = Regex("<[^:]*:XAddrs[^>]*>([^<]+)</[^:]*:XAddrs>")
-            val xAddrsMatch = xAddrsRegex.find(probeMatchXml)
-            if (xAddrsMatch != null) {
-                val text = xAddrsMatch.groupValues[1].trim()
-                if (text.isNotEmpty()) {
-                    xAddrs.addAll(text.split(" ").filter { it.isNotEmpty() })
-                }
-            }
-
-            // Извлечение Types
-            val typesRegex = Regex("<[^:]*:Types[^>]*>([^<]+)</[^:]*:Types>")
-            val typesMatch = typesRegex.find(probeMatchXml)
-            if (typesMatch != null) {
-                val text = typesMatch.groupValues[1].trim()
-                if (text.isNotEmpty()) {
-                    types.addAll(text.split(" ").filter { it.isNotEmpty() })
-                }
-            }
-
-            // Извлечение Scopes
-            val scopesRegex = Regex("<[^:]*:Scopes[^>]*>([^<]+)</[^:]*:Scopes>")
-            val scopesMatch = scopesRegex.find(probeMatchXml)
-            if (scopesMatch != null) {
-                val text = scopesMatch.groupValues[1].trim()
-                if (text.isNotEmpty()) {
-                    scopes.addAll(text.split(" ").filter { it.isNotEmpty() })
-                }
-            }
-
-            if (xAddrs.isNotEmpty()) {
-                devices.add(DiscoveredDevice(xAddrs = xAddrs, types = types, scopes = scopes))
-            }
-        }
-
-        // Если не нашли через regex, попробуем простой поиск XAddrs
-        if (devices.isEmpty()) {
-            val xAddrsRegex = Regex("<[^:]*:XAddrs[^>]*>([^<]+)</[^:]*:XAddrs>")
-            val xAddrsMatch = xAddrsRegex.find(xml)
-            if (xAddrsMatch != null) {
-                val text = xAddrsMatch.groupValues[1].trim()
-                if (text.isNotEmpty()) {
-                    val xAddrs = text.split(" ").filter { it.isNotEmpty() }
-                    if (xAddrs.isNotEmpty()) {
-                        devices.add(DiscoveredDevice(xAddrs = xAddrs, types = emptyList(), scopes = emptyList()))
+                // Извлечение XAddrs
+                val xAddrsRegex = Regex("<[^>]*:?XAddrs[^>]*>([^<]+)</[^>]*:?XAddrs>", RegexOption.MULTILINE)
+                val xAddrsMatches = xAddrsRegex.findAll(probeMatchXml)
+                for (xMatch in xAddrsMatches) {
+                    val text = xMatch.groupValues.getOrNull(1)?.trim()
+                    if (text != null && text.isNotEmpty()) {
+                        xAddrs.addAll(text.split(Regex("\\s+")).filter { it.isNotEmpty() && it.isNotBlank() })
                     }
                 }
+
+                // Извлечение Types
+                val typesRegex = Regex("<[^>]*:?Types[^>]*>([^<]+)</[^>]*:?Types>", RegexOption.MULTILINE)
+                val typesMatches = typesRegex.findAll(probeMatchXml)
+                for (tMatch in typesMatches) {
+                    val text = tMatch.groupValues.getOrNull(1)?.trim()
+                    if (text != null && text.isNotEmpty()) {
+                        types.addAll(text.split(Regex("\\s+")).filter { it.isNotEmpty() && it.isNotBlank() })
+                    }
+                }
+
+                // Извлечение Scopes
+                val scopesRegex = Regex("<[^>]*:?Scopes[^>]*>([^<]+)</[^>]*:?Scopes>", RegexOption.MULTILINE)
+                val scopesMatches = scopesRegex.findAll(probeMatchXml)
+                for (sMatch in scopesMatches) {
+                    val text = sMatch.groupValues.getOrNull(1)?.trim()
+                    if (text != null && text.isNotEmpty()) {
+                        scopes.addAll(text.split(Regex("\\s+")).filter { it.isNotEmpty() && it.isNotBlank() })
+                    }
+                }
+
+                if (xAddrs.isNotEmpty()) {
+                    devices.add(
+                        DiscoveredDevice(
+                            xAddrs = xAddrs.distinct(),
+                            types = types.distinct(),
+                            scopes = scopes.distinct()
+                        )
+                    )
+                }
             }
+
+            // Если не нашли через ProbeMatch блоки, ищем XAddrs напрямую
+            if (devices.isEmpty()) {
+                val xAddrsRegex = Regex("<[^>]*:?XAddrs[^>]*>([^<]+)</[^>]*:?XAddrs>", RegexOption.MULTILINE)
+                val xAddrsMatches = xAddrsRegex.findAll(xml)
+                val allXAddrs = mutableListOf<String>()
+
+                for (match in xAddrsMatches) {
+                    val text = match.groupValues.getOrNull(1)?.trim()
+                    if (text != null && text.isNotEmpty()) {
+                        allXAddrs.addAll(text.split(Regex("\\s+")).filter { it.isNotEmpty() && it.isNotBlank() })
+                    }
+                }
+
+                if (allXAddrs.isNotEmpty()) {
+                    devices.add(
+                        DiscoveredDevice(
+                            xAddrs = allXAddrs.distinct(),
+                            types = emptyList(),
+                            scopes = emptyList()
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            logger.debug(e) { "Error in fallback parsing: ${e.message}" }
         }
 
         return devices

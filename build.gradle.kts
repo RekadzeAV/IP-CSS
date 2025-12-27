@@ -25,13 +25,15 @@ allprojects {
 
 tasks.register("clean", Delete::class) {
     delete(rootProject.buildDir)
+    dependsOn("cleanNativeLibraries")
 }
 
 tasks.register("buildAll") {
     dependsOn(
+        "buildNativeLibraries",
         ":core:common:build",
         ":shared:build",
-        ":core:license:build",
+        // ":core:license:build", // Отложено: лицензирование вынесено за рамки проекта
         ":core:network:build"
     )
     group = "build"
@@ -42,7 +44,7 @@ tasks.register("testAll") {
     dependsOn(
         ":core:common:test",
         ":shared:test",
-        ":core:license:test",
+        // ":core:license:test", // Отложено: лицензирование вынесено за рамки проекта
         ":core:network:test"
     )
     group = "verification"
@@ -53,7 +55,7 @@ tasks.register("publishToLocalMaven") {
     dependsOn(
         ":core:common:publishToMavenLocal",
         ":core:network:publishToMavenLocal",
-        ":core:license:publishToMavenLocal",
+        // ":core:license:publishToMavenLocal", // Отложено: лицензирование вынесено за рамки проекта
         ":shared:publishToMavenLocal"
     )
     group = "publishing"
@@ -125,4 +127,92 @@ tasks.register<Exec>("buildNasPackageTruenas") {
     description = "Build TrueNAS package (Docker/Kubernetes)"
     dependsOn(":server:api:build")
     commandLine("bash", "scripts/build-nas-package.sh", "truenas", "x86_64", "Alfa-0.0.1")
+}
+
+// =============================================================================
+// Native Libraries Build Tasks
+// =============================================================================
+
+tasks.register("buildNativeLibraries") {
+    group = "build"
+    description = "Build all native libraries for current platform"
+    dependsOn(
+        "buildNativeVideoProcessing",
+        "buildNativeAnalytics",
+        "buildNativeCodecs"
+    )
+}
+
+tasks.register<Exec>("buildNativeVideoProcessing") {
+    group = "build"
+    description = "Build video-processing native library"
+    workingDir = file("native")
+    val os = System.getProperty("os.name").lowercase()
+    val arch = System.getProperty("os.arch").lowercase()
+
+    when {
+        os.contains("windows") -> {
+            commandLine("powershell", "-ExecutionPolicy", "Bypass", "-File", "../scripts/build-all-native-libs.ps1")
+        }
+        os.contains("linux") || os.contains("mac") -> {
+            commandLine("bash", "../scripts/build-all-native-libs.sh", "all")
+        }
+        else -> {
+            doFirst {
+                throw GradleException("Unsupported OS: $os")
+            }
+        }
+    }
+}
+
+tasks.register<Exec>("buildNativeAnalytics") {
+    group = "build"
+    description = "Build analytics native library"
+    dependsOn("buildNativeVideoProcessing")
+    // Analytics собирается вместе с video-processing в одном скрипте
+    doFirst {
+        println("Analytics library will be built with video-processing")
+    }
+}
+
+tasks.register<Exec>("buildNativeCodecs") {
+    group = "build"
+    description = "Build codecs native library"
+    dependsOn("buildNativeVideoProcessing")
+    // Codecs собирается вместе с video-processing в одном скрипте
+    doFirst {
+        println("Codecs library will be built with video-processing")
+    }
+}
+
+tasks.register<Exec>("buildNativeForLinux") {
+    group = "build"
+    description = "Build native libraries for Linux x64"
+    workingDir = file("native")
+    commandLine("bash", "../scripts/build-all-native-libs.sh", "linux")
+}
+
+tasks.register<Exec>("buildNativeForMacOS") {
+    group = "build"
+    description = "Build native libraries for macOS (x64 and arm64)"
+    workingDir = file("native")
+    commandLine("bash", "../scripts/build-all-native-libs.sh", "macos")
+}
+
+tasks.register<Exec>("buildNativeForWindows") {
+    group = "build"
+    description = "Build native libraries for Windows x64"
+    workingDir = file("native")
+    commandLine("powershell", "-ExecutionPolicy", "Bypass", "-File", "../scripts/build-all-native-libs.ps1")
+}
+
+tasks.register("cleanNativeLibraries") {
+    group = "clean"
+    description = "Clean native libraries build artifacts"
+    doLast {
+        delete(fileTree("native/build") { include("**/*") })
+        delete(fileTree("native/video-processing/lib") { include("**/*") })
+        delete(fileTree("native/analytics/lib") { include("**/*") })
+        delete(fileTree("native/codecs/lib") { include("**/*") })
+    }
 }

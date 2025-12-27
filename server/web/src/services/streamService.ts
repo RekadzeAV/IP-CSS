@@ -85,5 +85,17 @@ export const streamService = {
     }
     throw new Error(response.data.message || 'Failed to capture screenshot');
   },
+
+  /**
+   * Изменить качество потока
+   */
+  async setStreamQuality(cameraId: string, quality: 'low' | 'medium' | 'high' | 'ultra'): Promise<void> {
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      `/cameras/${cameraId}/stream/quality?quality=${quality}`
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to change stream quality');
+    }
+  },
 };
 

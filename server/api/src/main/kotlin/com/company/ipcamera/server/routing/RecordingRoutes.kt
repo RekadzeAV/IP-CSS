@@ -2,13 +2,19 @@ package com.company.ipcamera.server.routing
 
 import com.company.ipcamera.server.dto.*
 import com.company.ipcamera.server.middleware.AuthorizationMiddleware.requireRole
+import com.company.ipcamera.server.service.FfmpegService
+import com.company.ipcamera.server.service.HlsGeneratorService
+import com.company.ipcamera.server.service.StreamQuality
 import com.company.ipcamera.server.service.VideoRecordingService
 import com.company.ipcamera.shared.domain.model.Quality
 import com.company.ipcamera.shared.domain.model.RecordingFormat
 import com.company.ipcamera.shared.domain.model.UserRole
 import com.company.ipcamera.shared.domain.repository.CameraRepository
 import com.company.ipcamera.shared.domain.repository.RecordingRepository
+import java.io.File
+import java.nio.file.Paths
 import io.ktor.http.*
+import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.request.*
@@ -28,6 +34,8 @@ fun Route.recordingRoutes() {
     val recordingRepository: RecordingRepository by inject()
     val videoRecordingService: VideoRecordingService by inject()
     val cameraRepository: CameraRepository by inject()
+    val hlsGeneratorService: HlsGeneratorService? by inject()
+    val ffmpegService: FfmpegService by inject()
 
     authenticate("jwt-auth") {
         route("/recordings") {
@@ -222,6 +230,134 @@ fun Route.recordingRoutes() {
                     }
                 }
 
+                // GET /api/v1/recordings/{id}/hls/playlist.m3u8 - HLS плейлист для воспроизведения записи
+                // Минимум VIEWER для воспроизведения записей
+                route("/hls") {
+                    get("/playlist.m3u8") {
+                        requireRole(UserRole.VIEWER)
+                        try {
+                            val id = call.parameters["id"] ?: return@get call.respond(
+                                HttpStatusCode.BadRequest,
+                                "Recording ID is required"
+                            )
+
+                            val recording = recordingRepository.getRecordingById(id)
+                                ?: return@get call.respond(
+                                    HttpStatusCode.NotFound,
+                                    "Recording not found"
+                                )
+
+                            if (recording.filePath == null) {
+                                return@get call.respond(
+                                    HttpStatusCode.BadRequest,
+                                    "Recording file not available"
+                                )
+                            }
+
+                            val videoFile = File(recording.filePath)
+                            if (!videoFile.exists()) {
+                                return@get call.respond(
+                                    HttpStatusCode.NotFound,
+                                    "Recording file not found"
+                                )
+                            }
+
+                            // Получаем качество из query параметра
+                            val qualityStr = call.request.queryParameters["quality"] ?: "medium"
+                            val quality = try {
+                                StreamQuality.valueOf(qualityStr.uppercase())
+                            } catch (e: Exception) {
+                                StreamQuality.MEDIUM
+                            }
+
+                            // Генерируем HLS из записи, если еще не сгенерирован
+                            val hlsGenerator = hlsGeneratorService
+                            if (hlsGenerator == null) {
+                                return@get call.respond(
+                                    HttpStatusCode.ServiceUnavailable,
+                                    "HLS generation service not available"
+                                )
+                            }
+
+                            val playlistPath = hlsGenerator.startHlsFromRecording(
+                                recordingId = id,
+                                videoFilePath = recording.filePath,
+                                quality = quality
+                            )
+
+                            if (playlistPath == null) {
+                                return@get call.respond(
+                                    HttpStatusCode.InternalServerError,
+                                    "Failed to generate HLS playlist"
+                                )
+                            }
+
+                            val playlistFile = File(playlistPath)
+                            if (!playlistFile.exists()) {
+                                return@get call.respond(
+                                    HttpStatusCode.NotFound,
+                                    "HLS playlist not found"
+                                )
+                            }
+
+                            var playlistContent = playlistFile.readText()
+
+                            // Заменяем пути к сегментам на правильные URL
+                            playlistContent = playlistContent.replace(
+                                Regex("segment_\\d+\\.ts"),
+                                "/api/v1/recordings/$id/hls/\\$0"
+                            )
+
+                            call.respondText(
+                                playlistContent,
+                                ContentType("application", "vnd.apple.mpegurl"),
+                                HttpStatusCode.OK
+                            )
+                        } catch (e: Exception) {
+                            logger.error(e) { "Error getting HLS playlist for recording" }
+                            call.respond(
+                                HttpStatusCode.InternalServerError,
+                                "Internal server error: ${e.message}"
+                            )
+                        }
+                    }
+
+                    // GET /api/v1/recordings/{id}/hls/segment_XXX.ts - HLS сегмент
+                    get("/segment_{segmentNumber:\\d+}.ts") {
+                        requireRole(UserRole.VIEWER)
+                        try {
+                            val id = call.parameters["id"] ?: return@get call.respond(
+                                HttpStatusCode.BadRequest,
+                                "Recording ID is required"
+                            )
+
+                            val segmentNumber = call.parameters["segmentNumber"] ?: return@get call.respond(
+                                HttpStatusCode.BadRequest,
+                                "Segment number is required"
+                            )
+
+                            val segmentPath = Paths.get(
+                                "streams/hls/recordings",
+                                id,
+                                "segment_${segmentNumber.padStart(3, '0')}.ts"
+                            )
+
+                            val segmentFile = segmentPath.toFile()
+                            if (segmentFile.exists()) {
+                                call.respondFile(segmentFile)
+                            } else {
+                                call.respond(HttpStatusCode.NotFound, "Segment not found")
+                            }
+                        } catch (e: Exception) {
+                            logger.error(e) { "Error getting HLS segment" }
+                            call.respond(
+                                HttpStatusCode.InternalServerError,
+                                "Internal server error: ${e.message}"
+                            )
+                        }
+                    }
+                }
+
                 // POST /api/v1/recordings/{id}/export - экспорт записи
                 // Минимум OPERATOR для экспорта записей
                 post("/export") {
@@ -236,34 +372,93 @@ fun Route.recordingRoutes() {
                             )
                         )
 
-                        // TODO: Получить параметры экспорта из тела запроса
-                        val format = call.request.queryParameters["format"] ?: "mp4"
-                        val quality = call.request.queryParameters["quality"] ?: "medium"
+                        // Получаем параметры экспорта из тела запроса или query параметров
+                        val request = try {
+                            call.receive<ExportRecordingRequest>()
+                        } catch (e: Exception) {
+                            // Fallback на query параметры для обратной совместимости
+                            ExportRecordingRequest(
+                                format = call.request.queryParameters["format"] ?: "mp4",
+                                quality = call.request.queryParameters["quality"] ?: "medium",
+                                startTime = call.request.queryParameters["startTime"]?.toLongOrNull(),
+                                endTime = call.request.queryParameters["endTime"]?.toLongOrNull(),
+                                useH265 = call.request.queryParameters["useH265"]?.toBoolean() ?: false
+                            )
+                        }
 
-                        val result = recordingRepository.exportRecording(id, format, quality)
-                        result.fold(
-                            onSuccess = { exportUrl ->
-                                call.respond(
-                                    HttpStatusCode.OK,
-                                    ApiResponse(
-                                        success = true,
-                                        data = exportUrl,
-                                        message = "Recording exported successfully"
-                                    )
+                        val recording = recordingRepository.getRecordingById(id)
+                            ?: return@post call.respond(
+                                HttpStatusCode.NotFound,
+                                ApiResponse<String>(
+                                    success = false,
+                                    data = null,
+                                    message = "Recording not found"
                                 )
-                            },
-                            onFailure = { error ->
-                                logger.error(error) { "Error exporting recording: $id" }
-                                call.respond(
-                                    HttpStatusCode.BadRequest,
-                                    ApiResponse<String>(
-                                        success = false,
-                                        data = null,
-                                        message = "Error exporting recording: ${error.message}"
-                                    )
+                            )
+
+                        if (recording.filePath == null) {
+                            return@post call.respond(
+                                HttpStatusCode.BadRequest,
+                                ApiResponse<String>(
+                                    success = false,
+                                    data = null,
+                                    message = "Recording file not available"
                                 )
-                            }
+                            )
+                        }
+
+                        val inputFile = File(recording.filePath)
+                        if (!inputFile.exists()) {
+                            return@post call.respond(
+                                HttpStatusCode.NotFound,
+                                ApiResponse<String>(
+                                    success = false,
+                                    data = null,
+                                    message = "Recording file not found"
+                                )
+                            )
+                        }
+
+                        // Парсим формат
+                        val outputFormat = try {
+                            RecordingFormat.valueOf(request.format?.uppercase() ?: "MP4")
+                        } catch (e: Exception) {
+                            RecordingFormat.MP4
+                        }
+
+                        // Создаем путь для экспортированного файла
+                        val exportDir = File("exports")
+                        exportDir.mkdirs()
+                        val exportFileName = "${id}_export_${System.currentTimeMillis()}.${outputFormat.name.lowercase()}"
+                        val outputFile = File(exportDir, exportFileName)
+
+                        // Конвертируем видео используя FfmpegService
+                        val success = ffmpegService.convertVideo(
+                            inputFile = inputFile,
+                            outputFile = outputFile,
+                            outputFormat = outputFormat
                         )
+
+                        if (success && outputFile.exists()) {
+                            val exportUrl = "/api/v1/recordings/$id/export/download?file=$exportFileName"
+                            call.respond(
+                                HttpStatusCode.OK,
+                                ApiResponse(
+                                    success = true,
+                                    data = exportUrl,
+                                    message = "Recording exported successfully"
+                                )
+                            )
+                        } else {
+                            call.respond(
+                                HttpStatusCode.InternalServerError,
+                                ApiResponse<String>(
+                                    success = false,
+                                    data = null,
+                                    message = "Failed to export recording"
+                                )
+                            )
+                        }
                     } catch (e: Exception) {
                         logger.error(e) { "Error exporting recording" }
                         call.respond(
@@ -273,6 +468,36 @@ fun Route.recordingRoutes() {
                                 data = null,
                                 message = "Internal server error: ${e.message}"
                             )
+                        )
+                    }
+                }
+
+                // GET /api/v1/recordings/{id}/export/download - скачать экспортированный файл
+                get("/export/download") {
+                    requireRole(UserRole.VIEWER)
+                    try {
+                        val id = call.parameters["id"] ?: return@get call.respond(
+                            HttpStatusCode.BadRequest,
+                            "Recording ID is required"
+                        )
+
+                        val fileName = call.request.queryParameters["file"]
+                            ?: return@get call.respond(
+                                HttpStatusCode.BadRequest,
+                                "File name is required"
+                            )
+
+                        val exportFile = File("exports", fileName)
+                        if (exportFile.exists()) {
+                            call.respondFile(exportFile)
+                        } else {
+                            call.respond(HttpStatusCode.NotFound, "Export file not found")
+                        }
+                    } catch (e: Exception) {
+                        logger.error(e) { "Error downloading export file" }
+                        call.respond(
+                            HttpStatusCode.InternalServerError,
+                            "Internal server error: ${e.message}"
                         )
                     }
                 }

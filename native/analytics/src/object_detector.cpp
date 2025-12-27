@@ -3,6 +3,8 @@
 #include <mutex>
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <cmath>
 
 #ifdef ENABLE_OPENCV
 #include <opencv2/opencv.hpp>
@@ -142,15 +144,141 @@ bool object_detector_detect(
         std::vector<cv::Mat> outputs;
         detector->dnnNet.forward(outputs, outNames);
 
-        // Парсинг результатов (упрощенная версия для YOLO)
+        // Полная реализация парсинга YOLO выходов
         std::vector<DetectedObject> detectedObjects;
 
-        // TODO: Полная реализация парсинга YOLO выходов
-        // Здесь должна быть обработка outputs для извлечения bounding boxes
+        // Размер входного изображения для нормализации
+        const float inputWidth = 416.0f;
+        const float inputHeight = 416.0f;
+        const float scaleX = static_cast<float>(width) / inputWidth;
+        const float scaleY = static_cast<float>(height) / inputHeight;
 
-        // Временная заглушка
+        // Обработка каждого выходного слоя (YOLO обычно имеет 3 слоя)
+        for (size_t i = 0; i < outputs.size(); i++) {
+            const cv::Mat& output = outputs[i];
+
+            // YOLO выход: [batch, anchors, grid_h, grid_w, 5 + num_classes]
+            // Или в плоском виде: [num_detections, 85] для COCO (80 классов + 5)
+            const int numDetections = output.rows;
+            const int numValues = output.cols;
+
+            // Проверяем формат выхода
+            if (numValues < 5) continue; // Минимум: x, y, w, h, confidence
+
+            for (int j = 0; j < numDetections; j++) {
+                const float* data = output.ptr<float>(j);
+
+                // Извлекаем координаты центра и размеры (нормализованные 0-1)
+                float centerX = data[0];
+                float centerY = data[1];
+                float boxWidth = data[2];
+                float boxHeight = data[3];
+                float confidence = data[4];
+
+                // Пропускаем если confidence ниже порога
+                if (confidence < detector->params.confidenceThreshold) {
+                    continue;
+                }
+
+                // Находим класс с максимальной вероятностью
+                int bestClass = 0;
+                float bestClassProb = 0.0f;
+
+                if (numValues > 5) {
+                    // Ищем максимальную вероятность класса
+                    for (int k = 5; k < numValues; k++) {
+                        float classProb = data[k];
+                        if (classProb > bestClassProb) {
+                            bestClassProb = classProb;
+                            bestClass = k - 5;
+                        }
+                    }
+
+                    // Финальная уверенность = confidence * class_probability
+                    confidence = confidence * bestClassProb;
+
+                    // Еще раз проверяем порог с учетом класса
+                    if (confidence < detector->params.confidenceThreshold) {
+                        continue;
+                    }
+                }
+
+                // Преобразуем нормализованные координаты в абсолютные пиксели
+                int x = static_cast<int>((centerX - boxWidth / 2.0f) * inputWidth * scaleX);
+                int y = static_cast<int>((centerY - boxHeight / 2.0f) * inputHeight * scaleY);
+                int w = static_cast<int>(boxWidth * inputWidth * scaleX);
+                int h = static_cast<int>(boxHeight * inputHeight * scaleY);
+
+                // Ограничиваем координаты границами изображения
+                x = std::max(0, std::min(x, width - 1));
+                y = std::max(0, std::min(y, height - 1));
+                w = std::max(1, std::min(w, width - x));
+                h = std::max(1, std::min(h, height - y));
+
+                // Определяем тип объекта на основе класса
+                ObjectType objectType = OBJECT_TYPE_UNKNOWN;
+                if (numValues > 5) {
+                    // COCO dataset mapping: 0=person, 2=car, 3=motorcycle, 6=bus, 7=truck, etc.
+                    if (bestClass == 0) {
+                        objectType = OBJECT_TYPE_PERSON;
+                    } else if (bestClass == 2 || bestClass == 5 || bestClass == 7) {
+                        objectType = OBJECT_TYPE_VEHICLE;
+                    } else if (bestClass == 3) {
+                        objectType = OBJECT_TYPE_MOTORCYCLE;
+                    } else if (bestClass == 1) {
+                        objectType = OBJECT_TYPE_BICYCLE;
+                    }
+                }
+
+                DetectedObject obj;
+                obj.type = objectType;
+                obj.confidence = confidence;
+                obj.x = x;
+                obj.y = y;
+                obj.width = w;
+                obj.height = h;
+
+                detectedObjects.push_back(obj);
+            }
+        }
+
+        // Применяем Non-Maximum Suppression (NMS) для удаления дубликатов
+        if (detectedObjects.size() > 1) {
+            std::vector<int> indices;
+            std::vector<float> scores;
+            std::vector<cv::Rect> boxes;
+
+            for (const auto& obj : detectedObjects) {
+                scores.push_back(obj.confidence);
+                boxes.push_back(cv::Rect(obj.x, obj.y, obj.width, obj.height));
+            }
+
+            // Используем OpenCV NMS
+            cv::dnn::NMSBoxes(boxes, scores, detector->params.confidenceThreshold, 0.4f, indices);
+
+            // Оставляем только объекты, прошедшие NMS
+            std::vector<DetectedObject> filteredObjects;
+            for (int idx : indices) {
+                filteredObjects.push_back(detectedObjects[idx]);
+            }
+
+            detectedObjects = std::move(filteredObjects);
+        }
+
+        // Сортируем по уверенности (от большей к меньшей)
+        std::sort(detectedObjects.begin(), detectedObjects.end(),
+            [](const DetectedObject& a, const DetectedObject& b) {
+                return a.confidence > b.confidence;
+            });
+
+        // Ограничиваем количество объектов
+        if (detectedObjects.size() > static_cast<size_t>(detector->params.maxObjects)) {
+            detectedObjects.resize(detector->params.maxObjects);
+        }
+
+        // Копируем результаты
         if (detectedObjects.size() > 0) {
-            result->objectCount = std::min(static_cast<int>(detectedObjects.size()), detector->params.maxObjects);
+            result->objectCount = static_cast<int>(detectedObjects.size());
             result->objects = new DetectedObject[result->objectCount];
             for (int i = 0; i < result->objectCount; i++) {
                 result->objects[i] = detectedObjects[i];

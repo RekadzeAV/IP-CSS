@@ -134,7 +134,12 @@ export function useWebSocket() {
           break;
       case 'notifications':
         // Уведомления будут обработаны в компоненте WebSocketNotificationHandler
-        console.log('[WebSocket] Notification:', message.data);
+        // Также добавляем в Redux для страницы уведомлений
+        if (message.data && message.data.id) {
+          import('@/store/slices/notificationsSlice').then((module) => {
+            dispatch(module.addNotificationFromWebSocket(message.data));
+          });
+        }
         break;
       }
     }

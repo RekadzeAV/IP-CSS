@@ -15,10 +15,12 @@ import {
   TextField,
   Alert,
 } from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Add as AddIcon, Search as SearchIcon } from '@mui/icons-material';
 import Layout from '@/components/Layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute/ProtectedRoute';
 import CameraCard from '@/components/CameraCard/CameraCard';
+import CameraDiscoveryDialog from '@/components/CameraDiscoveryDialog/CameraDiscoveryDialog';
+import Pagination from '@/components/Pagination/Pagination';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import {
   fetchCameras,
@@ -35,6 +37,7 @@ function CamerasContent() {
   const { enqueueSnackbar } = useSnackbar();
   const { cameras, loading, error } = useAppSelector((state) => state.cameras);
   const [openDialog, setOpenDialog] = useState(false);
+  const [discoveryDialogOpen, setDiscoveryDialogOpen] = useState(false);
   const [formData, setFormData] = useState<CreateCameraRequest>({
     name: '',
     url: '',
@@ -74,13 +77,23 @@ function CamerasContent() {
     <Layout>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Камеры</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenDialog(true)}
-        >
-          Добавить камеру
-        </Button>
+        <Box>
+          <Button
+            variant="outlined"
+            startIcon={<SearchIcon />}
+            onClick={() => setDiscoveryDialogOpen(true)}
+            sx={{ mr: 1 }}
+          >
+            Обнаружить камеры
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setOpenDialog(true)}
+          >
+            Добавить камеру
+          </Button>
+        </Box>
       </Box>
 
       {error && (
@@ -174,6 +187,11 @@ function CamerasContent() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <CameraDiscoveryDialog
+        open={discoveryDialogOpen}
+        onClose={() => setDiscoveryDialogOpen(false)}
+      />
     </Layout>
   );
 }

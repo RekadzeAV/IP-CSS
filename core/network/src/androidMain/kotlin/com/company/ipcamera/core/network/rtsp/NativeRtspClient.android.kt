@@ -26,18 +26,15 @@ actual class NativeRtspClient {
 
     init {
         // Загрузка нативной библиотеки при первом использовании
-        // TODO: Раскомментировать после создания JNI обертки
-        // try {
-        //     System.loadLibrary("video_processing")
-        // } catch (e: UnsatisfiedLinkError) {
-        //     android.util.Log.e("NativeRtspClient", "Failed to load native library", e)
-        // }
+        try {
+            System.loadLibrary("video_processing")
+        } catch (e: UnsatisfiedLinkError) {
+            android.util.Log.e("NativeRtspClient", "Failed to load native library", e)
+        }
     }
 
     actual fun create(): NativeRtspClientHandle {
-        // TODO: JNI вызов
-        // return nativeCreate()
-        return 0L
+        return nativeCreate()
     }
 
     actual suspend fun connect(
@@ -47,56 +44,56 @@ actual class NativeRtspClient {
         password: String?,
         timeoutMs: Int
     ): Boolean = withContext(Dispatchers.IO) {
-        // TODO: JNI вызов
-        // return nativeConnect(handle, url, username, password, timeoutMs)
-        false
+        return nativeConnect(handle, url, username, password, timeoutMs)
     }
 
     actual suspend fun disconnect(handle: NativeRtspClientHandle) = withContext(Dispatchers.IO) {
-        // TODO: JNI вызов
-        // nativeDisconnect(handle)
+        nativeDisconnect(handle)
     }
 
     actual fun getStatus(handle: NativeRtspClientHandle): RtspClientStatus {
-        // TODO: JNI вызов
-        // return convertNativeStatus(nativeGetStatus(handle))
-        return RtspClientStatus.DISCONNECTED
+        return convertNativeStatus(nativeGetStatus(handle))
     }
 
     actual suspend fun play(handle: NativeRtspClientHandle): Boolean = withContext(Dispatchers.IO) {
-        // TODO: JNI вызов
-        // return nativePlay(handle)
-        false
+        return nativePlay(handle)
     }
 
     actual suspend fun stop(handle: NativeRtspClientHandle): Boolean = withContext(Dispatchers.IO) {
-        // TODO: JNI вызов
-        // return nativeStop(handle)
-        false
+        return nativeStop(handle)
     }
 
     actual suspend fun pause(handle: NativeRtspClientHandle): Boolean = withContext(Dispatchers.IO) {
-        // TODO: JNI вызов
-        // return nativePause(handle)
-        false
+        return nativePause(handle)
     }
 
     actual fun getStreamCount(handle: NativeRtspClientHandle): Int {
-        // TODO: JNI вызов
-        // return nativeGetStreamCount(handle)
-        return 0
+        return nativeGetStreamCount(handle)
     }
 
     actual fun getStreamType(handle: NativeRtspClientHandle, streamIndex: Int): RtspStreamType? {
-        // TODO: JNI вызов
-        // return convertNativeStreamType(nativeGetStreamType(handle, streamIndex))
-        return null
+        return convertNativeStreamType(nativeGetStreamType(handle, streamIndex))
     }
 
     actual fun getStreamInfo(handle: NativeRtspClientHandle, streamIndex: Int): RtspStreamInfo? {
-        // TODO: JNI вызов
-        // return nativeGetStreamInfo(handle, streamIndex)
-        return null
+        val widthArray = IntArray(1)
+        val heightArray = IntArray(1)
+        val fpsArray = IntArray(1)
+        val codecArray = ByteArray(64)
+
+        val success = nativeGetStreamInfo(handle, streamIndex, widthArray, heightArray, fpsArray, codecArray)
+
+        if (!success) {
+            return null
+        }
+
+        val streamType = getStreamType(handle, streamIndex) ?: return null
+        val codec = codecArray.decodeToString().trim('\u0000')
+        val resolution = if (widthArray[0] > 0 && heightArray[0] > 0) {
+            com.company.ipcamera.core.common.model.Resolution(widthArray[0], heightArray[0])
+        } else null
+
+        return RtspStreamInfo(streamIndex, streamType, resolution, fpsArray[0], codec)
     }
 
     actual fun setFrameCallback(
@@ -104,24 +101,38 @@ actual class NativeRtspClient {
         streamType: RtspStreamType,
         callback: (RtspFrame) -> Unit
     ) {
-        // TODO: JNI callback через JNIEnv
-        // Для реализации нужно:
-        // 1. Сохранить callback в Java объекте
-        // 2. Передать Java объект в JNI метод
-        // 3. В нативном коде использовать JNIEnv->CallVoidMethod для вызова callback
+        // Создаем функциональный интерфейс для callback'а
+        val callbackInterface = object : java.util.function.Consumer<RtspFrame> {
+            override fun accept(frame: RtspFrame) {
+                callback(frame)
+            }
+        }
+        nativeSetFrameCallback(handle, convertStreamTypeToInt(streamType), callbackInterface)
     }
 
     actual fun setStatusCallback(
         handle: NativeRtspClientHandle,
         callback: (RtspClientStatus, String?) -> Unit
     ) {
-        // TODO: JNI callback
-        // Аналогично setFrameCallback
+        // Создаем функциональный интерфейс для callback'а
+        val callbackInterface = object : java.util.function.BiConsumer<RtspClientStatus, String?> {
+            override fun accept(status: RtspClientStatus, message: String?) {
+                callback(status, message)
+            }
+        }
+        nativeSetStatusCallback(handle, callbackInterface)
     }
 
     actual fun destroy(handle: NativeRtspClientHandle) {
-        // TODO: JNI вызов
-        // nativeDestroy(handle)
+        nativeDestroy(handle)
+    }
+
+    private fun convertStreamTypeToInt(streamType: RtspStreamType): Int {
+        return when (streamType) {
+            RtspStreamType.VIDEO -> 0
+            RtspStreamType.AUDIO -> 1
+            RtspStreamType.METADATA -> 2
+        }
     }
 
     // Вспомогательные функции для конвертации (будут использоваться после реализации JNI)
@@ -145,18 +156,20 @@ actual class NativeRtspClient {
         }
     }
 
-    // TODO: Объявить external функции после создания JNI обертки
-    // private external fun nativeCreate(): Long
-    // private external fun nativeConnect(handle: Long, url: String, username: String?, password: String?, timeoutMs: Int): Boolean
-    // private external fun nativeDisconnect(handle: Long)
-    // private external fun nativeGetStatus(handle: Long): Int
-    // private external fun nativePlay(handle: Long): Boolean
-    // private external fun nativeStop(handle: Long): Boolean
-    // private external fun nativePause(handle: Long): Boolean
-    // private external fun nativeGetStreamCount(handle: Long): Int
-    // private external fun nativeGetStreamType(handle: Long, streamIndex: Int): Int
-    // private external fun nativeGetStreamInfo(handle: Long, streamIndex: Int): RtspStreamInfo?
-    // private external fun nativeDestroy(handle: Long)
+    // JNI функции
+    private external fun nativeCreate(): Long
+    private external fun nativeDestroy(handle: Long)
+    private external fun nativeConnect(handle: Long, url: String, username: String?, password: String?, timeoutMs: Int): Boolean
+    private external fun nativeDisconnect(handle: Long)
+    private external fun nativeGetStatus(handle: Long): Int
+    private external fun nativePlay(handle: Long): Boolean
+    private external fun nativeStop(handle: Long): Boolean
+    private external fun nativePause(handle: Long): Boolean
+    private external fun nativeGetStreamCount(handle: Long): Int
+    private external fun nativeGetStreamType(handle: Long, streamIndex: Int): Int
+    private external fun nativeGetStreamInfo(handle: Long, streamIndex: Int, width: IntArray, height: IntArray, fps: IntArray, codec: ByteArray): Boolean
+    private external fun nativeSetFrameCallback(handle: Long, streamType: Int, callback: java.util.function.Consumer<RtspFrame>)
+    private external fun nativeSetStatusCallback(handle: Long, callback: java.util.function.BiConsumer<RtspClientStatus, String?>)
 }
 
 actual typealias NativeRtspClientHandle = Long

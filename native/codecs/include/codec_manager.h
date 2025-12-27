@@ -33,10 +33,15 @@ bool codec_is_supported(CodecType type);
 // Проверка аппаратного ускорения
 bool codec_has_hardware_acceleration(CodecType type);
 
+// Автоматический выбор лучшего кодека (с приоритетом аппаратного ускорения)
+// Возвращает выбранный тип кодека или CODEC_TYPE_H264 если ничего не найдено
+CodecType codec_select_best(CodecType preferredType, bool preferHardware);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif // CODEC_MANAGER_H
+
 
 

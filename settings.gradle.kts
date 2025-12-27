@@ -32,8 +32,8 @@ rootProject.name = "ip-camera-surveillance-system"
 // - platforms/nas-x86_64/     - NAS x86-x64 (использует :server:api)
 //
 // Клиентские платформы:
-// - platforms/client-desktop-x86_64/ - Desktop x86-x64 (планируется)
-// - platforms/client-desktop-arm/    - Desktop ARM (планируется)
+// - platforms/client-desktop-x86_64/ - Desktop x86-x64 (в разработке)
+// - platforms/client-desktop-arm/    - Desktop ARM (в разработке)
 // - platforms/client-android/        - Android (использует :android:app)
 // - platforms/client-ios/            - iOS/macOS (планируется)
 //
@@ -69,4 +69,13 @@ include(":server:api")
 // Note: server:web is a Node.js project, not a Gradle module
 // It should be built separately using npm/yarn
 // Используется всеми серверными платформами с веб-интерфейсом
+
+// Desktop client modules
+// Desktop x86-x64 client
+include(":platforms:client-desktop-x86_64:app")
+project(":platforms:client-desktop-x86_64:app").projectDir = file("platforms/client-desktop-x86_64/app")
+
+// Desktop ARM client
+include(":platforms:client-desktop-arm:app")
+project(":platforms:client-desktop-arm:app").projectDir = file("platforms/client-desktop-arm/app")
 

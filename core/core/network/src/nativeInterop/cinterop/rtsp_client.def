@@ -1,0 +1,13 @@
+language = C
+headers = rtsp_client.h
+headerFilter = rtsp_client.h
+package = com.company.ipcamera.core.network.rtsp
+compilerOpts = -I../../../../native/video-processing/include
+linkerOpts = -L../../../../native/video-processing/lib -lvideo_processing
+
+# Явно указываем типы структур для правильной генерации биндингов
+---
+typedef struct RTSPClient RTSPClient;
+typedef struct RTSPStream RTSPStream;
+typedef struct RTSPFrame RTSPFrame;
+

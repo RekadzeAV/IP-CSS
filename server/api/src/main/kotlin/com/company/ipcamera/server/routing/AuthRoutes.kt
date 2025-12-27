@@ -6,6 +6,7 @@ import com.company.ipcamera.server.config.JwtConfig
 import com.company.ipcamera.server.dto.*
 import com.company.ipcamera.server.middleware.RateLimitMiddleware
 import com.company.ipcamera.server.middleware.checkRateLimit
+import com.company.ipcamera.server.middleware.getJwtToken
 import com.company.ipcamera.server.repository.ServerUserRepository
 import com.company.ipcamera.server.security.SecurityLogger
 import com.company.ipcamera.server.validation.RequestValidator
@@ -310,6 +311,59 @@ fun Route.authRoutes() {
                         message = "Internal server error: ${e.message}"
                     )
                 )
+            }
+        }
+
+        // GET /api/v1/auth/ws-token - получение токена для WebSocket подключения
+        authenticate("jwt-auth") {
+            get("/ws-token") {
+                try {
+                    val principal = call.principal<io.ktor.server.auth.jwt.JWTPrincipal>()
+                    val userId = principal?.payload?.subject
+                        ?: return@get call.respond(
+                            HttpStatusCode.Unauthorized,
+                            ApiResponse<Map<String, String>>(
+                                success = false,
+                                data = null,
+                                message = "User not authenticated"
+                            )
+                        )
+
+                    // Получаем токен из cookie
+                    val token = call.getJwtToken()
+
+                    if (token == null) {
+                        call.respond(
+                            HttpStatusCode.Unauthorized,
+                            ApiResponse<Map<String, String>>(
+                                success = false,
+                                data = null,
+                                message = "Token not found"
+                            )
+                        )
+                        return@get
+                    }
+
+                    // Возвращаем токен для WebSocket подключения
+                    call.respond(
+                        HttpStatusCode.OK,
+                        ApiResponse(
+                            success = true,
+                            data = mapOf("token" to token),
+                            message = "Token retrieved successfully"
+                        )
+                    )
+                } catch (e: Exception) {
+                    logger.error(e) { "Error retrieving WebSocket token" }
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ApiResponse<Map<String, String>>(
+                            success = false,
+                            data = null,
+                            message = "Internal server error: ${e.message}"
+                        )
+                    )
+                }
             }
         }
 

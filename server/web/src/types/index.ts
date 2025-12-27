@@ -131,12 +131,21 @@ export enum Quality {
   ULTRA = 'ULTRA'
 }
 
+export interface DetectionZone {
+  id: string;
+  name: string;
+  points: Array<{ x: number; y: number }>;
+  enabled: boolean;
+  sensitivity?: number;
+}
+
 export interface AnalyticsSettings {
   enabled: boolean;
   motionDetection?: boolean;
   objectDetection?: boolean;
   faceDetection?: boolean;
   licensePlateRecognition?: boolean;
+  detectionZones?: DetectionZone[];
 }
 
 export interface NotificationSettings {
@@ -359,5 +368,38 @@ export interface CameraCapabilitiesDto {
   audio: boolean;
   onvif: boolean;
   analytics: boolean;
+}
+
+export enum NotificationType {
+  EVENT = 'EVENT',
+  ALERT = 'ALERT',
+  INFO = 'INFO',
+  WARNING = 'WARNING',
+  ERROR = 'ERROR',
+  SYSTEM = 'SYSTEM',
+  RECORDING = 'RECORDING',
+  LICENSE = 'LICENSE',
+  USER = 'USER',
+}
+
+export enum NotificationPriority {
+  LOW = 'LOW',
+  NORMAL = 'NORMAL',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  cameraId?: string;
+  eventId?: string;
+  recordingId?: string;
+  read: boolean;
+  timestamp: number;
+  extras?: Record<string, string>;
 }
 

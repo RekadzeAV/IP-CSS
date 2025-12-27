@@ -13,6 +13,7 @@ import io.ktor.serialization.kotlinx.xml.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.xml.*
 import mu.KotlinLogging
@@ -55,47 +56,102 @@ class OnvifClient(
 
             // Преобразование обнаруженных устройств в камеры
             for (device in discoveredDevices) {
-                // Фильтрация по типам устройств (только NetworkVideoTransmitter)
-                val isVideoTransmitter = device.types.any { type ->
+                // Фильтрация по типам устройств ONVIF
+                val isOnvifDevice = device.types.any { type ->
                     type.contains("NetworkVideoTransmitter", ignoreCase = true) ||
+                    type.contains("NetworkVideoDisplay", ignoreCase = true) ||
                     type.contains("Video", ignoreCase = true) ||
-                    type.contains("Camera", ignoreCase = true)
+                    type.contains("Camera", ignoreCase = true) ||
+                    type.contains("onvif", ignoreCase = true) ||
+                    type.contains("Device", ignoreCase = true)
                 }
 
-                // Если типы не указаны, считаем устройство валидным (некоторые камеры не указывают типы)
-                if (device.types.isEmpty() || isVideoTransmitter) {
+                // Проверка scopes на наличие ONVIF
+                val hasOnvifScope = device.scopes.any { scope ->
+                    scope.contains("onvif", ignoreCase = true) ||
+                    scope.contains("www.onvif.org", ignoreCase = true)
+                }
+
+                // Если типы не указаны, но есть ONVIF scope, считаем валидным
+                // Если типы указаны и нет ONVIF признаков, пропускаем
+                val shouldProcess = when {
+                    device.types.isEmpty() -> hasOnvifScope || true // Если типов нет, проверяем по XAddr
+                    isOnvifDevice -> true
+                    hasOnvifScope -> true
+                    else -> false
+                }
+
+                if (shouldProcess) {
                     for (xAddr in device.xAddrs) {
                         try {
                             // Нормализация URL
                             val normalizedUrl = normalizeUrl(xAddr)
 
-                            // Попытка получить информацию о камере
-                            val deviceInfo = getDeviceInformation(normalizedUrl)
-                            val capabilities = getCapabilities(normalizedUrl)
+                            // Пропускаем пустые URL
+                            if (normalizedUrl.isBlank()) {
+                                logger.debug { "Skipping empty XAddr" }
+                                continue
+                            }
+
+                            // Попытка получить информацию о камере с таймаутом
+                            var deviceInfo: DeviceInformation? = null
+                            var capabilities: CameraCapabilities? = null
+
+                            try {
+                                withTimeout(3000) { // 3 секунды таймаут для получения информации
+                                    deviceInfo = getDeviceInformation(normalizedUrl)
+                                }
+                            } catch (e: Exception) {
+                                logger.debug(e) { "Timeout or error getting device info for $normalizedUrl" }
+                            }
+
+                            try {
+                                withTimeout(2000) { // 2 секунды для capabilities
+                                    capabilities = getCapabilities(normalizedUrl)
+                                }
+                            } catch (e: Exception) {
+                                logger.debug(e) { "Timeout or error getting capabilities for $normalizedUrl" }
+                            }
 
                             val camera = DiscoveredCamera(
                                 url = normalizedUrl,
-                                name = deviceInfo?.model ?: "Unknown Camera",
+                                name = deviceInfo?.model
+                                    ?: deviceInfo?.manufacturer?.let { "$it Camera" }
+                                    ?: "ONVIF Device",
                                 manufacturer = deviceInfo?.manufacturer,
                                 model = deviceInfo?.model,
                                 capabilities = capabilities
                             )
                             discoveredCameras.add(camera)
-                            logger.info { "Discovered camera: ${camera.name} at ${camera.url} (types: ${device.types.joinToString()})" }
+                            logger.info {
+                                "Discovered camera: ${camera.name} at ${camera.url} " +
+                                "(types: ${device.types.take(2).joinToString()}, " +
+                                "scopes: ${device.scopes.take(1).joinToString()})"
+                            }
                         } catch (e: Exception) {
-                            logger.warn(e) { "Error getting information for device at $xAddr" }
-                            // Добавляем камеру даже без полной информации
-                            discoveredCameras.add(
-                                DiscoveredCamera(
-                                    url = normalizeUrl(xAddr),
-                                    name = "ONVIF Device",
-                                    capabilities = null
+                            logger.debug(e) { "Error processing device at $xAddr: ${e.message}" }
+                            // Добавляем камеру даже без полной информации, если URL валидный
+                            val normalizedUrl = try {
+                                normalizeUrl(xAddr)
+                            } catch (e2: Exception) {
+                                null
+                            }
+                            if (normalizedUrl != null && normalizedUrl.isNotBlank()) {
+                                discoveredCameras.add(
+                                    DiscoveredCamera(
+                                        url = normalizedUrl,
+                                        name = "ONVIF Device",
+                                        capabilities = null
+                                    )
                                 )
-                            )
+                            }
                         }
                     }
                 } else {
-                    logger.debug { "Skipping device with types: ${device.types.joinToString()} (not a video transmitter)" }
+                    logger.debug {
+                        "Skipping device with types: ${device.types.take(2).joinToString()} " +
+                        "(not an ONVIF video device)"
+                    }
                 }
             }
 
@@ -327,11 +383,18 @@ class OnvifClient(
                     )
                 }
 
+                // Определение поддержки audio из профилей
+                val hasAudio = profiles.any { profile ->
+                    profile.hasAudio ||
+                    profile.audioCodec != null ||
+                    streamInfo.any { it.type.contains("audio", ignoreCase = true) }
+                }
+
                 val result = ConnectionTestResult.Success(
                     streams = streamInfo,
                     capabilities = CameraCapabilities(
                         ptz = capabilities.ptzServiceUrl != null,
-                        audio = false, // TODO: определить из профилей
+                        audio = hasAudio,
                         onvif = true,
                         analytics = false
                     )
@@ -670,12 +733,19 @@ class OnvifClient(
                             val codec = encoderConfig?.encoding ?: "H.264"
                             val fps = encoderConfig?.rateControl?.frameRateLimit ?: 25
 
+                            // Проверка наличия аудио конфигурации
+                            val hasAudio = profileXml.audioEncoderConfiguration != null ||
+                                         profileXml.audioSourceConfiguration != null
+                            val audioCodec = profileXml.audioEncoderConfiguration?.encoding
+
                             OnvifProfile(
                                 token = profileXml.token,
                                 name = profileXml.name ?: profileXml.token,
                                 videoResolution = Resolution(width, height),
                                 fps = fps,
-                                codec = codec
+                                codec = codec,
+                                hasAudio = hasAudio,
+                                audioCodec = audioCodec
                             )
                         } catch (e: Exception) {
                             logger.warn(e) { "Error parsing profile ${profileXml.token}" }
@@ -719,13 +789,21 @@ class OnvifClient(
             val codec = extractXmlValue(xml, "Encoding") ?: "H.264"
             val fps = extractXmlValue(xml, "FrameRateLimit")?.toIntOrNull() ?: 25
 
+            // Попытка извлечь информацию об аудио
+            val hasAudio = extractXmlValue(xml, "AudioEncoderConfiguration") != null ||
+                          extractXmlValue(xml, "AudioSourceConfiguration") != null
+            val audioCodec = extractXmlValue(xml, "AudioEncoding") ?:
+                           extractXmlValue(xml, "AudioCodec")
+
             result.add(
                 OnvifProfile(
                     token = token,
                     name = name,
                     videoResolution = Resolution(width, height),
                     fps = fps,
-                    codec = codec
+                    codec = codec,
+                    hasAudio = hasAudio,
+                    audioCodec = audioCodec
                 )
             )
         }
@@ -738,7 +816,9 @@ class OnvifClient(
                     name = "Profile1",
                     videoResolution = Resolution(1920, 1080),
                     fps = 25,
-                    codec = "H.264"
+                    codec = "H.264",
+                    hasAudio = false,
+                    audioCodec = null
                 )
             )
         }
@@ -856,7 +936,9 @@ data class OnvifProfile(
     val name: String,
     val videoResolution: Resolution? = null,
     val fps: Int? = null,
-    val codec: String? = null
+    val codec: String? = null,
+    val hasAudio: Boolean = false,
+    val audioCodec: String? = null
 )
 
 /**
@@ -989,7 +1071,9 @@ data class OnvifProfileXml(
     @XmlAttribute(true) val token: String,
     @XmlElement(true) val name: String? = null,
     @XmlElement(true) val videoSourceConfiguration: VideoSourceConfiguration? = null,
-    @XmlElement(true) val videoEncoderConfiguration: VideoEncoderConfiguration? = null
+    @XmlElement(true) val videoEncoderConfiguration: VideoEncoderConfiguration? = null,
+    @XmlElement(true) val audioEncoderConfiguration: AudioEncoderConfiguration? = null,
+    @XmlElement(true) val audioSourceConfiguration: AudioSourceConfiguration? = null
 )
 
 @Serializable
@@ -1017,6 +1101,22 @@ data class ResolutionXml(
 @XmlSerialName("RateControl", namespace = "http://www.onvif.org/ver10/schema", prefix = "tt")
 data class RateControl(
     @XmlElement(true) val frameRateLimit: Int? = null
+)
+
+@Serializable
+@XmlSerialName("AudioEncoderConfiguration", namespace = "http://www.onvif.org/ver10/schema", prefix = "tt")
+data class AudioEncoderConfiguration(
+    @XmlAttribute(true) val token: String? = null,
+    @XmlElement(true) val encoding: String? = null,
+    @XmlElement(true) val bitrate: Int? = null,
+    @XmlElement(true) val sampleRate: Int? = null
+)
+
+@Serializable
+@XmlSerialName("AudioSourceConfiguration", namespace = "http://www.onvif.org/ver10/schema", prefix = "tt")
+data class AudioSourceConfiguration(
+    @XmlAttribute(true) val token: String? = null,
+    @XmlAttribute(true) val sourceToken: String? = null
 )
 
 @Serializable

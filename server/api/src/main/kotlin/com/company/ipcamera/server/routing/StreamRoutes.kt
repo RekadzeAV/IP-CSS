@@ -2,6 +2,7 @@ package com.company.ipcamera.server.routing
 
 import com.company.ipcamera.server.dto.*
 import com.company.ipcamera.server.service.ScreenshotService
+import com.company.ipcamera.server.service.StreamQuality
 import com.company.ipcamera.server.service.VideoStreamService
 import com.company.ipcamera.shared.domain.repository.CameraRepository
 import io.ktor.http.*
@@ -22,7 +23,7 @@ private val logger = KotlinLogging.logger {}
 fun Route.streamRoutes() {
     val videoStreamService: VideoStreamService by inject()
     val screenshotService: ScreenshotService by inject()
-    
+
     authenticate("jwt-auth") {
         route("/cameras/{id}/stream") {
             // GET /api/v1/cameras/{id}/stream/start - начать трансляцию
@@ -36,9 +37,9 @@ fun Route.streamRoutes() {
                             message = "Camera ID is required"
                         )
                     )
-                    
+
                     val result = videoStreamService.startStream(cameraId)
-                    
+
                     result.fold(
                         onSuccess = { streamId ->
                             call.respond(
@@ -74,7 +75,7 @@ fun Route.streamRoutes() {
                     )
                 }
             }
-            
+
             // POST /api/v1/cameras/{id}/stream/stop - остановить трансляцию
             post("/stop") {
                 try {
@@ -86,9 +87,9 @@ fun Route.streamRoutes() {
                             message = "Camera ID is required"
                         )
                     )
-                    
+
                     val result = videoStreamService.stopStream(cameraId)
-                    
+
                     result.fold(
                         onSuccess = {
                             call.respond(
@@ -124,7 +125,7 @@ fun Route.streamRoutes() {
                     )
                 }
             }
-            
+
             // GET /api/v1/cameras/{id}/stream/status - получить статус трансляции
             get("/status") {
                 try {
@@ -136,17 +137,17 @@ fun Route.streamRoutes() {
                             message = "Camera ID is required"
                         )
                     )
-                    
+
                     val isActive = videoStreamService.isStreamActive(cameraId)
                     val streamId = videoStreamService.getStreamId(cameraId)
-                    
+
                     val status = StreamStatusDto(
                         active = isActive,
                         streamId = streamId,
                         hlsUrl = if (isActive) videoStreamService.getHlsUrl(cameraId) else null,
                         rtspUrl = null // RTSP URL будет доступен через отдельный endpoint
                     )
-                    
+
                     call.respond(
                         HttpStatusCode.OK,
                         ApiResponse(
@@ -167,7 +168,7 @@ fun Route.streamRoutes() {
                     )
                 }
             }
-            
+
             // GET /api/v1/cameras/{id}/stream/hls/playlist.m3u8 - HLS плейлист
             get("/hls/playlist.m3u8") {
                 try {
@@ -175,7 +176,7 @@ fun Route.streamRoutes() {
                         HttpStatusCode.BadRequest,
                         "Camera ID is required"
                     )
-                    
+
                     // Проверяем, активен ли стрим, если нет - запускаем
                     if (!videoStreamService.isStreamActive(cameraId)) {
                         val startResult = videoStreamService.startStream(cameraId)
@@ -187,28 +188,28 @@ fun Route.streamRoutes() {
                             return@get
                         }
                     }
-                    
+
                     // Получаем путь к HLS плейлисту
                     val playlistPath = videoStreamService.getHlsPlaylistPath(cameraId)
-                    
+
                     if (playlistPath != null) {
                         val playlistFile = java.io.File(playlistPath)
                         if (playlistFile.exists()) {
                             // Читаем плейлист из файла
                             val playlistContent = playlistFile.readText()
-                            
+
                             // Заменяем пути к сегментам на правильные URL
                             val streamId = videoStreamService.getStreamId(cameraId) ?: return@get call.respond(
                                 HttpStatusCode.NotFound,
                                 "Stream not found"
                             )
-                            
+
                             // Заменяем локальные пути на URL
                             val modifiedPlaylist = playlistContent.replace(
                                 Regex("segment_\\d+\\.ts"),
                                 "/api/v1/cameras/streams/$streamId/hls/\\$0"
                             )
-                            
+
                             call.respondText(
                                 modifiedPlaylist,
                                 ContentType("application", "vnd.apple.mpegurl"),
@@ -234,8 +235,8 @@ fun Route.streamRoutes() {
                     )
                 }
             }
-            
-            
+
+
             // GET /api/v1/cameras/{id}/stream/rtsp - получить RTSP URL для прямой трансляции
             get("/rtsp") {
                 try {
@@ -247,9 +248,9 @@ fun Route.streamRoutes() {
                             message = "Camera ID is required"
                         )
                     )
-                    
+
                     val rtspUrl = videoStreamService.getRtspUrl(cameraId)
-                    
+
                     if (rtspUrl == null) {
                         call.respond(
                             HttpStatusCode.NotFound,
@@ -261,7 +262,7 @@ fun Route.streamRoutes() {
                         )
                         return@get
                     }
-                    
+
                     call.respond(
                         HttpStatusCode.OK,
                         ApiResponse(
@@ -282,7 +283,79 @@ fun Route.streamRoutes() {
                     )
                 }
             }
-            
+
+            // POST /api/v1/cameras/{id}/stream/quality - изменить качество потока
+            post("/quality") {
+                try {
+                    val cameraId = call.parameters["id"] ?: return@post call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiResponse<Unit>(
+                            success = false,
+                            data = null,
+                            message = "Camera ID is required"
+                        )
+                    )
+
+                    val qualityStr = call.request.queryParameters["quality"] ?: return@post call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiResponse<Unit>(
+                            success = false,
+                            data = null,
+                            message = "Quality parameter is required (low, medium, high, ultra)"
+                        )
+                    )
+
+                    val quality = try {
+                        StreamQuality.valueOf(qualityStr.uppercase())
+                    } catch (e: Exception) {
+                        return@post call.respond(
+                            HttpStatusCode.BadRequest,
+                            ApiResponse<Unit>(
+                                success = false,
+                                data = null,
+                                message = "Invalid quality value. Use: low, medium, high, ultra"
+                            )
+                        )
+                    }
+
+                    val result = videoStreamService.setStreamQuality(cameraId, quality)
+
+                    result.fold(
+                        onSuccess = {
+                            call.respond(
+                                HttpStatusCode.OK,
+                                ApiResponse<Unit>(
+                                    success = true,
+                                    data = null,
+                                    message = "Stream quality changed to $qualityStr successfully"
+                                )
+                            )
+                        },
+                        onFailure = { error ->
+                            logger.error(error) { "Error changing stream quality for camera: $cameraId" }
+                            call.respond(
+                                HttpStatusCode.BadRequest,
+                                ApiResponse<Unit>(
+                                    success = false,
+                                    data = null,
+                                    message = "Error changing stream quality: ${error.message}"
+                                )
+                            )
+                        }
+                    )
+                } catch (e: Exception) {
+                    logger.error(e) { "Error in stream quality change endpoint" }
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ApiResponse<Unit>(
+                            success = false,
+                            data = null,
+                            message = "Internal server error: ${e.message}"
+                        )
+                    )
+                }
+            }
+
             // POST /api/v1/cameras/{id}/stream/screenshot - создать снимок кадра
             post("/screenshot") {
                 try {
@@ -294,10 +367,10 @@ fun Route.streamRoutes() {
                             message = "Camera ID is required"
                         )
                     )
-                    
+
                     // Получаем RTSP URL для камеры
                     val rtspUrl = videoStreamService.getRtspUrl(cameraId)
-                    
+
                     if (rtspUrl == null) {
                         call.respond(
                             HttpStatusCode.NotFound,
@@ -309,7 +382,7 @@ fun Route.streamRoutes() {
                         )
                         return@post
                     }
-                    
+
                     // Получаем камеру через репозиторий
                     val cameraRepository: CameraRepository by inject()
                     val camera = cameraRepository.getCameraById(cameraId)
@@ -321,7 +394,7 @@ fun Route.streamRoutes() {
                                 message = "Camera not found"
                             )
                         )
-                    
+
                     // Создаем снимок
                     val screenshotPath = screenshotService.captureFromRtsp(
                         rtspUrl = rtspUrl,
@@ -329,7 +402,7 @@ fun Route.streamRoutes() {
                         username = camera.username,
                         password = camera.password
                     )
-                    
+
                     if (screenshotPath != null) {
                         val screenshotUrl = screenshotService.getScreenshotUrl(screenshotPath)
                         call.respond(

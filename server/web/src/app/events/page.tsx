@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
@@ -35,9 +36,13 @@ import {
   Visibility as VisibilityIcon,
   FilterList as FilterListIcon,
   Download as DownloadIcon,
+  Timeline as TimelineIcon,
+  FileDownload as FileDownloadIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute/ProtectedRoute';
+import EventTimeline from '@/components/EventTimeline/EventTimeline';
+import Pagination from '@/components/Pagination/Pagination';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import {
   fetchEvents,
@@ -50,6 +55,7 @@ import {
 } from '@/store/slices/eventsSlice';
 import { fetchCameras } from '@/store/slices/camerasSlice';
 import { useSnackbar } from 'notistack';
+import { exportEvents } from '@/utils/export';
 import type { EventType, EventSeverity } from '@/types';
 
 function EventsContent() {
@@ -65,6 +71,7 @@ function EventsContent() {
     severity: '' as EventSeverity | '',
     acknowledged: undefined as boolean | undefined,
   });
+  const [showTimeline, setShowTimeline] = useState(false);
 
   useEffect(() => {
     dispatch(fetchCameras());
@@ -78,7 +85,7 @@ function EventsContent() {
     if (filters.type) filterParams.type = filters.type;
     if (filters.severity) filterParams.severity = filters.severity;
     if (filters.acknowledged !== undefined) filterParams.acknowledged = filters.acknowledged;
-    
+
     dispatch(setFilters(filterParams));
     dispatch(fetchEvents(filterParams));
     setFilterDialogOpen(false);
@@ -138,6 +145,25 @@ function EventsContent() {
         <Typography variant="h4">События</Typography>
         <Box>
           <Button
+            variant={showTimeline ? 'contained' : 'outlined'}
+            startIcon={<TimelineIcon />}
+            onClick={() => setShowTimeline(!showTimeline)}
+            sx={{ mr: 1 }}
+          >
+            {showTimeline ? 'Скрыть шкалу' : 'Показать шкалу'}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            onClick={() => {
+              exportEvents(events, 'csv');
+              enqueueSnackbar('События экспортированы', { variant: 'success' });
+            }}
+            sx={{ mr: 1 }}
+          >
+            Экспорт CSV
+          </Button>
+          <Button
             variant="outlined"
             startIcon={<FilterListIcon />}
             onClick={() => setFilterDialogOpen(true)}
@@ -156,6 +182,15 @@ function EventsContent() {
           )}
         </Box>
       </Box>
+
+      {showTimeline && (
+        <Box sx={{ mb: 3 }}>
+          <EventTimeline
+            events={events}
+            onEventClick={(event) => router.push(`/events/${event.id}`)}
+          />
+        </Box>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => dispatch(clearError())}>
@@ -219,7 +254,12 @@ function EventsContent() {
             </TableHead>
             <TableBody>
               {events.map((event) => (
-                <TableRow key={event.id} hover>
+                <TableRow
+                  key={event.id}
+                  hover
+                  sx={{ cursor: 'pointer' }}
+                  onClick={() => router.push(`/events/${event.id}`)}
+                >
                   <TableCell padding="checkbox">
                     <Checkbox
                       checked={selectedEvents.includes(event.id)}
@@ -250,7 +290,7 @@ function EventsContent() {
                       <Chip label="Неподтверждено" color="warning" size="small" />
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <Tooltip title="Подтвердить">
                       <IconButton
                         size="small"
@@ -276,6 +316,32 @@ function EventsContent() {
             </TableBody>
           </Table>
         </TableContainer>
+      )}
+
+      {pagination && (
+        <Pagination
+          page={pagination.page}
+          limit={pagination.limit}
+          total={pagination.total || events.length}
+          onPageChange={(page) =>
+            dispatch(
+              fetchEvents({
+                ...filters,
+                page,
+                limit: pagination.limit,
+              })
+            )
+          }
+          onLimitChange={(limit) =>
+            dispatch(
+              fetchEvents({
+                ...filters,
+                page: 1,
+                limit,
+              })
+            )
+          }
+        />
       )}
 
       <Dialog open={filterDialogOpen} onClose={() => setFilterDialogOpen(false)} maxWidth="sm" fullWidth>

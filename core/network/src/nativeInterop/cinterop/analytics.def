@@ -1,0 +1,20 @@
+language = C
+headers = object_detector.h object_tracker.h anpr_engine.h face_detector.h motion_detector.h
+headerFilter = object_detector.h object_tracker.h anpr_engine.h face_detector.h motion_detector.h
+package = com.company.ipcamera.core.network.native.analytics
+compilerOpts = -I../../../../native/analytics/include
+linkerOpts = -L../../../../native/analytics/lib -lanalytics
+
+# Платформо-специфичные опции линковки
+---
+staticLibraries = analytics
+libraryPaths = ../../../../native/analytics/lib
+
+# Явно указываем типы структур для правильной генерации биндингов
+---
+typedef struct ObjectDetector ObjectDetector;
+typedef struct ObjectTracker ObjectTracker;
+typedef struct ANPREngine ANPREngine;
+typedef struct FaceDetector FaceDetector;
+typedef struct MotionDetector MotionDetector;
+

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Typography,
@@ -32,9 +33,11 @@ import {
   FilterList as FilterListIcon,
   Schedule as ScheduleIcon,
   Videocam as VideocamIcon,
+  FileDownload as FileDownloadIcon,
 } from '@mui/icons-material';
 import Layout from '@/components/Layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute/ProtectedRoute';
+import Pagination from '@/components/Pagination/Pagination';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import {
   fetchRecordings,
@@ -46,8 +49,10 @@ import {
 } from '@/store/slices/recordingsSlice';
 import { fetchCameras } from '@/store/slices/camerasSlice';
 import { useSnackbar } from 'notistack';
+import { exportRecordings } from '@/utils/export';
 
 function RecordingsContent() {
+  const router = useRouter();
   const dispatch = useAppDispatch();
   const { enqueueSnackbar } = useSnackbar();
   const { recordings, loading, error, pagination } = useAppSelector((state) => state.recordings);
@@ -166,13 +171,26 @@ function RecordingsContent() {
     <Layout>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Записи</Typography>
-        <Button
-          variant="outlined"
-          startIcon={<FilterListIcon />}
-          onClick={() => setFilterDialogOpen(true)}
-        >
-          Фильтры
-        </Button>
+        <Box>
+          <Button
+            variant="outlined"
+            startIcon={<FileDownloadIcon />}
+            onClick={() => {
+              exportRecordings(recordings, 'csv');
+              enqueueSnackbar('Записи экспортированы', { variant: 'success' });
+            }}
+            sx={{ mr: 1 }}
+          >
+            Экспорт CSV
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<FilterListIcon />}
+            onClick={() => setFilterDialogOpen(true)}
+          >
+            Фильтры
+          </Button>
+        </Box>
       </Box>
 
       {error && (
@@ -195,7 +213,10 @@ function RecordingsContent() {
         <Grid container spacing={3}>
           {recordings.map((recording) => (
             <Grid item xs={12} sm={6} md={4} key={recording.id}>
-              <Card>
+              <Card
+                sx={{ cursor: 'pointer', height: '100%', display: 'flex', flexDirection: 'column' }}
+                onClick={() => router.push(`/recordings/${recording.id}`)}
+              >
                 {recording.thumbnailUrl && (
                   <Box
                     sx={{
@@ -237,8 +258,12 @@ function RecordingsContent() {
                   </Box>
                 </CardContent>
                 <CardActions>
-                  <Tooltip title="Воспроизвести">
-                    <IconButton size="small" color="primary">
+                  <Tooltip title="Просмотр деталей">
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={() => router.push(`/recordings/${recording.id}`)}
+                    >
                       <PlayArrowIcon />
                     </IconButton>
                   </Tooltip>
@@ -277,23 +302,30 @@ function RecordingsContent() {
         </Grid>
       )}
 
-      {pagination.hasMore && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-          <Button
-            variant="outlined"
-            onClick={() =>
-              dispatch(
-                fetchRecordings({
-                  ...filters,
-                  page: pagination.page + 1,
-                  limit: pagination.limit,
-                })
-              )
-            }
-          >
-            Загрузить еще
-          </Button>
-        </Box>
+      {pagination && (
+        <Pagination
+          page={pagination.page}
+          limit={pagination.limit}
+          total={pagination.total || 0}
+          onPageChange={(page) =>
+            dispatch(
+              fetchRecordings({
+                ...filters,
+                page,
+                limit: pagination.limit,
+              })
+            )
+          }
+          onLimitChange={(limit) =>
+            dispatch(
+              fetchRecordings({
+                ...filters,
+                page: 1,
+                limit,
+              })
+            )
+          }
+        />
       )}
 
       <Dialog open={filterDialogOpen} onClose={() => setFilterDialogOpen(false)} maxWidth="sm" fullWidth>

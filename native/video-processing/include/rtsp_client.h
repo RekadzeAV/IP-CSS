@@ -11,7 +11,6 @@ extern "C" {
 // Типы данных для RTSP клиента
 typedef struct RTSPClient RTSPClient;
 typedef struct RTSPStream RTSPStream;
-typedef struct RTSPFrame RTSPFrame;
 
 // Тип потока
 typedef enum {
@@ -28,6 +27,16 @@ typedef enum {
     RTSP_STATUS_PLAYING,
     RTSP_STATUS_ERROR
 } RTSPStatus;
+
+// Получение данных кадра (определено раньше для использования в callback)
+typedef struct {
+    uint8_t* data;
+    int size;
+    int64_t timestamp;
+    RTSPStreamType type;
+    int width;
+    int height;
+} RTSPFrame;
 
 // Callback для получения кадров
 typedef void (*RTSPFrameCallback)(RTSPFrame* frame, void* userData);
@@ -95,16 +104,6 @@ bool rtsp_client_get_stream_info(
     int codecBufferSize
 );
 
-// Получение данных кадра
-typedef struct {
-    uint8_t* data;
-    int size;
-    int64_t timestamp;
-    RTSPStreamType type;
-    int width;
-    int height;
-} RTSPFrame;
-
 // Получение размера буфера кадра
 int rtsp_frame_get_size(RTSPFrame* frame);
 
@@ -117,10 +116,23 @@ int64_t rtsp_frame_get_timestamp(RTSPFrame* frame);
 // Освобождение кадра
 void rtsp_frame_release(RTSPFrame* frame);
 
+// Параметры автоматического переподключения
+typedef struct {
+    bool enabled;           // Включить автоматическое переподключение
+    int maxRetries;        // Максимальное количество попыток (0 = бесконечно)
+    int initialDelayMs;    // Начальная задержка между попытками (мс)
+    int maxDelayMs;        // Максимальная задержка между попытками (мс)
+    float backoffMultiplier; // Множитель для экспоненциальной задержки
+} RTSPReconnectParams;
+
+// Установка параметров автоматического переподключения
+void rtsp_client_set_reconnect_params(RTSPClient* client, const RTSPReconnectParams* params);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif // RTSP_CLIENT_H
+
 
 
