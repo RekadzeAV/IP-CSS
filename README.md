@@ -97,6 +97,11 @@ cd native
 mkdir build && cd build
 cmake ..
 make
+
+# Собрать и опубликовать все модули в локальный Maven репозиторий
+./scripts/publish-local.sh
+# Или через Gradle
+./gradlew publishToLocalMaven
 ```
 
 ### Запуск
@@ -112,7 +117,7 @@ cd server/web && npm run dev
 
 ## Статус проекта
 
-**Текущий прогресс:** ~50%
+**Текущий прогресс:** ~55%
 
 ### Реализовано:
 - ✅ Базовая структура проекта и конфигурация
@@ -149,13 +154,14 @@ cd server/web && npm run dev
 - ⚠️ ONVIF клиент для обнаружения камер (WS-Discovery частично реализован)
 - ⚠️ Видеоплеер в веб-интерфейсе (требует интеграции с RTSP клиентом)
 - ⚠️ Интеграция WebSocket клиента в веб-интерфейс
+- ⚠️ Запись видео (базовая реализация завершена, требуется интеграция FFmpeg для кодирования)
 
 ### Планируется:
 - ❌ UI компоненты для мобильных платформ (Android, iOS) и Desktop
 - ❌ RTSP клиент (полная реализация)
-- ❌ Запись видео
 - ❌ AI-аналитика
 - ❌ Миграция серверных репозиториев на SQLDelight/PostgreSQL (сейчас in-memory)
+- ❌ Расширенная аутентификация (LDAP/AD, SSO, Kerberos) для корпоративных сред
 
 Подробный статус реализации: [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 Текущее состояние: [CURRENT_STATUS.md](CURRENT_STATUS.md)
@@ -185,7 +191,7 @@ cd server/web && npm run dev
 
 ### Статус и планирование
 - [TIMELINE.md](TIMELINE.md) - Временная шкала проекта (прошлое, настоящее, будущее) ⭐ НОВОЕ
-- [CURRENT_STATUS.md](CURRENT_STATUS.md) - Текущее состояние проекта (~20% прогресса)
+- [CURRENT_STATUS.md](CURRENT_STATUS.md) - Текущее состояние проекта (~55% прогресса)
 - [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) - Детальный статус реализации всех компонентов
 - [MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md) - Детальный анализ нереализованного функционала
 - [PROJECT_ROADMAP.md](PROJECT_ROADMAP.md) - Карта выполнения проекта (детальный статус по компонентам)
@@ -209,6 +215,12 @@ cd server/web && npm run dev
 ### Инструменты и тестирование
 - [DEVELOPMENT_TOOLS.md](docs/DEVELOPMENT_TOOLS.md) - Инструменты разработки
 - [TESTING.md](docs/TESTING.md) - Руководство по тестированию
+
+### Сборка и публикация
+- [BUILD_QUICK_REFERENCE.md](docs/BUILD_QUICK_REFERENCE.md) - Быстрая справка по командам
+- [LOCAL_BUILD.md](docs/LOCAL_BUILD.md) - Локальная сборка и публикация пакетов
+- [BUILD_ORGANIZATION.md](docs/BUILD_ORGANIZATION.md) - Организация процесса сборки
+- [BUILD_TROUBLESHOOTING.md](docs/BUILD_TROUBLESHOOTING.md) - Устранение проблем при сборке
 
 ## Лицензия
 

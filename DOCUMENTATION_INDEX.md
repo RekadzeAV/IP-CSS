@@ -22,7 +22,7 @@
 ### Для новых разработчиков
 
 1. **[README.md](README.md)** - Обзор проекта, быстрый старт
-2. **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Текущее состояние проекта (~50% прогресса)
+2. **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Текущее состояние проекта (~55% прогресса)
 3. **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Архитектура системы
 4. **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Структура проекта и модули
 5. **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** - Руководство по разработке
@@ -43,7 +43,7 @@
 
 ### Статус реализации
 
-- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Краткая сводка текущего состояния проекта (~50% прогресса)
+- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Краткая сводка текущего состояния проекта (~55% прогресса)
 - **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** - Детальный статус реализации всех компонентов
 - **[docs/MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md)** - Детальный анализ нереализованного функционала
 - **[docs/TECHNICAL_DEBT.md](docs/TECHNICAL_DEBT.md)** - Технический долг с разбивкой по типам доработок и примерными сроками ⭐ НОВОЕ
@@ -53,6 +53,7 @@
 ### Планирование
 
 - **[TIMELINE.md](TIMELINE.md)** - Временная шкала проекта (прошлое, настоящее, будущее) ⭐ НОВОЕ
+- **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Текущее состояние проекта (~55% прогресса)
 - **[docs/TIMELINE_GUIDE.md](docs/TIMELINE_GUIDE.md)** - Руководство по ведению временной шкалы (обязательное ведение) ⭐ НОВОЕ
 - **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)** - План дальнейшей разработки по фазам
 - **[docs/FUNCTIONALITY_ANALYSIS.md](docs/FUNCTIONALITY_ANALYSIS.md)** - Анализ функционала: что можно добавить (критически необходимые, важные, дополнительные, инновационные функции)
@@ -115,6 +116,13 @@
 - **[docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)** - План дальнейшей разработки
 - **[docs/DEVELOPMENT_TOOLS.md](docs/DEVELOPMENT_TOOLS.md)** - Инструменты разработки
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - Руководство по участию в разработке (включая требования по ведению TIMELINE.md)
+
+### Сборка и публикация
+
+- **[docs/BUILD_QUICK_REFERENCE.md](docs/BUILD_QUICK_REFERENCE.md)** - Быстрая справка по командам и конфигурации ⭐ НОВОЕ
+- **[docs/LOCAL_BUILD.md](docs/LOCAL_BUILD.md)** - Локальная сборка и публикация пакетов (быстрый старт) ⭐ НОВОЕ
+- **[docs/BUILD_ORGANIZATION.md](docs/BUILD_ORGANIZATION.md)** - Организация локальной сборки (архитектура, процесс, конфигурация) ⭐ НОВОЕ
+- **[docs/BUILD_TROUBLESHOOTING.md](docs/BUILD_TROUBLESHOOTING.md)** - Устранение проблем при локальной сборке ⭐ НОВОЕ
 
 ### Тестирование
 
