@@ -6,33 +6,33 @@
 > 
 > Для изменения структуры проекта редактируйте файлы проекта, а затем запустите скрипт генерации.
 
-**Дата генерации:** 2025-12-27 14:34:49
+**Дата генерации:** 2025-12-27 18:21:36
 
 ## Статистика проекта
 
-- **Всего файлов:** 517
-- **Всего директорий:** 296
-- **Модулей:** 12
+- **Всего файлов:** 652
+- **Всего директорий:** 352
+- **Модулей:** 14
 
 ### Статистика по типам файлов
 
-- `.kt`: 206 файлов
-- `.md`: 175 файлов
+- `.kt`: 253 файлов
+- `.md`: 227 файлов
 - `.ts`: 25 файлов
+- `.sh`: 23 файлов
 - `.tsx`: 16 файлов
-- `.h`: 14 файлов
-- `.sh`: 14 файлов
 - `.cpp`: 14 файлов
-- `.ps1`: 7 файлов
-- `.yml`: 5 файлов
+- `.h`: 14 файлов
+- `.ps1`: 13 файлов
+- `.yml`: 8 файлов
 - `.txt`: 4 файлов
+- `.yaml`: 4 файлов
 - `.xml`: 3 файлов
 - `.json`: 2 файлов
-- `.sq`: 1 файлов
-- `.js`: 1 файлов
-- `.yaml`: 1 файлов
-- `.bat`: 1 файлов
 - `.py`: 1 файлов
+- `.js`: 1 файлов
+- `.bat`: 1 файлов
+- `.sq`: 1 файлов
 
 ## Дерево структуры проекта
 
@@ -41,12 +41,14 @@ IP-CSS/
 ├── .github/
 │   ├── pull_request_template.md
 │   └── workflows/
+├── BUILD_NATIVE_LIBRARY.md
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── CRITICAL_BLOCKERS_REMEDIATION_PLAN.md
 ├── CURRENT_STATUS.md
 ├── DEVELOPMENT_MAP.md
 ├── DEVELOPMENT_ROADMAP.md
+├── DOCUMENTATION_ANALYSIS_TABLE.md
 ├── DOCUMENTATION_INDEX.md
 ├── DOCUMENTATION_V2_SUMMARY.md
 ├── Dockerfile
@@ -54,6 +56,7 @@ IP-CSS/
 ├── INSTALLATION_SUMMARY.md
 ├── INSTALL_INSTRUCTIONS.md
 ├── Inf-pipeline/
+│   ├── INFRASTRUCTURE_ANALYSIS.md
 │   ├── RASPBERRY_PI_JENKINS_ANALYSIS.md
 │   ├── README.md
 │   └── SYNOLOGY_GIT_MIRROR_ANALYSIS.md
@@ -62,6 +65,12 @@ IP-CSS/
 ├── Log-server/
 │   ├── RASPBERRY_PI_4_ANALYSIS.md
 │   └── README.md
+├── NAS_PLATFORM_STATUS_TABLE.md
+├── NATIVE_LIBRARIES_ANALYSIS.md
+├── NATIVE_LIBRARIES_BUILD_COMPLETE.md
+├── NATIVE_LIBRARIES_BUILD_STATUS.md
+├── NATIVE_LIBRARIES_FIXES_SUMMARY.md
+├── NATIVE_LIBRARIES_INTEGRATION_COMPLETE.md
 ├── OLD-DOC-2025-01-27/
 │   └── README.md
 ├── PLATFORM_STRUCTURE.md
@@ -69,10 +78,13 @@ IP-CSS/
 ├── PROJECT_PROMPT.md
 ├── PROJECT_REVIEW.md
 ├── PROJECT_ROADMAP.md
+├── PROJECT_STATUS.md
+├── PROJECT_STATUS_TABLE.md
 ├── PROJECT_STRUCTURE.md
 ├── PROJECT_STRUCTURE_AUTO.md
 ├── QUICK_INSTALL.md
 ├── README.md
+├── RECOMMENDATIONS_COMPLETED.md
 ├── android/
 │   └── app/
 │       ├── build.gradle.kts
@@ -125,10 +137,13 @@ IP-CSS/
 ├── detekt.yml
 ├── docker-compose.yml
 ├── docs/
+│   ├── ACTIVATE_NATIVE_DECODER.md
 │   ├── ADMINISTRATOR_GUIDE.md
+│   ├── AI_ANALYTICS.md
 │   ├── ANALYSIS_ERRORS.md
 │   ├── ANALYSIS_SUMMARY_2025.md
 │   ├── API.md
+│   ├── API_EXAMPLES.md
 │   ├── ARCHITECTURE.md
 │   ├── BUILD_ORGANIZATION.md
 │   ├── BUILD_QUICK_REFERENCE.md
@@ -136,16 +151,24 @@ IP-CSS/
 │   ├── CONFIGURATION.md
 │   ├── DEEP_ANALYSIS_2025.md
 │   ├── DEPLOYMENT_GUIDE.md
+│   ├── DESKTOP_IMPLEMENTATION_PLAN.md
 │   ├── DEVELOPMENT.md
 │   ├── DEVELOPMENT_PLAN.md
 │   ├── DEVELOPMENT_TOOLS.md
 │   ├── DOCUMENTATION_ANALYSIS_REPORT.md
+│   ├── DOCUMENTATION_CONSOLIDATION_ANALYSIS.md
+│   ├── DOCUMENTATION_CONSOLIDATION_REPORT.md
 │   ├── DOCUMENTATION_GAPS.md
+│   ├── DOCUMENTATION_MANAGEMENT.md
 │   ├── DOCUMENTATION_OPTIMIZATION_PROPOSALS.md
 │   ├── DOCUMENTATION_OPTIMIZATION_REPORT.md
+│   ├── DOCUMENTATION_REVISION_REPORT.md
 │   ├── DOCUMENTATION_UPDATE.md
 │   ├── DOCUMENTATION_VERSIONING.md
 │   ├── DOCUMENTATION_VERSIONING_QUICK_START.md
+│   ├── ENVIRONMENT_VARIABLES.md
+│   ├── FFMPEG_INSTALLATION.md
+│   ├── FFMPEG_SETUP_REPORT.md
 │   ├── FUNCTIONALITY_ANALYSIS.md
 │   ├── IMPLEMENTATION_PROGRESS.md
 │   ├── IMPLEMENTATION_STATUS.md
@@ -163,6 +186,7 @@ IP-CSS/
 │   ├── OPERATOR_GUIDE.md
 │   ├── OPTIMIZATION_COMPLETED.md
 │   ├── OPTIMIZATION_PROGRESS.md
+│   ├── PERFORMANCE.md
 │   ├── PLATFORMS.md
 │   ├── PROJECT_ANALYSIS_DISCREPANCIES.md
 │   ├── PROJECT_FULL_ANALYSIS.md
@@ -181,6 +205,7 @@ IP-CSS/
 │   ├── RTSP_QUICK_START.md
 │   ├── RTSP_VIDEO_PLAYER_INTEGRATION.md
 │   ├── SECURITY_AUDIT_REPORT.md
+│   ├── SECURITY_BEST_PRACTICES.md
 │   ├── SECURITY_REMEDIATION_PLAN.md
 │   ├── SERVER_IMPLEMENTATION_COMPLETED.md
 │   ├── SERVER_IMPLEMENTATION_PLAN.md
@@ -190,11 +215,17 @@ IP-CSS/
 │   ├── TESTING_IMPLEMENTATION_PROGRESS.md
 │   ├── TESTING_PLAN_ANALYSIS.md
 │   ├── TESTS_SUMMARY.md
+│   ├── TEST_DOCUMENTATION.md
 │   ├── TIMELINE_GUIDE.md
 │   ├── TIMELINE_SETUP.md
+│   ├── TROUBLESHOOTING.md
 │   ├── TYPESCRIPT_NAVIGATION_EXTENSIONS.md
 │   ├── USER_GUIDE.md
 │   ├── USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md
+│   ├── VIDEO_CODECS.md
+│   ├── VIDEO_DECODER_COMPLETE.md
+│   ├── VIDEO_DECODER_INTEGRATION.md
+│   ├── VIDEO_DECODER_SETUP.md
 │   ├── VIDEO_RECORDING_ENHANCEMENTS.md
 │   ├── VIDEO_RECORDING_IMPLEMENTATION.md
 │   ├── VSCODE_EXTENSIONS.md
@@ -226,6 +257,7 @@ IP-CSS/
 │   │       ├── motion_detector.cpp
 │   │       ├── object_detector.cpp
 │   │       └── object_tracker.cpp
+│   ├── build-stub-libs.ps1
 │   ├── codecs/
 │   │   ├── CMakeLists.txt
 │   │   ├── include/
@@ -257,43 +289,81 @@ IP-CSS/
 │   ├── client-android/
 │   │   └── README.md
 │   ├── client-desktop-arm/
-│   │   └── README.md
+│   │   ├── README.md
+│   │   └── app/
+│   │       ├── README.md
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
 │   ├── client-desktop-x86_64/
-│   │   └── README.md
+│   │   ├── README.md
+│   │   └── app/
+│   │       ├── README.md
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
 │   ├── client-ios/
 │   │   └── README.md
 │   ├── nas-arm/
 │   │   ├── README.md
-│   │   └── packages/
+│   │   ├── docker/
+│   │   │   ├── README.md
+│   │   │   └── docker-compose.yml
+│   │   ├── packages/
+│   │   │   ├── README.md
+│   │   │   ├── asustor/
+│   │   │   │   ├── icons/
+│   │   │   │   └── scripts/
+│   │   │   ├── qnap/
+│   │   │   │   ├── icons/
+│   │   │   │   └── scripts/
+│   │   │   ├── synology/
+│   │   │   │   ├── icons/
+│   │   │   │   └── scripts/
+│   │   │   └── truenas/
+│   │   │       ├── docker-compose.yml
+│   │   │       └── kubernetes/
+│   │   └── server/
 │   │       ├── README.md
-│   │       ├── asustor/
-│   │       ├── qnap/
-│   │       └── synology/
 │   ├── nas-x86_64/
 │   │   ├── README.md
-│   │   └── packages/
+│   │   ├── docker/
+│   │   │   ├── Dockerfile
+│   │   │   ├── README.md
+│   │   │   └── docker-compose.yml
+│   │   ├── packages/
+│   │   │   ├── README.md
+│   │   │   ├── asustor/
+│   │   │   │   ├── icons/
+│   │   │   │   └── scripts/
+│   │   │   ├── qnap/
+│   │   │   │   ├── icons/
+│   │   │   │   └── scripts/
+│   │   │   ├── synology/
+│   │   │   │   ├── icons/
+│   │   │   │   └── scripts/
+│   │   │   └── truenas/
+│   │   │       ├── docker-compose.yml
+│   │   │       └── kubernetes/
+│   │   └── server/
 │   │       ├── README.md
-│   │       ├── asustor/
-│   │       │   └── scripts/
-│   │       ├── qnap/
-│   │       │   └── scripts/
-│   │       ├── synology/
-│   │       │   └── scripts/
-│   │       └── truenas/
-│   │           ├── docker-compose.yml
-│   │           └── kubernetes/
 │   ├── sbc-arm/
 │   │   └── README.md
 │   └── server-x86_64/
 │       └── README.md
 ├── scripts/
 │   ├── README.md
+│   ├── README_DOCUMENTATION_MANAGEMENT.md
 │   ├── activate-rtsp-client.sh
 │   ├── archive-documentation.ps1
 │   ├── archive-documentation.sh
+│   ├── build-all-native-libs.ps1
+│   ├── build-all-native-libs.sh
 │   ├── build-all-platforms.sh
 │   ├── build-nas-package.sh
 │   ├── build-native-lib.sh
+│   ├── build-video-processing-lib.ps1
+│   ├── build-video-processing-lib.sh
 │   ├── check-dependencies.ps1
 │   ├── check-timeline.sh
 │   ├── cleanup-old-branches.ps1
@@ -301,8 +371,14 @@ IP-CSS/
 │   ├── create-platform-branches.sh
 │   ├── generate-project-structure.py
 │   ├── install-build-dependencies.ps1
+│   ├── install-ffmpeg.ps1
+│   ├── install-ffmpeg.sh
 │   ├── install-vscode-extensions.ps1
 │   ├── install-vscode-extensions.sh
+│   ├── manage-documentation.ps1
+│   ├── manage-documentation.sh
+│   ├── monitor-ffmpeg-performance.ps1
+│   ├── monitor-ffmpeg-performance.sh
 │   ├── publish-local.sh
 │   ├── quick-install.ps1
 │   └── setup-git-hooks.sh
@@ -394,6 +470,10 @@ IP-CSS/
   - Build file: `core/license/build.gradle.kts`
 - **`core/network`**
   - Build file: `core/network/build.gradle.kts`
+- **`platforms/client-desktop-arm/app`**
+  - Build file: `platforms/client-desktop-arm/app/build.gradle.kts`
+- **`platforms/client-desktop-x86_64/app`**
+  - Build file: `platforms/client-desktop-x86_64/app/build.gradle.kts`
 - **`server/api`**
   - Build file: `server/api/build.gradle.kts`
 - **`shared`**
