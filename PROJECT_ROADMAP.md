@@ -125,14 +125,14 @@
   - ❌ `DiscoverCamerasUseCase`
   - ❌ `TestCameraConnectionUseCase`
   - ⚠️ `GetCameraStatusUseCase` - реализовано в CameraRepositoryImpl, но нет отдельного use case
-- ❌ **Запись видео:**
-  - ❌ `StartRecordingUseCase`
-  - ❌ `StopRecordingUseCase`
-  - ❌ `PauseRecordingUseCase`
-  - ❌ `ResumeRecordingUseCase`
-  - ❌ `GetRecordingsUseCase`
-  - ❌ `DeleteRecordingUseCase`
-  - ❌ `ExportRecordingUseCase`
+- ✅ **Запись видео:**
+  - ✅ `StartRecordingUseCase`
+  - ✅ `StopRecordingUseCase`
+  - ✅ `PauseRecordingUseCase`
+  - ✅ `ResumeRecordingUseCase`
+  - ✅ `GetRecordingsUseCase`
+  - ✅ `DeleteRecordingUseCase`
+  - ⚠️ `ExportRecordingUseCase` - частично (есть endpoint, требуется доработка)
 - ❌ **Аналитика:**
   - ❌ `DetectObjectsUseCase`
   - ❌ `TrackObjectsUseCase`
@@ -157,7 +157,7 @@
 
 ### 2.4 Доменные сервисы
 - ❌ `CameraService` - сервис управления камерами
-- ❌ `RecordingService` - сервис управления записями
+- ✅ `VideoRecordingService` - сервис записи видео (реализован в server/api)
 - ❌ `AnalyticsService` - сервис аналитики
 - ❌ `NotificationService` - сервис уведомлений
 - 🟡 `LicenseManager` - менеджер лицензий (частично реализован)

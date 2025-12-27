@@ -144,3 +144,16 @@ fun CameraCapabilities.toDto(): CameraCapabilitiesDto {
     )
 }
 
+@Serializable
+data class StreamStatusDto(
+    val active: Boolean,
+    val streamId: String?,
+    val hlsUrl: String?,
+    val rtspUrl: String?
+)
+
+@Serializable
+data class RtspStreamUrlDto(
+    val rtspUrl: String
+)
+

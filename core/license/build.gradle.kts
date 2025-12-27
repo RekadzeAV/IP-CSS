@@ -2,6 +2,7 @@ plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("com.android.library")
+    id("maven-publish")
 }
 
 kotlin {
@@ -74,6 +75,26 @@ android {
 
     defaultConfig {
         minSdk = 26
+    }
+}
+
+// Публикация в локальный Maven репозиторий
+afterEvaluate {
+    publishing {
+        publications {
+            all {
+                if (this is MavenPublication) {
+                    groupId = "com.company.ipcamera"
+                    version = project.version.toString()
+                    
+                    pom {
+                        name.set("IP Camera Core License")
+                        description.set("Core license module for IP Camera Surveillance System")
+                        url.set("https://github.com/company/ip-camera-surveillance-system")
+                    }
+                }
+            }
+        }
     }
 }
 

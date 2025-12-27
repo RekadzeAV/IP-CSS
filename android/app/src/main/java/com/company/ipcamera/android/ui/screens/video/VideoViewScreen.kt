@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.company.ipcamera.android.ui.components.ExoVideoPlayer
 import com.company.ipcamera.android.ui.viewmodel.VideoViewViewModel
 import org.koin.androidx.compose.koinViewModel
 
@@ -67,34 +68,61 @@ fun VideoViewScreen(
                 }
                 else -> {
                     Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        // TODO: Integrate video player component
+                        // Video Player
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .aspectRatio(16f / 9f)
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
+                                .weight(1f)
+                                .padding(16.dp)
                         ) {
-                            Text("Video Player Placeholder")
+                            if (uiState.rtspUrl != null) {
+                                ExoVideoPlayer(
+                                    videoUrl = uiState.rtspUrl,
+                                    autoPlay = uiState.isPlaying,
+                                    modifier = Modifier.fillMaxSize(),
+                                    onError = { error ->
+                                        // Обработка ошибки
+                                    }
+                                )
+                            } else {
+                                // Показываем placeholder, если URL еще не загружен
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (uiState.isLoading) {
+                                        CircularProgressIndicator()
+                                    } else {
+                                        Text("Loading stream URL...")
+                                    }
+                                }
+                            }
                         }
 
+                        // Controls
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            IconButton(onClick = { viewModel.togglePlayback() }) {
+                            IconButton(onClick = { 
+                                if (!uiState.streamActive) {
+                                    viewModel.startStream()
+                                }
+                                viewModel.togglePlayback() 
+                            }) {
                                 Icon(
                                     if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                     contentDescription = if (uiState.isPlaying) "Pause" else "Play"
                                 )
                             }
-                            IconButton(onClick = { viewModel.toggleRecording() }) {
+                            IconButton(onClick = { 
+                                viewModel.stopStream()
+                                viewModel.toggleRecording() 
+                            }) {
                                 Icon(
                                     Icons.Default.Stop,
                                     contentDescription = "Stop",

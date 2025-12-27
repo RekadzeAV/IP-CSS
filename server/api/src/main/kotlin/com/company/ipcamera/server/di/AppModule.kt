@@ -2,6 +2,11 @@ package com.company.ipcamera.server.di
 
 import com.company.ipcamera.server.middleware.RateLimitMiddleware
 import com.company.ipcamera.server.repository.ServerUserRepository
+import com.company.ipcamera.server.service.FfmpegService
+import com.company.ipcamera.server.service.HlsGeneratorService
+import com.company.ipcamera.server.service.ScreenshotService
+import com.company.ipcamera.server.service.VideoRecordingService
+import com.company.ipcamera.server.service.VideoStreamService
 import com.company.ipcamera.shared.data.local.DatabaseFactory
 import com.company.ipcamera.shared.data.local.createDatabase
 import com.company.ipcamera.shared.data.repository.CameraRepositoryImpl
@@ -21,12 +26,12 @@ val appModule = module {
     // Server User Repository (in-memory для MVP)
     single<ServerUserRepository> { ServerUserRepository() }
     
-    // Server Recording Repository (in-memory для MVP)
-    single<com.company.ipcamera.server.repository.ServerRecordingRepository> { 
-        com.company.ipcamera.server.repository.ServerRecordingRepository() 
+    // Server Recording Repository (SQLDelight для продакшена)
+    single<com.company.ipcamera.server.repository.ServerRecordingRepositorySqlDelight> { 
+        com.company.ipcamera.server.repository.ServerRecordingRepositorySqlDelight(get()) 
     }
     single<com.company.ipcamera.shared.domain.repository.RecordingRepository> { 
-        get<com.company.ipcamera.server.repository.ServerRecordingRepository>() 
+        get<com.company.ipcamera.server.repository.ServerRecordingRepositorySqlDelight>() 
     }
     
     // Server Event Repository (in-memory для MVP)
@@ -47,5 +52,44 @@ val appModule = module {
     
     // Rate Limiter
     single<RateLimitMiddleware> { RateLimitMiddleware() }
+    
+    // FFmpeg Service
+    single<FfmpegService> { FfmpegService() }
+    
+    // HLS Generator Service
+    single<HlsGeneratorService> {
+        HlsGeneratorService(
+            ffmpegService = get(),
+            hlsOutputDirectory = "streams/hls"
+        )
+    }
+    
+    // Video Recording Service
+    single<VideoRecordingService> { 
+        VideoRecordingService(
+            recordingRepository = get(),
+            recordingsDirectory = "recordings",
+            thumbnailsDirectory = "thumbnails",
+            ffmpegService = get()
+        )
+    }
+    
+    // Screenshot Service
+    single<ScreenshotService> {
+        ScreenshotService(
+            screenshotsDirectory = "screenshots"
+        )
+    }
+    
+    // Video Stream Service
+    single<VideoStreamService> {
+        VideoStreamService(
+            cameraRepository = get(),
+            hlsGeneratorService = get(),
+            streamsDirectory = "streams",
+            maxBufferSize = 50, // Максимальное количество кадров в буфере
+            streamTimeoutMinutes = 30 // Таймаут неактивного стрима в минутах
+        )
+    }
 }
 

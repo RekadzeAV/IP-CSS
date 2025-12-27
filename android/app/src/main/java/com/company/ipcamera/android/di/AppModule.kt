@@ -5,6 +5,7 @@ import com.company.ipcamera.core.license.LicenseManager
 import com.company.ipcamera.core.network.ApiClient
 import com.company.ipcamera.core.network.ApiClientConfig
 import com.company.ipcamera.core.network.api.*
+import com.company.ipcamera.core.network.api.StreamApiService
 import com.company.ipcamera.shared.data.local.DatabaseFactory
 import com.company.ipcamera.shared.data.local.createDatabase
 import com.company.ipcamera.shared.data.repository.*
@@ -42,6 +43,7 @@ val appModule = module {
     single<SettingsApiService> { SettingsApiService(get()) }
     single<LicenseApiService> { LicenseApiService(get()) }
     single<UserApiService> { UserApiService(get()) }
+    single<StreamApiService> { StreamApiService(get()) }
 
     // License Manager
     single<LicenseManager> { LicenseManager.getInstance() }
@@ -58,7 +60,7 @@ val appModule = module {
     viewModel { CameraListViewModel(get()) }
     viewModel { (cameraId: String) -> CameraDetailViewModel(get(), cameraId) }
     viewModel { CameraAddViewModel(get()) }
-    viewModel { (cameraId: String) -> VideoViewViewModel(get(), cameraId) }
+    viewModel { (cameraId: String) -> VideoViewViewModel(get(), get(), cameraId) }
     viewModel { RecordingsViewModel(get()) }
     viewModel { EventsViewModel(get()) }
     viewModel { SettingsViewModel(get()) }

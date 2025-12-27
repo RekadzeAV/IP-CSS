@@ -1,6 +1,10 @@
 package com.company.ipcamera.server.routing
 
 import com.company.ipcamera.server.dto.*
+import com.company.ipcamera.server.service.VideoRecordingService
+import com.company.ipcamera.shared.domain.model.Quality
+import com.company.ipcamera.shared.domain.model.RecordingFormat
+import com.company.ipcamera.shared.domain.repository.CameraRepository
 import com.company.ipcamera.shared.domain.repository.RecordingRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -8,6 +12,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 import mu.KotlinLogging
 import org.koin.ktor.ext.inject
 
@@ -19,6 +24,8 @@ private val logger = KotlinLogging.logger {}
  */
 fun Route.recordingRoutes() {
     val recordingRepository: RecordingRepository by inject()
+    val videoRecordingService: VideoRecordingService by inject()
+    val cameraRepository: CameraRepository by inject()
     
     authenticate("jwt-auth") {
         route("/recordings") {
@@ -256,6 +263,238 @@ fun Route.recordingRoutes() {
                             )
                         )
                     }
+                }
+            }
+            
+            // POST /api/v1/recordings/start - начать запись
+            post("/start") {
+                try {
+                    val request = call.receive<StartRecordingRequest>()
+                    
+                    // Получаем камеру
+                    val camera = cameraRepository.getCameraById(request.cameraId)
+                        ?: return@post call.respond(
+                            HttpStatusCode.NotFound,
+                            ApiResponse<StartRecordingResponse>(
+                                success = false,
+                                data = null,
+                                message = "Camera not found: ${request.cameraId}"
+                            )
+                        )
+                    
+                    // Парсим формат и качество
+                    val format = try {
+                        RecordingFormat.valueOf(request.format?.uppercase() ?: "MP4")
+                    } catch (e: Exception) {
+                        RecordingFormat.MP4
+                    }
+                    
+                    val quality = try {
+                        Quality.valueOf(request.quality?.uppercase() ?: "HIGH")
+                    } catch (e: Exception) {
+                        Quality.HIGH
+                    }
+                    
+                    // Начинаем запись
+                    val result = videoRecordingService.startRecording(
+                        camera = camera,
+                        format = format,
+                        quality = quality,
+                        duration = request.duration
+                    )
+                    
+                    result.fold(
+                        onSuccess = { recording ->
+                            val estimatedEndTime = if (request.duration != null) {
+                                recording.startTime + request.duration
+                            } else null
+                            
+                            call.respond(
+                                HttpStatusCode.OK,
+                                ApiResponse(
+                                    success = true,
+                                    data = StartRecordingResponse(
+                                        recordingId = recording.id,
+                                        cameraId = recording.cameraId,
+                                        startTime = recording.startTime,
+                                        estimatedEndTime = estimatedEndTime
+                                    ),
+                                    message = "Recording started successfully"
+                                )
+                            )
+                        },
+                        onFailure = { error ->
+                            logger.error(error) { "Error starting recording for camera: ${request.cameraId}" }
+                            call.respond(
+                                HttpStatusCode.BadRequest,
+                                ApiResponse<StartRecordingResponse>(
+                                    success = false,
+                                    data = null,
+                                    message = "Error starting recording: ${error.message}"
+                                )
+                            )
+                        }
+                    )
+                } catch (e: Exception) {
+                    logger.error(e) { "Error starting recording" }
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ApiResponse<StartRecordingResponse>(
+                            success = false,
+                            data = null,
+                            message = "Internal server error: ${e.message}"
+                        )
+                    )
+                }
+            }
+            
+            // POST /api/v1/recordings/stop/{cameraId} - остановить запись
+            post("/stop/{cameraId}") {
+                try {
+                    val cameraId = call.parameters["cameraId"] ?: return@post call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiResponse<RecordingDto>(
+                            success = false,
+                            data = null,
+                            message = "Camera ID is required"
+                        )
+                    )
+                    
+                    val result = videoRecordingService.stopRecording(cameraId)
+                    
+                    result.fold(
+                        onSuccess = { recording ->
+                            call.respond(
+                                HttpStatusCode.OK,
+                                ApiResponse(
+                                    success = true,
+                                    data = recording.toDto(),
+                                    message = "Recording stopped successfully"
+                                )
+                            )
+                        },
+                        onFailure = { error ->
+                            logger.error(error) { "Error stopping recording for camera: $cameraId" }
+                            call.respond(
+                                HttpStatusCode.BadRequest,
+                                ApiResponse<RecordingDto>(
+                                    success = false,
+                                    data = null,
+                                    message = "Error stopping recording: ${error.message}"
+                                )
+                            )
+                        }
+                    )
+                } catch (e: Exception) {
+                    logger.error(e) { "Error stopping recording" }
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ApiResponse<RecordingDto>(
+                            success = false,
+                            data = null,
+                            message = "Internal server error: ${e.message}"
+                        )
+                    )
+                }
+            }
+            
+            // POST /api/v1/recordings/pause/{cameraId} - приостановить запись
+            post("/pause/{cameraId}") {
+                try {
+                    val cameraId = call.parameters["cameraId"] ?: return@post call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiResponse<RecordingDto>(
+                            success = false,
+                            data = null,
+                            message = "Camera ID is required"
+                        )
+                    )
+                    
+                    val result = videoRecordingService.pauseRecording(cameraId)
+                    
+                    result.fold(
+                        onSuccess = { recording ->
+                            call.respond(
+                                HttpStatusCode.OK,
+                                ApiResponse(
+                                    success = true,
+                                    data = recording.toDto(),
+                                    message = "Recording paused successfully"
+                                )
+                            )
+                        },
+                        onFailure = { error ->
+                            logger.error(error) { "Error pausing recording for camera: $cameraId" }
+                            call.respond(
+                                HttpStatusCode.BadRequest,
+                                ApiResponse<RecordingDto>(
+                                    success = false,
+                                    data = null,
+                                    message = "Error pausing recording: ${error.message}"
+                                )
+                            )
+                        }
+                    )
+                } catch (e: Exception) {
+                    logger.error(e) { "Error pausing recording" }
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ApiResponse<RecordingDto>(
+                            success = false,
+                            data = null,
+                            message = "Internal server error: ${e.message}"
+                        )
+                    )
+                }
+            }
+            
+            // POST /api/v1/recordings/resume/{cameraId} - возобновить запись
+            post("/resume/{cameraId}") {
+                try {
+                    val cameraId = call.parameters["cameraId"] ?: return@post call.respond(
+                        HttpStatusCode.BadRequest,
+                        ApiResponse<RecordingDto>(
+                            success = false,
+                            data = null,
+                            message = "Camera ID is required"
+                        )
+                    )
+                    
+                    val result = videoRecordingService.resumeRecording(cameraId)
+                    
+                    result.fold(
+                        onSuccess = { recording ->
+                            call.respond(
+                                HttpStatusCode.OK,
+                                ApiResponse(
+                                    success = true,
+                                    data = recording.toDto(),
+                                    message = "Recording resumed successfully"
+                                )
+                            )
+                        },
+                        onFailure = { error ->
+                            logger.error(error) { "Error resuming recording for camera: $cameraId" }
+                            call.respond(
+                                HttpStatusCode.BadRequest,
+                                ApiResponse<RecordingDto>(
+                                    success = false,
+                                    data = null,
+                                    message = "Error resuming recording: ${error.message}"
+                                )
+                            )
+                        }
+                    )
+                } catch (e: Exception) {
+                    logger.error(e) { "Error resuming recording" }
+                    call.respond(
+                        HttpStatusCode.InternalServerError,
+                        ApiResponse<RecordingDto>(
+                            success = false,
+                            data = null,
+                            message = "Internal server error: ${e.message}"
+                        )
+                    )
                 }
             }
         }

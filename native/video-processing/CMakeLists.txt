@@ -19,8 +19,27 @@ set(HEADERS
     include/stream_manager.h
 )
 
-# Создание библиотеки
-add_library(video_processing ${SOURCES} ${HEADERS})
+# Создание shared библиотеки для динамической загрузки
+add_library(video_processing SHARED ${SOURCES} ${HEADERS})
+
+# Установка visibility символов (для правильного экспорта)
+set_target_properties(video_processing PROPERTIES
+    CXX_VISIBILITY_PRESET default
+    VISIBILITY_INLINES_HIDDEN ON
+    POSITION_INDEPENDENT_CODE ON
+)
+
+# Экспорт всех символов для C функций (нужно для cinterop)
+if(UNIX AND NOT APPLE)
+    set_target_properties(video_processing PROPERTIES
+        LINK_FLAGS "-Wl,--export-dynamic"
+    )
+elseif(APPLE)
+    set_target_properties(video_processing PROPERTIES
+        MACOSX_RPATH ON
+        BUILD_WITH_INSTALL_RPATH ON
+    )
+endif()
 
 # Зависимости
 target_link_libraries(video_processing

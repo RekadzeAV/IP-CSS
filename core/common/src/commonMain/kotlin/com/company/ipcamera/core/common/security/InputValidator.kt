@@ -1,86 +1,86 @@
 package com.company.ipcamera.core.common.security
 
 /**
- * Валидатор входных данных для предотвращения инъекций и некорректных данных
+ * Input validator for preventing injections and invalid data
  */
 object InputValidator {
 
     /**
-     * Валидирует URL камеры
+     * Validates camera URL
      */
     fun validateCameraUrl(url: String): ValidationResult {
         if (url.isBlank()) {
-            return ValidationResult.Error("URL не может быть пустым")
+            return ValidationResult.Error("URL cannot be empty")
         }
 
-        // Проверка длины
+        // Length check
         if (url.length > 2048) {
-            return ValidationResult.Error("URL слишком длинный (максимум 2048 символов)")
+            return ValidationResult.Error("URL is too long (maximum 2048 characters)")
         }
 
-        // Проверка формата URL
+        // URL format check
         val urlPattern = Regex(
-            "^https?://" + // Протокол
-            "([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}" + // Домен
-            "(:[0-9]{1,5})?" + // Порт (опционально)
-            "(/.*)?$" // Путь (опционально)
+            "^https?://" + // Protocol
+            "([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}" + // Domain
+            "(:[0-9]{1,5})?" + // Port (optional)
+            "(/.*)?$" // Path (optional)
         )
 
         val rtspPattern = Regex(
-            "^rtsp://" + // RTSP протокол
-            "([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}" + // Домен
-            "(:[0-9]{1,5})?" + // Порт (опционально)
-            "(/.*)?$" // Путь (опционально)
+            "^rtsp://" + // RTSP protocol
+            "([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}" + // Domain
+            "(:[0-9]{1,5})?" + // Port (optional)
+            "(/.*)?$" // Path (optional)
         )
 
         val ipPattern = Regex(
-            "^https?://" + // Протокол
+            "^https?://" + // Protocol
             "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)" + // IPv4
-            "(:[0-9]{1,5})?" + // Порт (опционально)
-            "(/.*)?$" // Путь (опционально)
+            "(:[0-9]{1,5})?" + // Port (optional)
+            "(/.*)?$" // Path (optional)
         )
 
         if (!urlPattern.matches(url) && !rtspPattern.matches(url) && !ipPattern.matches(url)) {
-            return ValidationResult.Error("Некорректный формат URL")
+            return ValidationResult.Error("Invalid URL format")
         }
 
-        // Проверка на SQL инъекции (базовая)
+        // SQL injection check (basic)
         val sqlInjectionPatterns = listOf(
             "';", "--", "/*", "*/", "xp_", "sp_", "exec", "union", "select", "insert", "update", "delete", "drop"
         )
         val lowerUrl = url.lowercase()
         if (sqlInjectionPatterns.any { lowerUrl.contains(it) }) {
-            return ValidationResult.Error("URL содержит потенциально опасные символы")
+            return ValidationResult.Error("URL contains potentially dangerous characters")
         }
 
-        // Проверка на XSS (базовая)
+        // XSS check (basic)
         val xssPatterns = listOf("<script", "javascript:", "onerror=", "onload=")
         if (xssPatterns.any { lowerUrl.contains(it) }) {
-            return ValidationResult.Error("URL содержит потенциально опасные символы")
+            return ValidationResult.Error("URL contains potentially dangerous characters")
         }
 
         return ValidationResult.Success
     }
 
     /**
-     * Валидирует имя пользователя
+     * Validates username
      */
     fun validateUsername(username: String?): ValidationResult {
-        if (username == null) return ValidationResult.Success // Опциональное поле
+        if (username == null) return ValidationResult.Success // Optional field
 
         if (username.isBlank()) {
-            return ValidationResult.Error("Имя пользователя не может быть пустым")
+            return ValidationResult.Error("Username cannot be empty")
         }
 
-        // Проверка длины
+        // Length check
         if (username.length > 255) {
-            return ValidationResult.Error("Имя пользователя слишком длинное (максимум 255 символов)")
+            return ValidationResult.Error("Username is too long (maximum 255 characters)")
         }
 
-        // Разрешенные символы: буквы, цифры, подчеркивание, дефис, точка
+        // Allowed characters: letters, numbers, underscore, hyphen, dot
         val usernamePattern = Regex("^[a-zA-Z0-9._-]+$")
         if (!usernamePattern.matches(username)) {
-            return ValidationResult.Error("Имя пользователя содержит недопустимые символы")
+            return ValidationResult.Error("Username contains invalid characters")
         }
 
         return ValidationResult.Success

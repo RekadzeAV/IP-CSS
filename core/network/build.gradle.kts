@@ -2,6 +2,7 @@ plugins {
     kotlin("multiplatform")
     kotlin("plugin.serialization")
     id("com.android.library")
+    id("maven-publish")
 }
 
 kotlin {
@@ -19,7 +20,7 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
 
-    // Native targets для cinterop
+    // Native targets для cinterop (Linux и macOS)
     linuxX64("native") {
         compilations.getByName("main") {
             cinterops {
@@ -27,6 +28,33 @@ kotlin {
                     defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
                     packageName("com.company.ipcamera.core.network.rtsp")
                     compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                }
+            }
+        }
+    }
+
+    macosX64("nativeMacosX64") {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                }
+            }
+        }
+    }
+
+    macosArm64("nativeMacosArm64") {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
                 }
             }
         }
@@ -99,6 +127,14 @@ kotlin {
         val nativeMain by creating {
             dependsOn(commonMain)
         }
+
+        val nativeMacosX64Main by getting {
+            dependsOn(nativeMain)
+        }
+
+        val nativeMacosArm64Main by getting {
+            dependsOn(nativeMain)
+        }
     }
 }
 
@@ -108,6 +144,26 @@ android {
 
     defaultConfig {
         minSdk = 26
+    }
+}
+
+// Публикация в локальный Maven репозиторий
+afterEvaluate {
+    publishing {
+        publications {
+            all {
+                if (this is MavenPublication) {
+                    groupId = "com.company.ipcamera"
+                    version = project.version.toString()
+                    
+                    pom {
+                        name.set("IP Camera Core Network")
+                        description.set("Core network module for IP Camera Surveillance System")
+                        url.set("https://github.com/company/ip-camera-surveillance-system")
+                    }
+                }
+            }
+        }
     }
 }
 

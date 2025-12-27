@@ -65,5 +65,12 @@ dependencies {
     // Logging
     implementation(libs.kotlin.logging)
     implementation("ch.qos.logback:logback-classic:1.5.9")
+    
+    // ExoPlayer (Media3) for video playback
+    val media3Version = "1.2.1"
+    implementation("androidx.media3:media3-exoplayer:$media3Version")
+    implementation("androidx.media3:media3-ui:$media3Version")
+    implementation("androidx.media3:media3-common:$media3Version")
+    implementation("androidx.media3:media3-datasource-rtsp:$media3Version")
 }
 

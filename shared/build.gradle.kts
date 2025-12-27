@@ -3,6 +3,7 @@ plugins {
     kotlin("plugin.serialization")
     id("com.android.library")
     id("app.cash.sqldelight")
+    id("maven-publish")
     // Development tools (optional, can be applied at root level)
     // id("io.gitlab.arturbosch.detekt")
     // id("org.jlleitschuh.gradle.ktlint")
@@ -149,6 +150,26 @@ sqldelight {
         create("CameraDatabase") {
             packageName.set("com.company.ipcamera.shared.database")
             generateAsync.set(true)
+        }
+    }
+}
+
+// Публикация в локальный Maven репозиторий
+afterEvaluate {
+    publishing {
+        publications {
+            all {
+                if (this is MavenPublication) {
+                    groupId = "com.company.ipcamera"
+                    version = project.version.toString()
+                    
+                    pom {
+                        name.set("IP Camera Shared")
+                        description.set("Shared Kotlin Multiplatform module for IP Camera Surveillance System")
+                        url.set("https://github.com/company/ip-camera-surveillance-system")
+                    }
+                }
+            }
         }
     }
 }

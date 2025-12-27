@@ -274,6 +274,8 @@ class RtspClient(
      * Приостановить воспроизведение
      */
     suspend fun pause() = withContext(Dispatchers.IO) {
+        val handle = nativeHandle ?: return@withContext
+        
         if (status.value != RtspClientStatus.PLAYING) {
             return@withContext
         }
@@ -281,11 +283,16 @@ class RtspClient(
         receiveJob?.cancel()
         receiveJob = null
 
-        // TODO: Вызов нативной функции rtsp_client_pause()
-        status.value = RtspClientStatus.CONNECTED
-        statusCallback?.invoke(RtspClientStatus.CONNECTED, "Paused")
-
-        logger.info { "RTSP client paused" }
+        val success = nativeClient.pause(handle)
+        if (success) {
+            status.value = RtspClientStatus.CONNECTED
+            statusCallback?.invoke(RtspClientStatus.CONNECTED, "Paused")
+            logger.info { "RTSP client paused" }
+        } else {
+            logger.error { "Failed to pause RTSP client" }
+            status.value = RtspClientStatus.ERROR
+            statusCallback?.invoke(RtspClientStatus.ERROR, "Failed to pause")
+        }
     }
 
     /**

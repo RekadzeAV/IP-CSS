@@ -67,3 +67,25 @@ fun PaginatedResult<Recording>.toDto(): PaginatedRecordingResponse {
     )
 }
 
+/**
+ * DTO для запроса начала записи
+ */
+@Serializable
+data class StartRecordingRequest(
+    val cameraId: String,
+    val format: String? = "MP4",
+    val quality: String? = "HIGH",
+    val duration: Long? = null // в миллисекундах, null = бесконечная запись
+)
+
+/**
+ * DTO для ответа на начало записи
+ */
+@Serializable
+data class StartRecordingResponse(
+    val recordingId: String,
+    val cameraId: String,
+    val startTime: Long,
+    val estimatedEndTime: Long? = null
+)
+

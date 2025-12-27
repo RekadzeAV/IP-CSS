@@ -10,12 +10,21 @@ fun Application.configureRouting() {
             authRoutes()
             healthRoutes()
             
+            // HLS маршруты (без аутентификации для доступа к сегментам)
+            route("/cameras") {
+                hlsRoutes()
+            }
+            
+            // Маршруты для снимков (без аутентификации для простоты доступа)
+            screenshotRoutes()
+            
             // Защищенные маршруты (требуют аутентификации)
             cameraRoutes()
             recordingRoutes()
             eventRoutes()
             userRoutes()
             settingsRoutes()
+            streamRoutes()
         }
     }
 }
