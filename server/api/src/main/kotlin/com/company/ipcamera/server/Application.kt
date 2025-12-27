@@ -3,6 +3,7 @@ package com.company.ipcamera.server
 import com.auth0.jwt.JWT
 import com.company.ipcamera.server.config.JwtConfig
 import com.company.ipcamera.server.di.appModule
+import com.company.ipcamera.server.websocket.configureWebSocket
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
@@ -81,5 +82,8 @@ fun Application.module() {
 
     // Routing
     configureRouting()
+    
+    // WebSocket
+    configureWebSocket()
 }
 
