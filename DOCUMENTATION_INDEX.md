@@ -43,6 +43,7 @@
 
 ### Статус реализации
 
+- **[DEVELOPMENT_MAP.md](DEVELOPMENT_MAP.md)** - Детальная карта разработки с визуализацией состояния каждого этапа ⭐ НОВОЕ
 - **[CURRENT_STATUS.md](CURRENT_STATUS.md)** - Краткая сводка текущего состояния проекта (~55% прогресса)
 - **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** - Детальный статус реализации всех компонентов
 - **[docs/MISSING_FUNCTIONALITY.md](docs/MISSING_FUNCTIONALITY.md)** - Детальный анализ нереализованного функционала
@@ -224,7 +225,7 @@
 ### Я хочу...
 
 - **Понять архитектуру проекта** → [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- **Узнать текущий статус** → [CURRENT_STATUS.md](CURRENT_STATUS.md) | [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
+- **Узнать текущий статус** → [DEVELOPMENT_MAP.md](DEVELOPMENT_MAP.md) ⭐ НОВОЕ | [CURRENT_STATUS.md](CURRENT_STATUS.md) | [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
 - **Начать разработку** → [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | [docs/DEVELOPMENT_PLAN.md](docs/DEVELOPMENT_PLAN.md)
 - **Работать с ONVIF** → [docs/ONVIF_CLIENT.md](docs/ONVIF_CLIENT.md)
 - **Работать с RTSP** → [docs/RTSP_CLIENT.md](docs/RTSP_CLIENT.md)
@@ -286,7 +287,7 @@ README.md (корневой)
 
 ---
 
-**Версия документации:** 1.2  
-**Последнее обновление:** Декабрь 2025  
+**Версия документации:** 1.2
+**Последнее обновление:** Декабрь 2025
 **Обновлено:** Добавлена документация для пользователей (администраторы, операторы, пользователи) с учетом всех платформ и архитектур
 

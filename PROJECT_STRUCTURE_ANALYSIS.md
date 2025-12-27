@@ -835,3 +835,4 @@ server/web (Next.js) → server/api (через REST API)
 ---
 
 **Последнее обновление:** Декабрь 2025
+

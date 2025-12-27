@@ -51,3 +51,4 @@ docker build -f platforms/server-x86_64/docker/Dockerfile -t ip-css-server:lates
 docker-compose -f platforms/server-x86_64/docker/docker-compose.yml up -d
 ```
 
+

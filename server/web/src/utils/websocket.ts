@@ -12,9 +12,17 @@ export interface WebSocketMessage {
   code?: string;
 }
 
+export interface WebSocketFilters {
+  cameraIds?: string[];
+  eventTypes?: string[];
+  severities?: string[];
+  [key: string]: any;
+}
+
 export interface WebSocketConfig {
   url: string;
-  token: string;
+  token?: string; // Опциональный, если не указан, будет получен через API
+  getToken?: () => Promise<string | null>; // Функция для получения токена
   onMessage: (message: WebSocketMessage) => void;
   onError?: (error: Error) => void;
   onConnect?: () => void;
@@ -64,11 +72,11 @@ export class WebSocketClient {
   private setupEventHandlers(): void {
     if (!this.ws) return;
 
-    this.ws.onopen = () => {
+    this.ws.onopen = async () => {
       console.log('[WebSocket] Connected');
       this.isReconnecting = false;
       this.isAuthenticated = false;
-      this.authenticate();
+      await this.authenticate();
     };
 
     this.ws.onmessage = (event) => {
@@ -101,15 +109,27 @@ export class WebSocketClient {
   /**
    * Аутентификация на сервере
    */
-  private authenticate(): void {
+  private async authenticate(): Promise<void> {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    // Получаем токен
+    let token = this.config.token;
+    if (!token && this.config.getToken) {
+      token = await this.config.getToken() || undefined;
+    }
+
+    if (!token) {
+      console.error('[WebSocket] No token available for authentication');
+      this.config.onError?.(new Error('No token available'));
       return;
     }
 
     const authMessage = {
       type: 'auth',
       data: {
-        token: this.config.token,
+        token: token,
       },
     };
 
@@ -166,19 +186,23 @@ export class WebSocketClient {
   /**
    * Подписка на канал
    */
-  subscribe(channels: WebSocketChannel[]): void {
+  subscribe(channels: WebSocketChannel[], filters?: WebSocketFilters): void {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.isAuthenticated) {
       // Сохраняем каналы для подписки после подключения
       channels.forEach((channel) => this.subscribedChannels.add(channel));
       return;
     }
 
-    const subscribeMessage = {
+    const subscribeMessage: any = {
       type: 'subscribe',
       data: {
         channels: channels,
       },
     };
+
+    if (filters && Object.keys(filters).length > 0) {
+      subscribeMessage.data.filters = filters;
+    }
 
     this.ws.send(JSON.stringify(subscribeMessage));
     channels.forEach((channel) => this.subscribedChannels.add(channel));

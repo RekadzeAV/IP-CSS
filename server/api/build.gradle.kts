@@ -20,14 +20,17 @@ dependencies {
     // Ktor Server
     implementation(libs.bundles.ktor.server)
     implementation(libs.ktor.server.websockets)
-    
+
     // Authentication
     implementation("io.ktor:ktor-server-auth:${libs.versions.ktor.get()}")
     implementation("io.ktor:ktor-server-auth-jwt:${libs.versions.ktor.get()}")
-    
+
+    // Cookies support
+    implementation("io.ktor:ktor-server-sessions:${libs.versions.ktor.get()}")
+
     // JWT
     implementation("com.auth0:java-jwt:4.4.0")
-    
+
     // BCrypt для хеширования паролей
     implementation("org.mindrot:jbcrypt:0.4")
 
@@ -44,6 +47,9 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.core)
+
+    // Redis client (Lettuce - асинхронный клиент)
+    implementation("io.lettuce:lettuce-core:6.3.2.RELEASE")
 
     // Testing
     testImplementation(kotlin("test"))

@@ -4,11 +4,14 @@ import com.company.ipcamera.core.network.RtspClient
 import com.company.ipcamera.core.network.RtspClientConfig
 import com.company.ipcamera.core.network.RtspClientStatus
 import com.company.ipcamera.core.network.RtspFrame
+import com.company.ipcamera.server.websocket.WebSocketManager
+import com.company.ipcamera.server.websocket.WebSocketChannel
 import com.company.ipcamera.shared.domain.model.Camera
 import com.company.ipcamera.shared.domain.repository.CameraRepository
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.*
+import kotlinx.serialization.json.*
 import mu.KotlinLogging
 import java.io.File
 import java.util.*
@@ -25,10 +28,10 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Сервис для трансляции видеопотоков с IP-камер
- * 
+ *
  * Управляет трансляцией RTSP потоков в форматы, поддерживаемые веб-браузерами (HLS)
  * и мобильными приложениями (RTSP для ExoPlayer).
- * 
+ *
  * Особенности:
  * - Оптимизированная буферизация с управлением памятью
  * - Автоматическая генерация HLS сегментов через FFmpeg
@@ -44,12 +47,12 @@ class VideoStreamService(
 ) {
     private val activeStreams = ConcurrentHashMap<String, ActiveStream>()
     private val streamScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    
+
     init {
         ensureDirectoriesExist()
         startCleanupTask()
     }
-    
+
     /**
      * Активный стрим
      */
@@ -64,7 +67,7 @@ class VideoStreamService(
         val hlsQuality: StreamQuality = StreamQuality.MEDIUM,
         val hlsPlaylistPath: String? = null
     )
-    
+
     /**
      * Начать трансляцию для камеры
      */
@@ -76,17 +79,17 @@ class VideoStreamService(
                 logger.info { "Stream already active for camera: $cameraId, streamId: ${existingStream.streamId}" }
                 return@withContext Result.success(existingStream.streamId)
             }
-            
+
             // Получаем информацию о камере
             val camera = cameraRepository.getCameraById(cameraId)
                 ?: return@withContext Result.failure(
                     IllegalArgumentException("Camera not found: $cameraId")
                 )
-            
+
             // Создаем ID для стрима
             val streamId = UUID.randomUUID().toString()
             val startTime = System.currentTimeMillis()
-            
+
             // Создаем RTSP клиент
             val rtspConfig = RtspClientConfig(
                 url = camera.url,
@@ -96,16 +99,16 @@ class VideoStreamService(
                 enableVideo = true,
                 enableAudio = camera.audio
             )
-            
+
             val rtspClient = RtspClient(rtspConfig)
-            
+
             // Подключаемся к RTSP потоку
             rtspClient.connect()
-            
+
             // Ждем подключения (максимум 10 секунд)
             var connected = false
             val timeout = System.currentTimeMillis() + 10000
-            
+
             while (System.currentTimeMillis() < timeout && !connected) {
                 val status = rtspClient.getStatus().value
                 if (status == RtspClientStatus.CONNECTED || status == RtspClientStatus.PLAYING) {
@@ -114,24 +117,24 @@ class VideoStreamService(
                 }
                 delay(100)
             }
-            
+
             if (!connected) {
                 rtspClient.close()
                 return@withContext Result.failure(
                     Exception("Failed to connect to RTSP stream within timeout")
                 )
             }
-            
+
             // Начинаем воспроизведение
             rtspClient.play()
-            
+
             // Создаем SharedFlow для видеокадров с оптимизированной буферизацией
             // Используем ограниченный буфер для управления памятью
             val videoFrames = MutableSharedFlow<RtspFrame>(
                 extraBufferCapacity = maxBufferSize,
                 onBufferOverflow = BufferOverflow.DROP_OLDEST // Удаляем самые старые кадры при переполнении
             )
-            
+
             // Подписываемся на видеокадры и перенаправляем их в SharedFlow
             // Обновляем время последней активности
             val streamJob = streamScope.launch {
@@ -157,7 +160,7 @@ class VideoStreamService(
                     logger.error(e) { "Error in stream: $streamId" }
                 }
             }
-            
+
             // Получаем RTSP URL с credentials для HLS генерации
             val rtspUrlWithAuth = if (camera.username != null && camera.password != null) {
                 val url = camera.url
@@ -171,14 +174,14 @@ class VideoStreamService(
             } else {
                 camera.url
             }
-            
+
             // Запускаем генерацию HLS если доступен HlsGeneratorService
             val hlsPlaylistPath = hlsGeneratorService?.startHlsGeneration(
                 streamId = streamId,
                 rtspUrl = rtspUrlWithAuth,
                 quality = StreamQuality.MEDIUM // Можно сделать конфигурируемым
             )
-            
+
             // Сохраняем активный стрим
             val activeStream = ActiveStream(
                 streamId = streamId,
@@ -191,18 +194,33 @@ class VideoStreamService(
                 hlsQuality = StreamQuality.MEDIUM,
                 hlsPlaylistPath = hlsPlaylistPath
             )
-            
+
             activeStreams[cameraId] = activeStream
-            
+
+            // Отправляем WebSocket событие о начале стрима
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.CAMERAS,
+                    "stream_started",
+                    jsonObject {
+                        put("cameraId", cameraId)
+                        put("streamId", streamId)
+                        put("timestamp", System.currentTimeMillis())
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for stream start" }
+            }
+
             logger.info { "Started stream: $streamId for camera: $cameraId" }
             Result.success(streamId)
-            
+
         } catch (e: Exception) {
             logger.error(e) { "Error starting stream for camera: $cameraId" }
             Result.failure(e)
         }
     }
-    
+
     /**
      * Остановить трансляцию для камеры
      */
@@ -212,27 +230,42 @@ class VideoStreamService(
                 ?: return@withContext Result.failure(
                     IllegalStateException("No active stream for camera: $cameraId")
                 )
-            
+
             // Останавливаем генерацию HLS
             hlsGeneratorService?.stopHlsGeneration(activeStream.streamId)
-            
+
             // Отменяем задачу стрима
             activeStream.streamJob.cancel()
-            
+
             // Останавливаем RTSP клиент
             activeStream.rtspClient.stop()
             activeStream.rtspClient.disconnect()
             activeStream.rtspClient.close()
-            
+
+            // Отправляем WebSocket событие об остановке стрима
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.CAMERAS,
+                    "stream_stopped",
+                    jsonObject {
+                        put("cameraId", cameraId)
+                        put("streamId", activeStream.streamId)
+                        put("timestamp", System.currentTimeMillis())
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for stream stop" }
+            }
+
             logger.info { "Stopped stream: ${activeStream.streamId} for camera: $cameraId" }
             Result.success(Unit)
-            
+
         } catch (e: Exception) {
             logger.error(e) { "Error stopping stream for camera: $cameraId" }
             Result.failure(e)
         }
     }
-    
+
     /**
      * Получить поток видеокадров для камеры
      */
@@ -240,7 +273,7 @@ class VideoStreamService(
         val activeStream = activeStreams[cameraId] ?: return null
         return activeStream.videoFrames
     }
-    
+
     /**
      * Получить последний кадр из потока (для снимков)
      * Внимание: это может не работать оптимально, так как SharedFlow не хранит последнее значение
@@ -252,14 +285,14 @@ class VideoStreamService(
         logger.warn { "getLatestFrame not yet fully implemented" }
         return null
     }
-    
+
     /**
      * Получить RTSP URL для прямой трансляции (для ExoPlayer)
      * В Android ExoPlayer может напрямую работать с RTSP, поэтому возвращаем оригинальный URL
      */
     suspend fun getRtspUrl(cameraId: String): String? = withContext(Dispatchers.IO) {
         val camera = cameraRepository.getCameraById(cameraId) ?: return@withContext null
-        
+
         // Если нужна авторизация, встраиваем credentials в URL
         if (camera.username != null && camera.password != null) {
             val url = camera.url
@@ -270,27 +303,27 @@ class VideoStreamService(
                 return@withContext "$protocol://${camera.username}:${camera.password}@$rest"
             }
         }
-        
+
         camera.url
     }
-    
+
     /**
      * Получить URL для HLS потока (для веб-интерфейса)
      * Возвращает URL для доступа к HLS плейлисту
      */
     fun getHlsUrl(cameraId: String): String? {
         val streamId = activeStreams[cameraId]?.streamId ?: return null
-        return hlsGeneratorService?.getPlaylistUrl(streamId) 
+        return hlsGeneratorService?.getPlaylistUrl(streamId)
             ?: "/api/v1/cameras/$cameraId/stream/hls/playlist.m3u8"
     }
-    
+
     /**
      * Получить путь к HLS плейлисту на диске
      */
     fun getHlsPlaylistPath(cameraId: String): String? {
         return activeStreams[cameraId]?.hlsPlaylistPath
     }
-    
+
     /**
      * Изменить качество HLS потока
      */
@@ -300,16 +333,16 @@ class VideoStreamService(
                 ?: return@withContext Result.failure(
                     IllegalStateException("No active stream for camera: $cameraId")
                 )
-            
+
             // Останавливаем текущую генерацию HLS
             hlsGeneratorService?.stopHlsGeneration(activeStream.streamId)
-            
+
             // Получаем RTSP URL для перезапуска с новым качеством
             val camera = cameraRepository.getCameraById(cameraId)
                 ?: return@withContext Result.failure(
                     IllegalArgumentException("Camera not found: $cameraId")
                 )
-            
+
             val rtspUrlWithAuth = if (camera.username != null && camera.password != null) {
                 val url = camera.url
                 if (!url.contains("@")) {
@@ -322,43 +355,43 @@ class VideoStreamService(
             } else {
                 camera.url
             }
-            
+
             // Запускаем генерацию HLS с новым качеством
             val hlsPlaylistPath = hlsGeneratorService?.startHlsGeneration(
                 streamId = activeStream.streamId,
                 rtspUrl = rtspUrlWithAuth,
                 quality = quality
             )
-            
+
             // Обновляем активный стрим
             activeStreams[cameraId] = activeStream.copy(
                 hlsQuality = quality,
                 hlsPlaylistPath = hlsPlaylistPath
             )
-            
+
             logger.info { "Changed stream quality to $quality for camera: $cameraId" }
             Result.success(Unit)
-            
+
         } catch (e: Exception) {
             logger.error(e) { "Error changing stream quality for camera: $cameraId" }
             Result.failure(e)
         }
     }
-    
+
     /**
      * Проверить, активна ли трансляция для камеры
      */
     fun isStreamActive(cameraId: String): Boolean {
         return activeStreams.containsKey(cameraId)
     }
-    
+
     /**
      * Получить ID активного стрима для камеры
      */
     fun getStreamId(cameraId: String): String? {
         return activeStreams[cameraId]?.streamId
     }
-    
+
     /**
      * Убедиться, что директории существуют
      */
@@ -370,7 +403,7 @@ class VideoStreamService(
             logger.error(e) { "Error creating streams directory" }
         }
     }
-    
+
     /**
      * Задача для очистки неактивных стримов
      */
@@ -386,18 +419,18 @@ class VideoStreamService(
             }
         }
     }
-    
+
     /**
      * Очистить неактивные стримы
      */
     private suspend fun cleanupInactiveStreams() = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val timeout = streamTimeoutMinutes * 60 * 1000L
-        
+
         val inactiveStreams = activeStreams.values.filter { stream ->
             now - stream.lastActivityTime > timeout
         }
-        
+
         inactiveStreams.forEach { stream ->
             try {
                 logger.info { "Cleaning up inactive stream: ${stream.streamId} for camera: ${stream.cameraId}" }
@@ -407,7 +440,7 @@ class VideoStreamService(
             }
         }
     }
-    
+
     /**
      * Закрыть сервис и освободить ресурсы
      */
@@ -422,10 +455,10 @@ class VideoStreamService(
                 }
             }
         }
-        
+
         // Очищаем HLS генератор
         hlsGeneratorService?.cleanup()
-        
+
         streamScope.cancel()
     }
 }

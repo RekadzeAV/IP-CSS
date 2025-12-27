@@ -56,3 +56,4 @@ USER appuser
 # Run the application
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
 
+

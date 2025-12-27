@@ -47,3 +47,4 @@ platforms/client-desktop-x86_64/
 ./gradlew :platforms:client-desktop-x86_64:app:packageDmg
 ```
 
+

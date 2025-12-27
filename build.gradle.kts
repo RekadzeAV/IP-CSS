@@ -59,3 +59,70 @@ tasks.register("publishToLocalMaven") {
     group = "publishing"
     description = "Publish all modules to local Maven repository (~/.m2/repository)"
 }
+
+// =============================================================================
+// NAS Packages Build Tasks
+// =============================================================================
+
+tasks.register("buildNasPackages") {
+    group = "build"
+    description = "Build all NAS packages (Synology, QNAP, Asustor, TrueNAS)"
+    dependsOn(":server:api:build")
+
+    doLast {
+        println("Building NAS packages...")
+        println("Run: ./scripts/build-nas-package.sh <type> <arch> [version]")
+        println("  Types: synology, qnap, asustor, truenas")
+        println("  Arch: x86_64, arm64")
+        println("  Example: ./scripts/build-nas-package.sh synology x86_64 Alfa-0.0.1")
+    }
+}
+
+tasks.register<Exec>("buildNasPackageSynologyX86") {
+    group = "build"
+    description = "Build Synology SPK package for x86_64"
+    dependsOn(":server:api:build")
+    commandLine("bash", "scripts/build-nas-package.sh", "synology", "x86_64", "Alfa-0.0.1")
+}
+
+tasks.register<Exec>("buildNasPackageSynologyArm") {
+    group = "build"
+    description = "Build Synology SPK package for ARM64"
+    dependsOn(":server:api:build")
+    commandLine("bash", "scripts/build-nas-package.sh", "synology", "arm64", "Alfa-0.0.1")
+}
+
+tasks.register<Exec>("buildNasPackageQnapX86") {
+    group = "build"
+    description = "Build QNAP QPKG package for x86_64"
+    dependsOn(":server:api:build")
+    commandLine("bash", "scripts/build-nas-package.sh", "qnap", "x86_64", "Alfa-0.0.1")
+}
+
+tasks.register<Exec>("buildNasPackageQnapArm") {
+    group = "build"
+    description = "Build QNAP QPKG package for ARM64"
+    dependsOn(":server:api:build")
+    commandLine("bash", "scripts/build-nas-package.sh", "qnap", "arm64", "Alfa-0.0.1")
+}
+
+tasks.register<Exec>("buildNasPackageAsustorX86") {
+    group = "build"
+    description = "Build Asustor APK package for x86_64"
+    dependsOn(":server:api:build")
+    commandLine("bash", "scripts/build-nas-package.sh", "asustor", "x86_64", "Alfa-0.0.1")
+}
+
+tasks.register<Exec>("buildNasPackageAsustorArm") {
+    group = "build"
+    description = "Build Asustor APK package for ARM64"
+    dependsOn(":server:api:build")
+    commandLine("bash", "scripts/build-nas-package.sh", "asustor", "arm64", "Alfa-0.0.1")
+}
+
+tasks.register<Exec>("buildNasPackageTruenas") {
+    group = "build"
+    description = "Build TrueNAS package (Docker/Kubernetes)"
+    dependsOn(":server:api:build")
+    commandLine("bash", "scripts/build-nas-package.sh", "truenas", "x86_64", "Alfa-0.0.1")
+}

@@ -42,3 +42,4 @@ platforms/client-desktop-arm/
 ./gradlew :platforms:client-desktop-arm:app:packageDmg -PtargetArch=arm64
 ```
 
+

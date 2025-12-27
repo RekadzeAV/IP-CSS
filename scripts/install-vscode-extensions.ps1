@@ -50,7 +50,10 @@ $extensions = @(
 
     # Project Management
     "alefragnani.project-manager",
-    "formulahendry.auto-rename-tag"
+    "formulahendry.auto-rename-tag",
+
+    # TypeScript Navigation & Code Exploration
+    "christian-kohler.path-intellisense"
 )
 
 $codeCommand = "code"
@@ -104,4 +107,5 @@ if ($failed -eq 0) {
 } else {
     Write-Host "`nНекоторые расширения не удалось установить. Проверьте логи выше." -ForegroundColor Red
 }
+
 

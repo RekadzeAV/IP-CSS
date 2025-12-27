@@ -12,8 +12,8 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
-  token: typeof window !== 'undefined' ? localStorage.getItem('token') : null,
-  isAuthenticated: typeof window !== 'undefined' ? !!localStorage.getItem('token') : false,
+  token: null, // Токен теперь в httpOnly cookie, недоступен из JavaScript
+  isAuthenticated: false, // Будет обновляться через fetchCurrentUser
   loading: false,
   error: null,
 };
@@ -55,7 +55,8 @@ const authSlice = createSlice({
       state.error = null;
     },
     setCredentials: (state, action: PayloadAction<{ token: string; user: User }>) => {
-      state.token = action.payload.token;
+      // Токен теперь в httpOnly cookie, не сохраняем его в state
+      state.token = null;
       state.user = action.payload.user;
       state.isAuthenticated = true;
     },
@@ -69,7 +70,8 @@ const authSlice = createSlice({
       })
       .addCase(login.fulfilled, (state, action) => {
         state.loading = false;
-        state.token = action.payload.token;
+        // Токены теперь в httpOnly cookies, не сохраняем их в state
+        state.token = null;
         state.user = action.payload.user;
         state.isAuthenticated = true;
         state.error = null;
@@ -105,4 +107,5 @@ const authSlice = createSlice({
 
 export const { clearError, setCredentials } = authSlice.actions;
 export default authSlice.reducer;
+
 

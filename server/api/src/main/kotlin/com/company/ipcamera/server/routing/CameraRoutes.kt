@@ -1,6 +1,12 @@
 package com.company.ipcamera.server.routing
 
 import com.company.ipcamera.server.dto.*
+import com.company.ipcamera.server.middleware.AuthorizationMiddleware.requireRole
+import com.company.ipcamera.server.middleware.validateRequest
+import com.company.ipcamera.server.validation.RequestValidator
+import com.company.ipcamera.server.websocket.WebSocketManager
+import com.company.ipcamera.server.websocket.WebSocketChannel
+import com.company.ipcamera.shared.domain.model.UserRole
 import com.company.ipcamera.shared.domain.repository.CameraRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -8,7 +14,11 @@ import io.ktor.server.auth.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.json.*
+import mu.KotlinLogging
 import org.koin.ktor.ext.inject
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * Маршруты для управления камерами
@@ -16,15 +26,17 @@ import org.koin.ktor.ext.inject
  */
 fun Route.cameraRoutes() {
     val cameraRepository: CameraRepository by inject()
-    
+
     authenticate("jwt-auth") {
         route("/cameras") {
             // GET /api/v1/cameras - список всех камер
+            // Минимум VIEWER для просмотра камер
             get {
+                requireRole(UserRole.VIEWER)
                 try {
                     val cameras = cameraRepository.getCameras()
                     val camerasDto = cameras.map { it.toDto() }
-                    
+
                     call.respond(
                         HttpStatusCode.OK,
                         ApiResponse(
@@ -44,16 +56,41 @@ fun Route.cameraRoutes() {
                     )
                 }
             }
-            
-            // POST /api/v1/cameras - создание новой камеры
+
+            // POST /api/v1/cameras - создание новой камеры (требует роль OPERATOR или выше)
             post {
+                requireRole(UserRole.OPERATOR)
+
                 try {
                     val request = call.receive<CreateCameraRequest>()
+
+                    // Валидация запроса
+                    if (!validateRequest(request) { RequestValidator.validateCreateCameraRequest(it) }) {
+                        return@post
+                    }
+
                     val camera = request.toDomain()
-                    
+
                     val result = cameraRepository.addCamera(camera)
                     result.fold(
                         onSuccess = { createdCamera ->
+                            // Отправляем WebSocket событие о новой камере
+                            try {
+                                WebSocketManager.broadcastEvent(
+                                    WebSocketChannel.CAMERAS,
+                                    "camera_created",
+                                    jsonObject {
+                                        put("cameraId", createdCamera.id)
+                                        put("name", createdCamera.name)
+                                        put("url", createdCamera.url)
+                                        put("status", createdCamera.status.name)
+                                        put("timestamp", System.currentTimeMillis())
+                                    }
+                                )
+                            } catch (e: Exception) {
+                                logger.warn(e) { "Failed to send WebSocket event for camera creation" }
+                            }
+
                             call.respond(
                                 HttpStatusCode.Created,
                                 ApiResponse(
@@ -85,13 +122,13 @@ fun Route.cameraRoutes() {
                     )
                 }
             }
-            
+
             // GET /api/v1/cameras/discover - обнаружение камер в сети
             get("/discover") {
                 try {
                     val discoveredCameras = cameraRepository.discoverCameras()
                     val camerasDto = discoveredCameras.map { it.toDto() }
-                    
+
                     call.respond(
                         HttpStatusCode.OK,
                         ApiResponse(
@@ -111,7 +148,7 @@ fun Route.cameraRoutes() {
                     )
                 }
             }
-            
+
             route("/{id}") {
                 // GET /api/v1/cameras/{id} - получение камеры по ID
                 get {
@@ -124,7 +161,7 @@ fun Route.cameraRoutes() {
                                 message = "Camera ID is required"
                             )
                         )
-                        
+
                         val camera = cameraRepository.getCameraById(id)
                         if (camera != null) {
                             call.respond(
@@ -156,9 +193,11 @@ fun Route.cameraRoutes() {
                         )
                     }
                 }
-                
-                // PUT /api/v1/cameras/{id} - обновление камеры
+
+                // PUT /api/v1/cameras/{id} - обновление камеры (требует роль OPERATOR или выше)
                 put {
+                    requireRole(UserRole.OPERATOR)
+
                     try {
                         val id = call.parameters["id"] ?: return@put call.respond(
                             HttpStatusCode.BadRequest,
@@ -168,10 +207,16 @@ fun Route.cameraRoutes() {
                                 message = "Camera ID is required"
                             )
                         )
-                        
+
                         val request = call.receive<UpdateCameraRequest>()
+
+                        // Валидация запроса
+                        if (!validateRequest(request) { RequestValidator.validateUpdateCameraRequest(it) }) {
+                            return@put
+                        }
+
                         val existingCamera = cameraRepository.getCameraById(id)
-                        
+
                         if (existingCamera == null) {
                             call.respond(
                                 HttpStatusCode.NotFound,
@@ -183,7 +228,7 @@ fun Route.cameraRoutes() {
                             )
                             return@put
                         }
-                        
+
                         // Обновляем только переданные поля
                         val updatedCamera = existingCamera.copy(
                             name = request.name ?: existingCamera.name,
@@ -191,10 +236,26 @@ fun Route.cameraRoutes() {
                             username = request.username ?: existingCamera.username,
                             password = request.password ?: existingCamera.password
                         )
-                        
+
                         val result = cameraRepository.updateCamera(updatedCamera)
                         result.fold(
                             onSuccess = { camera ->
+                                // Отправляем WebSocket событие об обновлении камеры
+                                try {
+                                    WebSocketManager.broadcastEvent(
+                                        WebSocketChannel.CAMERAS,
+                                        "camera_updated",
+                                        jsonObject {
+                                            put("cameraId", camera.id)
+                                            put("name", camera.name)
+                                            put("status", camera.status.name)
+                                            put("timestamp", System.currentTimeMillis())
+                                        }
+                                    )
+                                } catch (e: Exception) {
+                                    logger.warn(e) { "Failed to send WebSocket event for camera update" }
+                                }
+
                                 call.respond(
                                     HttpStatusCode.OK,
                                     ApiResponse(
@@ -226,9 +287,11 @@ fun Route.cameraRoutes() {
                         )
                     }
                 }
-                
-                // DELETE /api/v1/cameras/{id} - удаление камеры
+
+                // DELETE /api/v1/cameras/{id} - удаление камеры (только ADMIN)
                 delete {
+                    requireRole(UserRole.ADMIN)
+
                     try {
                         val id = call.parameters["id"] ?: return@delete call.respond(
                             HttpStatusCode.BadRequest,
@@ -238,10 +301,24 @@ fun Route.cameraRoutes() {
                                 message = "Camera ID is required"
                             )
                         )
-                        
+
                         val result = cameraRepository.removeCamera(id)
                         result.fold(
                             onSuccess = {
+                                // Отправляем WebSocket событие об удалении камеры
+                                try {
+                                    WebSocketManager.broadcastEvent(
+                                        WebSocketChannel.CAMERAS,
+                                        "camera_deleted",
+                                        jsonObject {
+                                            put("cameraId", id)
+                                            put("timestamp", System.currentTimeMillis())
+                                        }
+                                    )
+                                } catch (e: Exception) {
+                                    logger.warn(e) { "Failed to send WebSocket event for camera deletion" }
+                                }
+
                                 call.respond(
                                     HttpStatusCode.OK,
                                     ApiResponse<Unit>(
@@ -273,7 +350,7 @@ fun Route.cameraRoutes() {
                         )
                     }
                 }
-                
+
                 // POST /api/v1/cameras/{id}/test - тест подключения к камере
                 post("/test") {
                     try {
@@ -285,7 +362,7 @@ fun Route.cameraRoutes() {
                                 message = "Camera ID is required"
                             )
                         )
-                        
+
                         val camera = cameraRepository.getCameraById(id)
                         if (camera == null) {
                             call.respond(
@@ -298,10 +375,10 @@ fun Route.cameraRoutes() {
                             )
                             return@post
                         }
-                        
+
                         val testResult = cameraRepository.testConnection(camera)
                         val resultDto = testResult.toDto()
-                        
+
                         call.respond(
                             HttpStatusCode.OK,
                             ApiResponse(

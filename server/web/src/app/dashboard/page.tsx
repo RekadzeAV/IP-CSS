@@ -20,18 +20,23 @@ import Layout from '@/components/Layout/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute/ProtectedRoute';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { fetchCameras } from '@/store/slices/camerasSlice';
+import { fetchEvents, fetchStatistics } from '@/store/slices/eventsSlice';
 
 function DashboardContent() {
   const dispatch = useAppDispatch();
-  const { cameras, loading } = useAppSelector((state) => state.cameras);
+  const { cameras, loading: camerasLoading } = useAppSelector((state) => state.cameras);
+  const { events, statistics } = useAppSelector((state) => state.events);
 
   useEffect(() => {
     dispatch(fetchCameras());
+    dispatch(fetchEvents({ limit: 100 }));
+    dispatch(fetchStatistics({}));
   }, [dispatch]);
 
   const onlineCameras = cameras.filter((c) => c.status === 'ONLINE').length;
-  const totalEvents = 0; // TODO: получить из events slice
-  const totalRecordings = 0; // TODO: получить из recordings slice
+  const totalEvents = statistics?.total || events.length;
+  const totalRecordings = 0; // TODO: добавить когда будет recordingsSlice
+  const loading = camerasLoading;
 
   const stats = [
     {
@@ -112,9 +117,54 @@ function DashboardContent() {
             <Typography variant="h6" gutterBottom>
               Недавние события
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Здесь будет список последних событий (в разработке)
-            </Typography>
+            {events.length > 0 ? (
+              <Box sx={{ mt: 2 }}>
+                {events.slice(0, 5).map((event) => (
+                  <Box
+                    key={event.id}
+                    sx={{
+                      p: 1.5,
+                      mb: 1,
+                      borderRadius: 1,
+                      backgroundColor: 'action.hover',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {event.cameraName || event.cameraId}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {event.type} • {new Date(event.timestamp).toLocaleString('ru-RU')}
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        backgroundColor:
+                          event.severity === 'CRITICAL' || event.severity === 'ERROR'
+                            ? 'error.main'
+                            : event.severity === 'WARNING'
+                              ? 'warning.main'
+                              : 'info.main',
+                        color: 'white',
+                      }}
+                    >
+                      {event.severity}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                События отсутствуют
+              </Typography>
+            )}
           </Paper>
         </>
       )}

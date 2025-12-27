@@ -20,18 +20,21 @@ private val logger = KotlinLogging.logger {}
 class UserRepositoryImpl(
     private val userApiService: UserApiService
 ) : UserRepository {
-    
+
     override suspend fun login(username: String, password: String): Result<LoginResult> = withContext(Dispatchers.Default) {
         try {
             val request = LoginRequest(username = username, password = password)
             val result = userApiService.login(request)
             result.fold(
                 onSuccess = { response ->
+                    // Токены теперь хранятся в httpOnly cookies на сервере
+                    // Не сохраняем их локально для безопасности
+                    // Сервер устанавливает cookies автоматически при успешном логине
                     Result.success(
                         LoginResult(
                             user = response.user.toDomain(),
-                            token = response.token,
-                            refreshToken = response.refreshToken,
+                            token = "", // Токен в httpOnly cookie, недоступен из кода
+                            refreshToken = "", // Refresh token в httpOnly cookie
                             expiresIn = response.expiresIn
                         )
                     )
@@ -46,12 +49,12 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun logout(): Result<Unit> = withContext(Dispatchers.Default) {
         try {
             val result = userApiService.logout()
             result.fold(
-                onSuccess = { 
+                onSuccess = {
                     Result.success(Unit)
                 },
                 onError = { error ->
@@ -64,7 +67,7 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun register(
         username: String,
         email: String,
@@ -76,7 +79,7 @@ class UserRepositoryImpl(
             val result = userApiService.register(request)
             result.fold(
                 onSuccess = { response ->
-                    response.user?.let { 
+                    response.user?.let {
                         Result.success(it.toDomain())
                     } ?: Result.failure(Exception(response.message ?: "Registration failed"))
                 },
@@ -90,7 +93,7 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun getCurrentUser(): User? = withContext(Dispatchers.Default) {
         try {
             val result = userApiService.getCurrentUser()
@@ -106,7 +109,7 @@ class UserRepositoryImpl(
             null
         }
     }
-    
+
     override suspend fun updateCurrentUser(user: User): Result<User> = withContext(Dispatchers.Default) {
         try {
             val request = UpdateUserRequest(
@@ -116,7 +119,7 @@ class UserRepositoryImpl(
             )
             val result = userApiService.updateCurrentUser(request)
             result.fold(
-                onSuccess = { dto -> 
+                onSuccess = { dto ->
                     Result.success(dto.toDomain())
                 },
                 onError = { error ->
@@ -129,7 +132,7 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun getUsers(
         page: Int,
         limit: Int,
@@ -157,7 +160,7 @@ class UserRepositoryImpl(
             PaginatedResult(emptyList(), 0, page, limit, false)
         }
     }
-    
+
     override suspend fun getUserById(id: String): User? = withContext(Dispatchers.Default) {
         try {
             val result = userApiService.getUserById(id)
@@ -173,7 +176,7 @@ class UserRepositoryImpl(
             null
         }
     }
-    
+
     override suspend fun updateUser(user: User): Result<User> = withContext(Dispatchers.Default) {
         try {
             val request = UpdateUserRequest(
@@ -183,7 +186,7 @@ class UserRepositoryImpl(
             )
             val result = userApiService.updateUser(user.id, request)
             result.fold(
-                onSuccess = { dto -> 
+                onSuccess = { dto ->
                     Result.success(dto.toDomain())
                 },
                 onError = { error ->
@@ -196,12 +199,12 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun deleteUser(id: String): Result<Unit> = withContext(Dispatchers.Default) {
         try {
             val result = userApiService.deleteUser(id)
             result.fold(
-                onSuccess = { 
+                onSuccess = {
                     Result.success(Unit)
                 },
                 onError = { error ->
@@ -214,17 +217,20 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     override suspend fun refreshToken(refreshToken: String): Result<LoginResult> = withContext(Dispatchers.Default) {
         try {
-            val result = userApiService.refreshToken(refreshToken)
+            // Refresh token теперь берется из httpOnly cookie автоматически
+            // Передаем пустую строку, сервер прочитает token из cookie
+            val result = userApiService.refreshToken("")
             result.fold(
                 onSuccess = { response ->
+                    // Новые токены устанавливаются в cookies сервером
                     Result.success(
                         LoginResult(
                             user = response.user.toDomain(),
-                            token = response.token,
-                            refreshToken = response.refreshToken,
+                            token = "", // Токен в httpOnly cookie
+                            refreshToken = "", // Refresh token в httpOnly cookie
                             expiresIn = response.expiresIn
                         )
                     )
@@ -239,7 +245,7 @@ class UserRepositoryImpl(
             Result.failure(e)
         }
     }
-    
+
     private fun UserResponse.toDomain(): User {
         return User(
             id = id,
@@ -254,4 +260,5 @@ class UserRepositoryImpl(
         )
     }
 }
+
 

@@ -150,6 +150,10 @@ sqldelight {
         create("CameraDatabase") {
             packageName.set("com.company.ipcamera.shared.database")
             generateAsync.set(true)
+            // Настройка миграций
+            migrationOutputDirectory.set(file("src/commonMain/sqldelight/migrations"))
+            // Версия базы данных
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight"))
         }
     }
 }
@@ -162,7 +166,7 @@ afterEvaluate {
                 if (this is MavenPublication) {
                     groupId = "com.company.ipcamera"
                     version = project.version.toString()
-                    
+
                     pom {
                         name.set("IP Camera Shared")
                         description.set("Shared Kotlin Multiplatform module for IP Camera Surveillance System")

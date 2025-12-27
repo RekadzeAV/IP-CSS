@@ -202,6 +202,225 @@ class CameraEntityMapperTest {
         assertEquals(ptzConfig.enabled, domainCamera.ptz?.enabled)
         assertEquals(ptzConfig.type, domainCamera.ptz?.type)
     }
+
+    @Test
+    fun `test toDomain with invalid PTZ config JSON throws exception`() {
+        // Arrange - некорректный JSON в ptz_config
+        val dbCamera = com.company.ipcamera.shared.database.Camera(
+            id = "camera-invalid-ptz",
+            name = "Invalid PTZ Camera",
+            url = "rtsp://192.168.1.100:554/stream",
+            username = null,
+            password = null,
+            model = null,
+            status = "ONLINE",
+            resolution_width = null,
+            resolution_height = null,
+            fps = 25L,
+            bitrate = 4096L,
+            codec = "H.264",
+            audio = 0L,
+            ptz_config = "{invalid json}", // Некорректный JSON
+            streams = null,
+            settings = "{}",
+            statistics = null,
+            created_at = 1000L,
+            updated_at = 1000L,
+            last_seen = null
+        )
+
+        // Act & Assert - текущая реализация маппера выбрасывает исключение при некорректном JSON
+        // Это правильное поведение, так как некорректные данные должны быть обработаны на уровне репозитория
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            mapper.toDomain(dbCamera)
+        }
+    }
+
+    @Test
+    fun `test toDomain with invalid streams JSON throws exception`() {
+        // Arrange - некорректный JSON в streams
+        val dbCamera = com.company.ipcamera.shared.database.Camera(
+            id = "camera-invalid-streams",
+            name = "Invalid Streams Camera",
+            url = "rtsp://192.168.1.100:554/stream",
+            username = null,
+            password = null,
+            model = null,
+            status = "ONLINE",
+            resolution_width = null,
+            resolution_height = null,
+            fps = 25L,
+            bitrate = 4096L,
+            codec = "H.264",
+            audio = 0L,
+            ptz_config = null,
+            streams = "{invalid json}", // Некорректный JSON
+            settings = "{}",
+            statistics = null,
+            created_at = 1000L,
+            updated_at = 1000L,
+            last_seen = null
+        )
+
+        // Act & Assert - текущая реализация маппера выбрасывает исключение при некорректном JSON
+        assertFailsWith<kotlinx.serialization.SerializationException> {
+            mapper.toDomain(dbCamera)
+        }
+    }
+
+    @Test
+    fun `test toDomain with boundary resolution values`() {
+        // Arrange - минимальные и максимальные значения разрешения
+        val minResolution = com.company.ipcamera.shared.database.Camera(
+            id = "camera-min-res",
+            name = "Min Resolution Camera",
+            url = "rtsp://192.168.1.100:554/stream",
+            username = null,
+            password = null,
+            model = null,
+            status = "ONLINE",
+            resolution_width = 1L, // Минимальное значение
+            resolution_height = 1L,
+            fps = 1L,
+            bitrate = 1L,
+            codec = "H.264",
+            audio = 0L,
+            ptz_config = null,
+            streams = null,
+            settings = "{}",
+            statistics = null,
+            created_at = 1000L,
+            updated_at = 1000L,
+            last_seen = null
+        )
+
+        val maxResolution = com.company.ipcamera.shared.database.Camera(
+            id = "camera-max-res",
+            name = "Max Resolution Camera",
+            url = "rtsp://192.168.1.100:554/stream",
+            username = null,
+            password = null,
+            model = null,
+            status = "ONLINE",
+            resolution_width = 7680L, // 8K разрешение
+            resolution_height = 4320L,
+            fps = 60L,
+            bitrate = 100000L,
+            codec = "H.265",
+            audio = 1L,
+            ptz_config = null,
+            streams = null,
+            settings = "{}",
+            statistics = null,
+            created_at = 1000L,
+            updated_at = 1000L,
+            last_seen = null
+        )
+
+        // Act
+        val minDomainCamera = mapper.toDomain(minResolution)
+        val maxDomainCamera = mapper.toDomain(maxResolution)
+
+        // Assert
+        assertNotNull(minDomainCamera.resolution)
+        assertEquals(1, minDomainCamera.resolution?.width)
+        assertEquals(1, minDomainCamera.resolution?.height)
+
+        assertNotNull(maxDomainCamera.resolution)
+        assertEquals(7680, maxDomainCamera.resolution?.width)
+        assertEquals(4320, maxDomainCamera.resolution?.height)
+    }
+
+    @Test
+    fun `test toDatabase with all StreamConfig types`() {
+        // Arrange
+        val streamConfigs = listOf(
+            TestDataFactory.createTestStreamConfig(type = StreamType.MAIN),
+            TestDataFactory.createTestStreamConfig(type = StreamType.SUB)
+        )
+        val camera = TestDataFactory.createTestCamera(
+            id = "camera-streams",
+            streams = streamConfigs
+        )
+
+        // Act
+        val dbCamera = mapper.toDatabase(camera)
+        val convertedCamera = mapper.toDomain(dbCamera)
+
+        // Assert
+        assertEquals(2, convertedCamera.streams.size)
+        assertEquals(StreamType.MAIN, convertedCamera.streams[0].type)
+        assertEquals(StreamType.SUB, convertedCamera.streams[1].type)
+    }
+
+    @Test
+    fun `test toDatabase with all PTZConfig types`() {
+        // Arrange
+        val ptzTypes = listOf(PTZType.PTZ, PTZType.PT, PTZType.FIXED)
+
+        ptzTypes.forEach { ptzType ->
+            val camera = TestDataFactory.createTestCamera(
+                id = "camera-ptz-$ptzType",
+                ptz = TestDataFactory.createTestPTZConfig(type = ptzType)
+            )
+
+            // Act
+            val dbCamera = mapper.toDatabase(camera)
+            val convertedCamera = mapper.toDomain(dbCamera)
+
+            // Assert
+            assertNotNull(convertedCamera.ptz)
+            assertEquals(ptzType, convertedCamera.ptz?.type)
+        }
+    }
+
+    @Test
+    fun `test toDatabase preserves timestamp values`() {
+        // Arrange - граничные значения временных меток
+        val minTimestamp = 0L
+        val maxTimestamp = Long.MAX_VALUE
+        val currentTimestamp = System.currentTimeMillis()
+
+        val cameraMin = TestDataFactory.createTestCamera(
+            id = "camera-min-time",
+            createdAt = minTimestamp,
+            updatedAt = minTimestamp,
+            lastSeen = minTimestamp
+        )
+
+        val cameraMax = TestDataFactory.createTestCamera(
+            id = "camera-max-time",
+            createdAt = maxTimestamp,
+            updatedAt = maxTimestamp,
+            lastSeen = maxTimestamp
+        )
+
+        val cameraCurrent = TestDataFactory.createTestCamera(
+            id = "camera-current-time",
+            createdAt = currentTimestamp,
+            updatedAt = currentTimestamp,
+            lastSeen = currentTimestamp
+        )
+
+        val cameraNullLastSeen = TestDataFactory.createTestCamera(
+            id = "camera-null-last-seen",
+            createdAt = currentTimestamp,
+            updatedAt = currentTimestamp,
+            lastSeen = null
+        )
+
+        // Act
+        val dbCameraMin = mapper.toDatabase(cameraMin)
+        val dbCameraMax = mapper.toDatabase(cameraMax)
+        val dbCameraCurrent = mapper.toDatabase(cameraCurrent)
+        val dbCameraNullLastSeen = mapper.toDatabase(cameraNullLastSeen)
+
+        // Assert
+        assertEquals(minTimestamp, dbCameraMin.created_at)
+        assertEquals(maxTimestamp, dbCameraMax.created_at)
+        assertEquals(currentTimestamp, dbCameraCurrent.created_at)
+        assertNull(dbCameraNullLastSeen.last_seen)
+    }
 }
 
 

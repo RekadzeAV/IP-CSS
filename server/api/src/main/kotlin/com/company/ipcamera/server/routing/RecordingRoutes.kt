@@ -1,9 +1,11 @@
 package com.company.ipcamera.server.routing
 
 import com.company.ipcamera.server.dto.*
+import com.company.ipcamera.server.middleware.AuthorizationMiddleware.requireRole
 import com.company.ipcamera.server.service.VideoRecordingService
 import com.company.ipcamera.shared.domain.model.Quality
 import com.company.ipcamera.shared.domain.model.RecordingFormat
+import com.company.ipcamera.shared.domain.model.UserRole
 import com.company.ipcamera.shared.domain.repository.CameraRepository
 import com.company.ipcamera.shared.domain.repository.RecordingRepository
 import io.ktor.http.*
@@ -26,18 +28,20 @@ fun Route.recordingRoutes() {
     val recordingRepository: RecordingRepository by inject()
     val videoRecordingService: VideoRecordingService by inject()
     val cameraRepository: CameraRepository by inject()
-    
+
     authenticate("jwt-auth") {
         route("/recordings") {
             // GET /api/v1/recordings - список записей с фильтрацией и пагинацией
+            // Минимум VIEWER для просмотра записей
             get {
+                requireRole(UserRole.VIEWER)
                 try {
                     val cameraId = call.request.queryParameters["cameraId"]
                     val startTime = call.request.queryParameters["startTime"]?.toLongOrNull()
                     val endTime = call.request.queryParameters["endTime"]?.toLongOrNull()
                     val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
                     val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 20
-                    
+
                     val result = recordingRepository.getRecordings(
                         cameraId = cameraId,
                         startTime = startTime,
@@ -45,7 +49,7 @@ fun Route.recordingRoutes() {
                         page = page,
                         limit = limit
                     )
-                    
+
                     call.respond(
                         HttpStatusCode.OK,
                         ApiResponse(
@@ -66,10 +70,12 @@ fun Route.recordingRoutes() {
                     )
                 }
             }
-            
+
             route("/{id}") {
                 // GET /api/v1/recordings/{id} - получение записи по ID
+                // Минимум VIEWER для просмотра записи
                 get {
+                    requireRole(UserRole.VIEWER)
                     try {
                         val id = call.parameters["id"] ?: return@get call.respond(
                             HttpStatusCode.BadRequest,
@@ -79,7 +85,7 @@ fun Route.recordingRoutes() {
                                 message = "Recording ID is required"
                             )
                         )
-                        
+
                         val recording = recordingRepository.getRecordingById(id)
                         if (recording != null) {
                             call.respond(
@@ -112,9 +118,11 @@ fun Route.recordingRoutes() {
                         )
                     }
                 }
-                
+
                 // DELETE /api/v1/recordings/{id} - удаление записи
+                // Минимум OPERATOR для удаления записей
                 delete {
+                    requireRole(UserRole.OPERATOR)
                     try {
                         val id = call.parameters["id"] ?: return@delete call.respond(
                             HttpStatusCode.BadRequest,
@@ -124,7 +132,7 @@ fun Route.recordingRoutes() {
                                 message = "Recording ID is required"
                             )
                         )
-                        
+
                         val result = recordingRepository.deleteRecording(id)
                         result.fold(
                             onSuccess = {
@@ -162,9 +170,11 @@ fun Route.recordingRoutes() {
                         )
                     }
                 }
-                
+
                 // GET /api/v1/recordings/{id}/download - получение URL для скачивания
+                // Минимум VIEWER для скачивания записей
                 get("/download") {
+                    requireRole(UserRole.VIEWER)
                     try {
                         val id = call.parameters["id"] ?: return@get call.respond(
                             HttpStatusCode.BadRequest,
@@ -174,7 +184,7 @@ fun Route.recordingRoutes() {
                                 message = "Recording ID is required"
                             )
                         )
-                        
+
                         val result = recordingRepository.getDownloadUrl(id)
                         result.fold(
                             onSuccess = { url ->
@@ -211,9 +221,11 @@ fun Route.recordingRoutes() {
                         )
                     }
                 }
-                
+
                 // POST /api/v1/recordings/{id}/export - экспорт записи
+                // Минимум OPERATOR для экспорта записей
                 post("/export") {
+                    requireRole(UserRole.OPERATOR)
                     try {
                         val id = call.parameters["id"] ?: return@post call.respond(
                             HttpStatusCode.BadRequest,
@@ -223,11 +235,11 @@ fun Route.recordingRoutes() {
                                 message = "Recording ID is required"
                             )
                         )
-                        
+
                         // TODO: Получить параметры экспорта из тела запроса
                         val format = call.request.queryParameters["format"] ?: "mp4"
                         val quality = call.request.queryParameters["quality"] ?: "medium"
-                        
+
                         val result = recordingRepository.exportRecording(id, format, quality)
                         result.fold(
                             onSuccess = { exportUrl ->
@@ -265,12 +277,14 @@ fun Route.recordingRoutes() {
                     }
                 }
             }
-            
+
             // POST /api/v1/recordings/start - начать запись
+            // Минимум OPERATOR для начала записи
             post("/start") {
+                requireRole(UserRole.OPERATOR)
                 try {
                     val request = call.receive<StartRecordingRequest>()
-                    
+
                     // Получаем камеру
                     val camera = cameraRepository.getCameraById(request.cameraId)
                         ?: return@post call.respond(
@@ -281,20 +295,20 @@ fun Route.recordingRoutes() {
                                 message = "Camera not found: ${request.cameraId}"
                             )
                         )
-                    
+
                     // Парсим формат и качество
                     val format = try {
                         RecordingFormat.valueOf(request.format?.uppercase() ?: "MP4")
                     } catch (e: Exception) {
                         RecordingFormat.MP4
                     }
-                    
+
                     val quality = try {
                         Quality.valueOf(request.quality?.uppercase() ?: "HIGH")
                     } catch (e: Exception) {
                         Quality.HIGH
                     }
-                    
+
                     // Начинаем запись
                     val result = videoRecordingService.startRecording(
                         camera = camera,
@@ -302,13 +316,13 @@ fun Route.recordingRoutes() {
                         quality = quality,
                         duration = request.duration
                     )
-                    
+
                     result.fold(
                         onSuccess = { recording ->
                             val estimatedEndTime = if (request.duration != null) {
                                 recording.startTime + request.duration
                             } else null
-                            
+
                             call.respond(
                                 HttpStatusCode.OK,
                                 ApiResponse(
@@ -347,9 +361,11 @@ fun Route.recordingRoutes() {
                     )
                 }
             }
-            
+
             // POST /api/v1/recordings/stop/{cameraId} - остановить запись
+            // Минимум OPERATOR для остановки записи
             post("/stop/{cameraId}") {
+                requireRole(UserRole.OPERATOR)
                 try {
                     val cameraId = call.parameters["cameraId"] ?: return@post call.respond(
                         HttpStatusCode.BadRequest,
@@ -359,9 +375,9 @@ fun Route.recordingRoutes() {
                             message = "Camera ID is required"
                         )
                     )
-                    
+
                     val result = videoRecordingService.stopRecording(cameraId)
-                    
+
                     result.fold(
                         onSuccess = { recording ->
                             call.respond(
@@ -397,9 +413,11 @@ fun Route.recordingRoutes() {
                     )
                 }
             }
-            
+
             // POST /api/v1/recordings/pause/{cameraId} - приостановить запись
+            // Минимум OPERATOR для приостановки записи
             post("/pause/{cameraId}") {
+                requireRole(UserRole.OPERATOR)
                 try {
                     val cameraId = call.parameters["cameraId"] ?: return@post call.respond(
                         HttpStatusCode.BadRequest,
@@ -409,9 +427,9 @@ fun Route.recordingRoutes() {
                             message = "Camera ID is required"
                         )
                     )
-                    
+
                     val result = videoRecordingService.pauseRecording(cameraId)
-                    
+
                     result.fold(
                         onSuccess = { recording ->
                             call.respond(
@@ -447,9 +465,11 @@ fun Route.recordingRoutes() {
                     )
                 }
             }
-            
+
             // POST /api/v1/recordings/resume/{cameraId} - возобновить запись
+            // Минимум OPERATOR для возобновления записи
             post("/resume/{cameraId}") {
+                requireRole(UserRole.OPERATOR)
                 try {
                     val cameraId = call.parameters["cameraId"] ?: return@post call.respond(
                         HttpStatusCode.BadRequest,
@@ -459,9 +479,9 @@ fun Route.recordingRoutes() {
                             message = "Camera ID is required"
                         )
                     )
-                    
+
                     val result = videoRecordingService.resumeRecording(cameraId)
-                    
+
                     result.fold(
                         onSuccess = { recording ->
                             call.respond(

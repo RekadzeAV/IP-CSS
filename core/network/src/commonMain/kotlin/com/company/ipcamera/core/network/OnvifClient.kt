@@ -55,35 +55,47 @@ class OnvifClient(
 
             // Преобразование обнаруженных устройств в камеры
             for (device in discoveredDevices) {
-                for (xAddr in device.xAddrs) {
-                    try {
-                        // Нормализация URL
-                        val normalizedUrl = normalizeUrl(xAddr)
+                // Фильтрация по типам устройств (только NetworkVideoTransmitter)
+                val isVideoTransmitter = device.types.any { type ->
+                    type.contains("NetworkVideoTransmitter", ignoreCase = true) ||
+                    type.contains("Video", ignoreCase = true) ||
+                    type.contains("Camera", ignoreCase = true)
+                }
 
-                        // Попытка получить информацию о камере
-                        val deviceInfo = getDeviceInformation(normalizedUrl)
-                        val capabilities = getCapabilities(normalizedUrl)
+                // Если типы не указаны, считаем устройство валидным (некоторые камеры не указывают типы)
+                if (device.types.isEmpty() || isVideoTransmitter) {
+                    for (xAddr in device.xAddrs) {
+                        try {
+                            // Нормализация URL
+                            val normalizedUrl = normalizeUrl(xAddr)
 
-                        val camera = DiscoveredCamera(
-                            url = normalizedUrl,
-                            name = deviceInfo?.model ?: "Unknown Camera",
-                            manufacturer = deviceInfo?.manufacturer,
-                            model = deviceInfo?.model,
-                            capabilities = capabilities
-                        )
-                        discoveredCameras.add(camera)
-                        logger.info { "Discovered camera: ${camera.name} at ${camera.url}" }
-                    } catch (e: Exception) {
-                        logger.warn(e) { "Error getting information for device at $xAddr" }
-                        // Добавляем камеру даже без полной информации
-                        discoveredCameras.add(
-                            DiscoveredCamera(
-                                url = normalizeUrl(xAddr),
-                                name = "ONVIF Device",
-                                capabilities = null
+                            // Попытка получить информацию о камере
+                            val deviceInfo = getDeviceInformation(normalizedUrl)
+                            val capabilities = getCapabilities(normalizedUrl)
+
+                            val camera = DiscoveredCamera(
+                                url = normalizedUrl,
+                                name = deviceInfo?.model ?: "Unknown Camera",
+                                manufacturer = deviceInfo?.manufacturer,
+                                model = deviceInfo?.model,
+                                capabilities = capabilities
                             )
-                        )
+                            discoveredCameras.add(camera)
+                            logger.info { "Discovered camera: ${camera.name} at ${camera.url} (types: ${device.types.joinToString()})" }
+                        } catch (e: Exception) {
+                            logger.warn(e) { "Error getting information for device at $xAddr" }
+                            // Добавляем камеру даже без полной информации
+                            discoveredCameras.add(
+                                DiscoveredCamera(
+                                    url = normalizeUrl(xAddr),
+                                    name = "ONVIF Device",
+                                    capabilities = null
+                                )
+                            )
+                        }
                     }
+                } else {
+                    logger.debug { "Skipping device with types: ${device.types.joinToString()} (not a video transmitter)" }
                 }
             }
 
@@ -472,7 +484,7 @@ class OnvifClient(
         retries: Int = 2
     ): String {
         var lastException: Exception? = null
-        
+
         repeat(retries + 1) { attempt ->
             try {
                 val response = client.post(url) {
@@ -519,23 +531,25 @@ class OnvifClient(
                 }
             }
         }
-        
+
         throw lastException ?: Exception("SOAP request failed after $retries retries")
     }
 
     private fun parseCapabilities(xml: String): OnvifCapabilities? {
         return try {
-            // Используем XML парсер для более надежного парсинга
-            val xmlParser = Xml {
-                ignoreUnknownChildren = true
-                coerceInputValues = true
-                isCoerceInputValues = true
-            }
+            val xmlParser = createXmlParser()
 
             // Пытаемся распарсить как SOAP Envelope
             try {
                 val envelope = xmlParser.decodeFromString<SoapEnvelope>(xml)
-                val capabilities = envelope.body.capabilities
+
+                // Проверка на SOAP Fault
+                if (envelope.body.fault != null) {
+                    logger.warn { "SOAP Fault received: ${envelope.body.fault.reason?.text ?: "Unknown error"}" }
+                    return null
+                }
+
+                val capabilities = envelope.body.capabilities?.capabilities
 
                 if (capabilities != null) {
                     OnvifCapabilities(
@@ -546,40 +560,16 @@ class OnvifClient(
                 } else {
                     // Fallback на упрощенный парсинг
                     logger.debug { "Capabilities not found in SOAP body, using fallback parsing" }
-                    val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
-                    val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
-                    val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
-
-                    OnvifCapabilities(
-                        deviceServiceUrl = deviceUrl,
-                        mediaServiceUrl = mediaUrl,
-                        ptzServiceUrl = ptzUrl
-                    )
+                    parseCapabilitiesFallback(xml)
                 }
             } catch (e: kotlinx.serialization.SerializationException) {
                 // Fallback на упрощенный парсинг если XML парсинг не удался
                 logger.debug(e) { "XML serialization failed, using fallback regex parsing" }
-                val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
-                val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
-                val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
-
-                OnvifCapabilities(
-                    deviceServiceUrl = deviceUrl,
-                    mediaServiceUrl = mediaUrl,
-                    ptzServiceUrl = ptzUrl
-                )
+                parseCapabilitiesFallback(xml)
             } catch (e: Exception) {
                 // Fallback на упрощенный парсинг если XML парсинг не удался
                 logger.debug(e) { "XML parsing failed with unexpected error, using fallback" }
-                val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
-                val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
-                val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
-
-                OnvifCapabilities(
-                    deviceServiceUrl = deviceUrl,
-                    mediaServiceUrl = mediaUrl,
-                    ptzServiceUrl = ptzUrl
-                )
+                parseCapabilitiesFallback(xml)
             }
         } catch (e: Exception) {
             logger.error(e) { "Error parsing capabilities XML" }
@@ -587,77 +577,222 @@ class OnvifClient(
         }
     }
 
+    private fun parseCapabilitiesFallback(xml: String): OnvifCapabilities? {
+        val deviceUrl = extractXmlValue(xml, "Device", "XAddr")
+        val mediaUrl = extractXmlValue(xml, "Media", "XAddr")
+        val ptzUrl = extractXmlValue(xml, "PTZ", "XAddr")
+
+        return OnvifCapabilities(
+            deviceServiceUrl = deviceUrl,
+            mediaServiceUrl = mediaUrl,
+            ptzServiceUrl = ptzUrl
+        )
+    }
+
     private fun parseDeviceInformation(xml: String): DeviceInformation? {
         return try {
-            DeviceInformation(
-                manufacturer = extractXmlValue(xml, "Manufacturer") ?: "Unknown",
-                model = extractXmlValue(xml, "Model") ?: "Unknown",
-                firmwareVersion = extractXmlValue(xml, "FirmwareVersion") ?: "Unknown",
-                serialNumber = extractXmlValue(xml, "SerialNumber") ?: "Unknown",
-                hardwareId = extractXmlValue(xml, "HardwareId") ?: "Unknown"
-            )
+            val xmlParser = createXmlParser()
+
+            // Пытаемся распарсить как SOAP Envelope
+            try {
+                val envelope = xmlParser.decodeFromString<SoapEnvelope>(xml)
+
+                // Проверка на SOAP Fault
+                if (envelope.body.fault != null) {
+                    logger.warn { "SOAP Fault received: ${envelope.body.fault.reason?.text ?: "Unknown error"}" }
+                    return null
+                }
+
+                val deviceInfo = envelope.body.deviceInformation
+
+                if (deviceInfo != null) {
+                    DeviceInformation(
+                        manufacturer = deviceInfo.manufacturer ?: "Unknown",
+                        model = deviceInfo.model ?: "Unknown",
+                        firmwareVersion = deviceInfo.firmwareVersion ?: "Unknown",
+                        serialNumber = deviceInfo.serialNumber ?: "Unknown",
+                        hardwareId = deviceInfo.hardwareId ?: "Unknown"
+                    )
+                } else {
+                    // Fallback на упрощенный парсинг
+                    logger.debug { "DeviceInformation not found in SOAP body, using fallback parsing" }
+                    parseDeviceInformationFallback(xml)
+                }
+            } catch (e: kotlinx.serialization.SerializationException) {
+                // Fallback на упрощенный парсинг если XML парсинг не удался
+                logger.debug(e) { "XML serialization failed, using fallback regex parsing" }
+                parseDeviceInformationFallback(xml)
+            } catch (e: Exception) {
+                // Fallback на упрощенный парсинг если XML парсинг не удался
+                logger.debug(e) { "XML parsing failed with unexpected error, using fallback" }
+                parseDeviceInformationFallback(xml)
+            }
         } catch (e: Exception) {
             logger.error(e) { "Error parsing device information" }
             null
         }
     }
 
+    private fun parseDeviceInformationFallback(xml: String): DeviceInformation? {
+        return DeviceInformation(
+            manufacturer = extractXmlValue(xml, "Manufacturer") ?: "Unknown",
+            model = extractXmlValue(xml, "Model") ?: "Unknown",
+            firmwareVersion = extractXmlValue(xml, "FirmwareVersion") ?: "Unknown",
+            serialNumber = extractXmlValue(xml, "SerialNumber") ?: "Unknown",
+            hardwareId = extractXmlValue(xml, "HardwareId") ?: "Unknown"
+        )
+    }
+
     private fun parseProfiles(xml: String): List<OnvifProfile> {
         return try {
-            // Упрощенный парсинг - в продакшене нужен полноценный XML парсер
-            val result = mutableListOf<OnvifProfile>()
+            val xmlParser = createXmlParser()
 
-            // Поиск всех Profile элементов
-            val profileRegex = Regex("<trt:Profile[^>]*token=\"([^\"]+)\"[^>]*>")
-            val matches = profileRegex.findAll(xml)
+            // Пытаемся распарсить как SOAP Envelope
+            try {
+                val envelope = xmlParser.decodeFromString<SoapEnvelope>(xml)
 
-            for (match in matches) {
-                val token = match.groupValues[1]
-                val name = extractXmlValue(xml, "Name") ?: token
+                // Проверка на SOAP Fault
+                if (envelope.body.fault != null) {
+                    logger.warn { "SOAP Fault received: ${envelope.body.fault.reason?.text ?: "Unknown error"}" }
+                    return emptyList()
+                }
 
-                // Попытка извлечь информацию о видео
-                val width = extractXmlValue(xml, "Width")?.toIntOrNull() ?: 1920
-                val height = extractXmlValue(xml, "Height")?.toIntOrNull() ?: 1080
-                val codec = extractXmlValue(xml, "Encoding") ?: "H.264"
-                val fps = extractXmlValue(xml, "FrameRateLimit")?.toIntOrNull() ?: 25
+                val profilesResponse = envelope.body.profiles
+                val profiles = profilesResponse?.profiles
 
-                result.add(
-                    OnvifProfile(
-                        token = token,
-                        name = name,
-                        videoResolution = Resolution(width, height),
-                        fps = fps,
-                        codec = codec
-                    )
-                )
+                if (profiles != null && profiles.isNotEmpty()) {
+                    profiles.mapNotNull { profileXml ->
+                        try {
+                            val encoderConfig = profileXml.videoEncoderConfiguration
+                            val resolution = encoderConfig?.resolution
+                            val width = resolution?.width ?: 1920
+                            val height = resolution?.height ?: 1080
+                            val codec = encoderConfig?.encoding ?: "H.264"
+                            val fps = encoderConfig?.rateControl?.frameRateLimit ?: 25
+
+                            OnvifProfile(
+                                token = profileXml.token,
+                                name = profileXml.name ?: profileXml.token,
+                                videoResolution = Resolution(width, height),
+                                fps = fps,
+                                codec = codec
+                            )
+                        } catch (e: Exception) {
+                            logger.warn(e) { "Error parsing profile ${profileXml.token}" }
+                            null
+                        }
+                    }
+                } else {
+                    // Fallback на упрощенный парсинг
+                    logger.debug { "Profiles not found in SOAP body, using fallback parsing" }
+                    parseProfilesFallback(xml)
+                }
+            } catch (e: kotlinx.serialization.SerializationException) {
+                // Fallback на упрощенный парсинг если XML парсинг не удался
+                logger.debug(e) { "XML serialization failed, using fallback regex parsing" }
+                parseProfilesFallback(xml)
+            } catch (e: Exception) {
+                // Fallback на упрощенный парсинг если XML парсинг не удался
+                logger.debug(e) { "XML parsing failed with unexpected error, using fallback" }
+                parseProfilesFallback(xml)
             }
-
-            if (result.isEmpty()) {
-                // Fallback: создаем один профиль по умолчанию
-                result.add(
-                    OnvifProfile(
-                        token = "Profile1",
-                        name = "Profile1",
-                        videoResolution = Resolution(1920, 1080),
-                        fps = 25,
-                        codec = "H.264"
-                    )
-                )
-            }
-
-            result
         } catch (e: Exception) {
             logger.error(e) { "Error parsing profiles" }
             emptyList()
         }
     }
 
+    private fun parseProfilesFallback(xml: String): List<OnvifProfile> {
+        val result = mutableListOf<OnvifProfile>()
+
+        // Поиск всех Profile элементов
+        val profileRegex = Regex("<trt:Profile[^>]*token=\"([^\"]+)\"[^>]*>")
+        val matches = profileRegex.findAll(xml)
+
+        for (match in matches) {
+            val token = match.groupValues[1]
+            val name = extractXmlValue(xml, "Name") ?: token
+
+            // Попытка извлечь информацию о видео
+            val width = extractXmlValue(xml, "Width")?.toIntOrNull() ?: 1920
+            val height = extractXmlValue(xml, "Height")?.toIntOrNull() ?: 1080
+            val codec = extractXmlValue(xml, "Encoding") ?: "H.264"
+            val fps = extractXmlValue(xml, "FrameRateLimit")?.toIntOrNull() ?: 25
+
+            result.add(
+                OnvifProfile(
+                    token = token,
+                    name = name,
+                    videoResolution = Resolution(width, height),
+                    fps = fps,
+                    codec = codec
+                )
+            )
+        }
+
+        if (result.isEmpty()) {
+            // Fallback: создаем один профиль по умолчанию
+            result.add(
+                OnvifProfile(
+                    token = "Profile1",
+                    name = "Profile1",
+                    videoResolution = Resolution(1920, 1080),
+                    fps = 25,
+                    codec = "H.264"
+                )
+            )
+        }
+
+        return result
+    }
+
     private fun parseStreamUri(xml: String): String? {
         return try {
-            extractXmlValue(xml, "Uri")
+            val xmlParser = createXmlParser()
+
+            // Пытаемся распарсить как SOAP Envelope
+            try {
+                val envelope = xmlParser.decodeFromString<SoapEnvelope>(xml)
+
+                // Проверка на SOAP Fault
+                if (envelope.body.fault != null) {
+                    logger.warn { "SOAP Fault received: ${envelope.body.fault.reason?.text ?: "Unknown error"}" }
+                    return null
+                }
+
+                val streamUriResponse = envelope.body.streamUri
+                streamUriResponse?.uri ?: parseStreamUriFallback(xml)
+            } catch (e: kotlinx.serialization.SerializationException) {
+                // Fallback на упрощенный парсинг если XML парсинг не удался
+                logger.debug(e) { "XML serialization failed, using fallback regex parsing" }
+                parseStreamUriFallback(xml)
+            } catch (e: Exception) {
+                // Fallback на упрощенный парсинг если XML парсинг не удался
+                logger.debug(e) { "XML parsing failed with unexpected error, using fallback" }
+                parseStreamUriFallback(xml)
+            }
         } catch (e: Exception) {
             logger.error(e) { "Error parsing stream URI" }
             null
+        }
+    }
+
+    private fun parseStreamUriFallback(xml: String): String? {
+        return extractXmlValue(xml, "Uri")
+    }
+
+    /**
+     * Создать настроенный XML парсер для SOAP
+     */
+    private fun createXmlParser(): Xml {
+        return Xml {
+            ignoreUnknownChildren = true
+            coerceInputValues = true
+            isCoerceInputValues = true
+            // Поддержка различных префиксов для namespaces
+            autoPolymorphic = false
+            // Игнорировать неизвестные элементы для лучшей совместимости
+            ignoreUnknownNamespaces = true
         }
     }
 
@@ -769,7 +904,35 @@ data class SoapBody(
     @XmlElement(true) val capabilities: CapabilitiesResponse? = null,
     @XmlElement(true) val deviceInformation: DeviceInformationResponse? = null,
     @XmlElement(true) val profiles: ProfilesResponse? = null,
-    @XmlElement(true) val streamUri: StreamUriResponse? = null
+    @XmlElement(true) val streamUri: StreamUriResponse? = null,
+    @XmlElement(true) val fault: SoapFault? = null
+)
+
+@Serializable
+@XmlSerialName("Fault", namespace = "http://www.w3.org/2003/05/soap-envelope", prefix = "s")
+data class SoapFault(
+    @XmlElement(true) val code: FaultCode? = null,
+    @XmlElement(true) val reason: FaultReason? = null,
+    @XmlElement(true) val detail: String? = null
+)
+
+@Serializable
+@XmlSerialName("Code", namespace = "http://www.w3.org/2003/05/soap-envelope", prefix = "s")
+data class FaultCode(
+    @XmlElement(true) val value: String? = null,
+    @XmlElement(true) val subcode: FaultSubcode? = null
+)
+
+@Serializable
+@XmlSerialName("Subcode", namespace = "http://www.w3.org/2003/05/soap-envelope", prefix = "s")
+data class FaultSubcode(
+    @XmlElement(true) val value: String? = null
+)
+
+@Serializable
+@XmlSerialName("Reason", namespace = "http://www.w3.org/2003/05/soap-envelope", prefix = "s")
+data class FaultReason(
+    @XmlElement(true) val text: String? = null
 )
 
 @Serializable
@@ -789,19 +952,19 @@ data class Capabilities(
 @Serializable
 @XmlSerialName("Device", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
 data class DeviceCapabilities(
-    @XmlElement(true) val xAddr: String? = null
+    @XmlAttribute(true) val xAddr: String? = null
 )
 
 @Serializable
 @XmlSerialName("Media", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
 data class MediaCapabilities(
-    @XmlElement(true) val xAddr: String? = null
+    @XmlAttribute(true) val xAddr: String? = null
 )
 
 @Serializable
 @XmlSerialName("PTZ", namespace = "http://www.onvif.org/ver10/device/wsdl", prefix = "tds")
 data class PtzCapabilities(
-    @XmlElement(true) val xAddr: String? = null
+    @XmlAttribute(true) val xAddr: String? = null
 )
 
 @Serializable

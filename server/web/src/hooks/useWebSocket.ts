@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { WebSocketClient, WebSocketChannel } from '@/utils/websocket';
+import { WebSocketClient, WebSocketChannel, WebSocketFilters } from '@/utils/websocket';
 import {
   setConnecting,
   setConnected,
@@ -11,6 +11,7 @@ import {
 } from '@/store/slices/websocketSlice';
 import { updateCameraStatus, updateCameraFromWebSocket } from '@/store/slices/camerasSlice';
 import { addEventFromWebSocket, updateEventFromWebSocket } from '@/store/slices/eventsSlice';
+import { authService } from '@/services/authService';
 import type { RootState } from '@/store';
 import type { WebSocketMessage } from '@/utils/websocket';
 import type { Camera, Event } from '@/types';
@@ -26,26 +27,53 @@ export function useWebSocket() {
   const { connected, connecting, subscribedChannels } = useSelector(
     (state: RootState) => state.websocket
   );
-  const token = useSelector((state: RootState) => state.auth.token);
+  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+
+  // Функция для получения токена для WebSocket
+  const getWebSocketToken = async (): Promise<string | null> => {
+    try {
+      // Пытаемся получить токен через специальный endpoint для WebSocket
+      // Если такого нет, можно использовать cookie через API
+      const response = await fetch('/api/v1/auth/ws-token', {
+        method: 'GET',
+        credentials: 'include', // Важно для отправки cookies
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data.token || null;
+      }
+
+      // Fallback: если endpoint не существует, возвращаем null
+      // Сервер WebSocket должен поддерживать аутентификацию через cookie
+      return null;
+    } catch (error) {
+      console.error('[WebSocket] Error getting token:', error);
+      return null;
+    }
+  };
 
   // Инициализация WebSocket клиента
   useEffect(() => {
-    if (!token || typeof window === 'undefined') {
+    if (!isAuthenticated || typeof window === 'undefined') {
       return;
     }
 
     // Создаем клиент
     wsClientRef.current = new WebSocketClient({
       url: WS_URL,
-      token,
+      getToken: getWebSocketToken, // Используем функцию для получения токена
       onConnect: () => {
         dispatch(setConnected(true));
+        console.log('[WebSocket] Connected');
       },
       onDisconnect: () => {
         dispatch(setConnected(false));
+        console.log('[WebSocket] Disconnected');
       },
       onError: (error) => {
         dispatch(setError(error.message));
+        console.error('[WebSocket] Error:', error.message);
       },
       onMessage: (message: WebSocketMessage) => {
         dispatch(setLastMessage(message));
@@ -66,16 +94,16 @@ export function useWebSocket() {
         wsClientRef.current = null;
       }
     };
-  }, [token, dispatch]);
+  }, [isAuthenticated, dispatch]);
 
-  // Обновление токена при изменении
+  // Обновление при изменении статуса аутентификации
   useEffect(() => {
-    if (!token && wsClientRef.current) {
+    if (!isAuthenticated && wsClientRef.current) {
       wsClientRef.current.disconnect();
       wsClientRef.current = null;
       dispatch(setConnected(false));
     }
-  }, [token, dispatch]);
+  }, [isAuthenticated, dispatch]);
 
   // Обработка WebSocket сообщений и обновление состояния
   const handleWebSocketMessage = (message: WebSocketMessage) => {
@@ -104,21 +132,18 @@ export function useWebSocket() {
         case 'recordings':
           // Обновление записи - можно обработать в recordingsSlice при необходимости
           break;
-        case 'notifications':
-          // Показать уведомление пользователю
-          if (message.data.title || message.data.message) {
-            // Можно использовать notistack для показа уведомлений
-            console.log('[WebSocket] Notification:', message.data);
-          }
-          break;
+      case 'notifications':
+        // Уведомления будут обработаны в компоненте WebSocketNotificationHandler
+        console.log('[WebSocket] Notification:', message.data);
+        break;
       }
     }
   };
 
   // Функции для подписки/отписки
-  const subscribe = (channels: WebSocketChannel[]) => {
+  const subscribe = (channels: WebSocketChannel[], filters?: WebSocketFilters) => {
     if (wsClientRef.current && connected) {
-      wsClientRef.current.subscribe(channels);
+      wsClientRef.current.subscribe(channels, filters);
       dispatch(subscribeAction(channels));
     }
   };

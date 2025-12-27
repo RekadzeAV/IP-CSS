@@ -146,3 +146,4 @@ bool motion_detector_set_params(MotionDetector* detector, const MotionDetectorPa
     return true;
 }
 
+

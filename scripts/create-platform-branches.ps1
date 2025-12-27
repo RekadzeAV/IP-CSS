@@ -54,3 +54,4 @@ Write-Host "`nAll platform branches created successfully!" -ForegroundColor Gree
 Write-Host "`nBranch structure:" -ForegroundColor Cyan
 git branch -a | Select-String -Pattern "(develop|test)/platform"
 
+

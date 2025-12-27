@@ -8,6 +8,65 @@ plugins {
 kotlin {
     android()
 
+    // Android Native targets для cinterop (если нужна нативная интеграция)
+    // Примечание: Для Android обычно используется JNI через androidMain,
+    // но можно также использовать androidNative* targets для Kotlin/Native
+    androidNativeArm32("androidNativeArm32") {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/android/armeabi-v7a -lvideo_processing")
+                }
+            }
+        }
+    }
+
+    androidNativeArm64("androidNativeArm64") {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/android/arm64-v8a -lvideo_processing")
+                }
+            }
+        }
+    }
+
+    androidNativeX86("androidNativeX86") {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/android/x86 -lvideo_processing")
+                }
+            }
+        }
+    }
+
+    androidNativeX64("androidNativeX64") {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/android/x86_64 -lvideo_processing")
+                }
+            }
+        }
+    }
+
     jvm("desktop") {
         compilations.all {
             kotlinOptions {
@@ -16,9 +75,48 @@ kotlin {
         }
     }
 
-    iosX64()
-    iosArm64()
-    iosSimulatorArm64()
+    // iOS targets с cinterop
+    iosX64 {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/ios/x64 -lvideo_processing")
+                }
+            }
+        }
+    }
+
+    iosArm64 {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/ios/arm64 -lvideo_processing")
+                }
+            }
+        }
+    }
+
+    iosSimulatorArm64 {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/ios/simulator-arm64 -lvideo_processing")
+                }
+            }
+        }
+    }
 
     // Native targets для cinterop (Linux и macOS)
     linuxX64("native") {
@@ -29,6 +127,7 @@ kotlin {
                     packageName("com.company.ipcamera.core.network.rtsp")
                     compilerOpts("-I${project.rootDir}/../native/video-processing/include")
                     includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/linux/x64 -lvideo_processing")
                 }
             }
         }
@@ -42,6 +141,7 @@ kotlin {
                     packageName("com.company.ipcamera.core.network.rtsp")
                     compilerOpts("-I${project.rootDir}/../native/video-processing/include")
                     includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/macos/x64 -lvideo_processing")
                 }
             }
         }
@@ -55,6 +155,22 @@ kotlin {
                     packageName("com.company.ipcamera.core.network.rtsp")
                     compilerOpts("-I${project.rootDir}/../native/video-processing/include")
                     includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/macos/arm64 -lvideo_processing")
+                }
+            }
+        }
+    }
+
+    // Windows (MinGW)
+    mingwX64("nativeWindows") {
+        compilations.getByName("main") {
+            cinterops {
+                val rtspClient by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/rtsp_client.def"))
+                    packageName("com.company.ipcamera.core.network.rtsp")
+                    compilerOpts("-I${project.rootDir}/../native/video-processing/include")
+                    includeDirs("${project.rootDir}/../native/video-processing/include")
+                    linkerOpts("-L${project.rootDir}/../native/video-processing/lib/windows/x64 -lvideo_processing")
                 }
             }
         }
@@ -135,6 +251,27 @@ kotlin {
         val nativeMacosArm64Main by getting {
             dependsOn(nativeMain)
         }
+
+        val nativeWindowsMain by getting {
+            dependsOn(nativeMain)
+        }
+
+        // Android Native source sets
+        val androidNativeArm32Main by creating {
+            dependsOn(commonMain)
+        }
+
+        val androidNativeArm64Main by creating {
+            dependsOn(commonMain)
+        }
+
+        val androidNativeX86Main by creating {
+            dependsOn(commonMain)
+        }
+
+        val androidNativeX64Main by creating {
+            dependsOn(commonMain)
+        }
     }
 }
 
@@ -155,7 +292,7 @@ afterEvaluate {
                 if (this is MavenPublication) {
                     groupId = "com.company.ipcamera"
                     version = project.version.toString()
-                    
+
                     pom {
                         name.set("IP Camera Core Network")
                         description.set("Core network module for IP Camera Surveillance System")

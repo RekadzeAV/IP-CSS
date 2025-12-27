@@ -13,3 +13,4 @@ data class Resolution(
     override fun toString(): String = "${width}x${height}"
 }
 
+

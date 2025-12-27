@@ -179,3 +179,4 @@ sealed class ValidationResult {
     val isError: Boolean get() = this is Error
 }
 
+

@@ -1,7 +1,7 @@
 package com.company.ipcamera.server.routing
 
 import com.company.ipcamera.server.dto.*
-import com.company.ipcamera.server.middleware.requireAdmin
+import com.company.ipcamera.server.middleware.AuthorizationMiddleware.requireAdmin
 import com.company.ipcamera.shared.domain.model.SettingsCategory
 import com.company.ipcamera.shared.domain.repository.SettingsRepository
 import io.ktor.http.*
@@ -22,21 +22,21 @@ private val logger = KotlinLogging.logger {}
  */
 fun Route.settingsRoutes() {
     val settingsRepository: SettingsRepository by inject()
-    
+
     authenticate("jwt-auth") {
         route("/settings") {
             // GET /api/v1/settings - получение всех настроек
             get {
                 try {
                     val categoryStr = call.request.queryParameters["category"]
-                    val category = categoryStr?.let { 
-                        try { SettingsCategory.valueOf(it.uppercase()) } 
+                    val category = categoryStr?.let {
+                        try { SettingsCategory.valueOf(it.uppercase()) }
                         catch (e: Exception) { null }
                     }
-                    
+
                     val settings = settingsRepository.getSettings(category)
                     val settingsDto = settings.map { it.toDto() }
-                    
+
                     call.respond(
                         HttpStatusCode.OK,
                         ApiResponse(
@@ -57,14 +57,14 @@ fun Route.settingsRoutes() {
                     )
                 }
             }
-            
+
             // PUT /api/v1/settings - обновление настроек (только для администраторов)
             put {
                 requireAdmin()
-                
+
                 try {
                     val request = call.receive<UpdateSettingsRequest>()
-                    
+
                     val result = settingsRepository.updateSettings(request.settings)
                     result.fold(
                         onSuccess = { updatedCount ->
@@ -102,7 +102,7 @@ fun Route.settingsRoutes() {
                     )
                 }
             }
-            
+
             // GET /api/v1/settings/system - получение системных настроек
             get("/system") {
                 try {
@@ -138,11 +138,11 @@ fun Route.settingsRoutes() {
                     )
                 }
             }
-            
+
             // POST /api/v1/settings/export - экспорт настроек (только для администраторов)
             post("/export") {
                 requireAdmin()
-                
+
                 try {
                     val result = settingsRepository.exportSettings()
                     result.fold(
@@ -181,14 +181,14 @@ fun Route.settingsRoutes() {
                     )
                 }
             }
-            
+
             // POST /api/v1/settings/import - импорт настроек (только для администраторов)
             post("/import") {
                 requireAdmin()
-                
+
                 try {
                     val request = call.receive<UpdateSettingsRequest>()
-                    
+
                     val result = settingsRepository.importSettings(request.settings)
                     result.fold(
                         onSuccess = {
@@ -226,18 +226,18 @@ fun Route.settingsRoutes() {
                     )
                 }
             }
-            
+
             // POST /api/v1/settings/reset - сброс настроек (только для администраторов)
             post("/reset") {
                 requireAdmin()
-                
+
                 try {
                     val categoryStr = call.request.queryParameters["category"]
-                    val category = categoryStr?.let { 
-                        try { SettingsCategory.valueOf(it.uppercase()) } 
+                    val category = categoryStr?.let {
+                        try { SettingsCategory.valueOf(it.uppercase()) }
                         catch (e: Exception) { null }
                     }
-                    
+
                     val result = settingsRepository.resetSettings(category)
                     result.fold(
                         onSuccess = {
@@ -275,7 +275,7 @@ fun Route.settingsRoutes() {
                     )
                 }
             }
-            
+
             route("/{key}") {
                 // GET /api/v1/settings/{key} - получение настройки по ключу
                 get {
@@ -288,7 +288,7 @@ fun Route.settingsRoutes() {
                                 message = "Setting key is required"
                             )
                         )
-                        
+
                         val setting = settingsRepository.getSetting(key)
                         if (setting != null) {
                             call.respond(
@@ -321,11 +321,11 @@ fun Route.settingsRoutes() {
                         )
                     }
                 }
-                
+
                 // PUT /api/v1/settings/{key} - обновление настройки (только для администраторов)
                 put {
                     requireAdmin()
-                    
+
                     try {
                         val key = call.parameters["key"] ?: return@put call.respond(
                             HttpStatusCode.BadRequest,
@@ -335,9 +335,9 @@ fun Route.settingsRoutes() {
                                 message = "Setting key is required"
                             )
                         )
-                        
+
                         val request = call.receive<UpdateSettingRequest>()
-                        
+
                         val result = settingsRepository.updateSetting(key, request.value)
                         result.fold(
                             onSuccess = { setting ->
@@ -375,11 +375,11 @@ fun Route.settingsRoutes() {
                         )
                     }
                 }
-                
+
                 // DELETE /api/v1/settings/{key} - удаление настройки (только для администраторов)
                 delete {
                     requireAdmin()
-                    
+
                     try {
                         val key = call.parameters["key"] ?: return@delete call.respond(
                             HttpStatusCode.BadRequest,
@@ -389,7 +389,7 @@ fun Route.settingsRoutes() {
                                 message = "Setting key is required"
                             )
                         )
-                        
+
                         val result = settingsRepository.deleteSetting(key)
                         result.fold(
                             onSuccess = {

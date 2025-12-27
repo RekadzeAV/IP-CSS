@@ -4,15 +4,15 @@ import type { ApiResponse, LoginRequest, LoginResponse, User } from '@/types';
 export const authService = {
   /**
    * Вход в систему
+   * Токены теперь хранятся в httpOnly cookies, автоматически устанавливаются сервером
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials);
+    const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/login', credentials, {
+      withCredentials: true, // Важно для отправки cookies
+    });
     if (response.data.success && response.data.data) {
-      // Сохраняем токен в localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', response.data.data.token);
-        localStorage.setItem('refreshToken', response.data.data.refreshToken);
-      }
+      // Токены теперь в httpOnly cookies, не нужно сохранять в localStorage
+      // Сервер устанавливает cookies автоматически
       return response.data.data;
     }
     throw new Error(response.data.message || 'Login failed');
@@ -20,42 +20,32 @@ export const authService = {
 
   /**
    * Выход из системы
+   * Сервер удалит cookies автоматически
    */
   async logout(): Promise<void> {
     try {
-      await apiClient.post('/auth/logout');
+      await apiClient.post('/auth/logout', {}, { withCredentials: true });
+      // Cookies будут удалены сервером автоматически
     } catch (error) {
       // Игнорируем ошибки при выходе
       console.error('Logout error:', error);
-    } finally {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-      }
     }
   },
 
   /**
    * Обновить токен
+   * Refresh token берется из cookie автоматически
    */
-  async refreshToken(): Promise<string> {
-    const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    const response = await apiClient.post<ApiResponse<{ token: string }>>('/auth/refresh', {
-      refreshToken,
+  async refreshToken(): Promise<void> {
+    // Refresh token теперь в httpOnly cookie, отправляется автоматически
+    const response = await apiClient.post<ApiResponse<LoginResponse>>('/auth/refresh', {}, {
+      withCredentials: true,
     });
 
-    if (response.data.success && response.data.data) {
-      const newToken = response.data.data.token;
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('token', newToken);
-      }
-      return newToken;
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to refresh token');
     }
-    throw new Error(response.data.message || 'Failed to refresh token');
+    // Новые токены устанавливаются в cookies сервером
   },
 
   /**
@@ -71,18 +61,27 @@ export const authService = {
 
   /**
    * Проверить, авторизован ли пользователь
+   * Проверяем через запрос к API, так как токен в httpOnly cookie недоступен из JS
    */
-  isAuthenticated(): boolean {
-    if (typeof window === 'undefined') return false;
-    return !!localStorage.getItem('token');
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      await this.getCurrentUser();
+      return true;
+    } catch {
+      return false;
+    }
   },
 
   /**
-   * Получить токен из localStorage
+   * Получить токен из cookie
+   * Токен в httpOnly cookie недоступен из JavaScript для безопасности
+   * Используйте getCurrentUser() для проверки аутентификации
    */
   getToken(): string | null {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('token');
+    // Токен в httpOnly cookie недоступен из JavaScript
+    // Это сделано для защиты от XSS атак
+    return null;
   },
 };
+
 

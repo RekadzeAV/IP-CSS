@@ -5,6 +5,7 @@ import io.ktor.client.call.*
 import io.ktor.client.engine.*
 import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.cookies.*
 import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
@@ -37,7 +38,8 @@ data class ApiClientConfig(
     val cacheExpirationTime: Duration = Duration.parse("5m"),
     val headers: Map<String, String> = emptyMap(),
     val apiKey: String? = null,
-    val authToken: String? = null
+    val authToken: String? = null,
+    val certificatePinningConfig: com.company.ipcamera.core.network.security.CertificatePinningConfig? = null
 ) {
     companion object {
         fun default(baseUrl: String) = ApiClientConfig(baseUrl = baseUrl)
@@ -53,7 +55,7 @@ sealed class ApiError : Exception() {
     data class SerializationError(val cause: Throwable) : ApiError()
     data class TimeoutError(val message: String) : ApiError()
     data class UnknownError(val cause: Throwable) : ApiError()
-    
+
     override val message: String
         get() = when (this) {
             is NetworkError -> "Network error: ${cause.message}"
@@ -70,10 +72,10 @@ sealed class ApiError : Exception() {
 sealed class ApiResult<out T> {
     data class Success<T>(val data: T) : ApiResult<T>()
     data class Error(val error: ApiError) : ApiResult<Nothing>()
-    
+
     val isSuccess: Boolean get() = this is Success
     val isError: Boolean get() = this is Error
-    
+
     inline fun <R> fold(
         onSuccess: (T) -> R,
         onError: (ApiError) -> R
@@ -95,39 +97,39 @@ internal class ResponseCache(
         val timestamp: Long,
         val expirationTime: Duration
     )
-    
+
     private val cache = mutableMapOf<String, CacheEntry>()
-    
+
     fun get(key: String): String? {
         val entry = cache[key] ?: return null
-        
+
         val now = System.currentTimeMillis()
         if (now - entry.timestamp > entry.expirationTime.inWholeMilliseconds) {
             cache.remove(key)
             return null
         }
-        
+
         return entry.data
     }
-    
+
     fun put(key: String, data: String) {
         if (cache.size >= maxSize) {
             // Удаляем самый старый элемент
             val oldestKey = cache.minByOrNull { it.value.timestamp }?.key
             oldestKey?.let { cache.remove(it) }
         }
-        
+
         cache[key] = CacheEntry(
             data = data,
             timestamp = System.currentTimeMillis(),
             expirationTime = expirationTime
         )
     }
-    
+
     fun clear() {
         cache.clear()
     }
-    
+
     fun remove(key: String) {
         cache.remove(key)
     }
@@ -135,7 +137,7 @@ internal class ResponseCache(
 
 /**
  * Базовый HTTP клиент для REST API
- * 
+ *
  * Поддерживает:
  * - Конфигурацию (baseUrl, timeouts, interceptors)
  * - Сериализацию (Kotlinx Serialization)
@@ -154,7 +156,7 @@ class ApiClient private constructor(
         encodeDefaults = false
         prettyPrint = false
     }
-    
+
     companion object {
         /**
          * Создает новый экземпляр ApiClient
@@ -163,14 +165,23 @@ class ApiClient private constructor(
             config: ApiClientConfig,
             httpClientEngine: HttpClientEngine? = null
         ): ApiClient {
-            val client = HttpClient(httpClientEngine ?: createDefaultEngine()) {
+            // Создаем engine с certificate pinning, если настроено
+            val engine = httpClientEngine ?: createEngineWithCertificatePinning(config)
+
+            val client = HttpClient(engine) {
                 // Базовая конфигурация
                 install(HttpTimeout) {
                     connectTimeoutMillis = config.connectTimeout.inWholeMilliseconds.toInt()
                     socketTimeoutMillis = config.socketTimeout.inWholeMilliseconds.toInt()
                     requestTimeoutMillis = config.requestTimeout.inWholeMilliseconds.toInt()
                 }
-                
+
+                // Поддержка cookies (httpOnly cookies для JWT)
+                install(HttpCookies) {
+                    // Cookies будут автоматически сохраняться и отправляться с запросами
+                    // Это позволяет работать с httpOnly cookies, установленными сервером
+                }
+
                 // Сериализация
                 install(ContentNegotiation) {
                     json(Json {
@@ -179,7 +190,7 @@ class ApiClient private constructor(
                         encodeDefaults = false
                     })
                 }
-                
+
                 // Логирование
                 if (config.enableLogging) {
                     install(Logging) {
@@ -191,9 +202,9 @@ class ApiClient private constructor(
                         }
                     }
                 }
-                
+
                 // Retry логика реализована вручную в executeRequest
-                
+
                 // Базовые заголовки
                 defaultRequest {
                     url(config.baseUrl)
@@ -203,29 +214,48 @@ class ApiClient private constructor(
                     config.apiKey?.let {
                         header("X-API-Key", it)
                     }
+                    // authToken теперь не используется, так как токены в httpOnly cookies
+                    // Оставляем для обратной совместимости, но приоритет у cookies
                     config.authToken?.let {
                         header(HttpHeaders.Authorization, "Bearer $it")
                     }
                 }
             }
-            
+
             val responseCache = if (config.enableCache) {
                 ResponseCache(
                     maxSize = config.cacheMaxSize,
                     expirationTime = config.cacheExpirationTime
                 )
             } else null
-            
+
             return ApiClient(client, config, responseCache)
         }
-        
+
         /**
          * Создает движок HTTP клиента по умолчанию
          * Должен быть переопределен в платформо-специфичных реализациях
          */
         expect fun createDefaultEngine(): HttpClientEngine
+
+        /**
+         * Создает HTTP engine с certificate pinning, если настроено
+         */
+        fun createEngineWithCertificatePinning(config: ApiClientConfig): HttpClientEngine {
+            val pinningConfig = config.certificatePinningConfig
+            return if (pinningConfig != null && pinningConfig.enablePinning) {
+                createEngineWithPinning(pinningConfig)
+            } else {
+                createDefaultEngine()
+            }
+        }
+
+        /**
+         * Создает HTTP engine с certificate pinning (платформо-специфичная реализация)
+         */
+        expect fun createEngineWithPinning(config: com.company.ipcamera.core.network.security.CertificatePinningConfig): HttpClientEngine
     }
-    
+
     /**
      * Выполняет GET запрос
      */
@@ -241,7 +271,7 @@ class ApiClient private constructor(
             useCache = useCache
         )
     }
-    
+
     /**
      * Выполняет POST запрос
      */
@@ -255,7 +285,7 @@ class ApiClient private constructor(
             body = body
         )
     }
-    
+
     /**
      * Выполняет PUT запрос
      */
@@ -269,7 +299,7 @@ class ApiClient private constructor(
             body = body
         )
     }
-    
+
     /**
      * Выполняет PATCH запрос
      */
@@ -283,7 +313,7 @@ class ApiClient private constructor(
             body = body
         )
     }
-    
+
     /**
      * Выполняет DELETE запрос
      */
@@ -295,7 +325,7 @@ class ApiClient private constructor(
             path = path
         )
     }
-    
+
     /**
      * Выполняет запрос с загрузкой файла
      */
@@ -311,13 +341,13 @@ class ApiClient private constructor(
                 header(HttpHeaders.ContentType, contentType)
                 header("Content-Disposition", "attachment; filename=\"$fileName\"")
             }
-            
+
             handleResponse<T>(response)
         } catch (e: Exception) {
             ApiResult.Error(handleException(e))
         }
     }
-    
+
     /**
      * Выполняет запрос с загрузкой файла (multipart)
      */
@@ -348,13 +378,13 @@ class ApiClient private constructor(
                     )
                 )
             }
-            
+
             handleResponse<T>(response)
         } catch (e: Exception) {
             ApiResult.Error(handleException(e))
         }
     }
-    
+
     /**
      * Выполняет базовый HTTP запрос с поддержкой retry
      */
@@ -380,11 +410,11 @@ class ApiClient private constructor(
                 }
             }
         }
-        
+
         // Retry логика
         var lastError: ApiError? = null
         var delay = config.retryDelay
-        
+
         repeat(if (config.enableRetry) config.maxRetries + 1 else 1) { attempt ->
             if (attempt > 0) {
                 logger.debug { "Retry attempt $attempt for $path" }
@@ -393,42 +423,42 @@ class ApiClient private constructor(
                 val newDelayMs = (delay.inWholeMilliseconds * 2).coerceAtMost(10000)
                 delay = newDelayMs.toLong().milliseconds
             }
-            
+
             val result = try {
                 val response = httpClient.request(path) {
                     this.method = method
-                    
+
                     // Query параметры
                     queryParameters.forEach { (key, value) ->
                         parameter(key, value)
                     }
-                    
+
                     // Тело запроса
                     if (body != null) {
                         contentType(ContentType.Application.Json)
                         setBody(body)
                     }
                 }
-                
+
                 handleResponse<T>(response)
             } catch (e: Exception) {
                 val error = handleException(e)
                 lastError = error
-                
+
                 // Проверяем, нужно ли повторять попытку
-                val shouldRetry = config.enableRetry && 
-                    attempt < config.maxRetries && 
-                    (error is ApiError.NetworkError || 
+                val shouldRetry = config.enableRetry &&
+                    attempt < config.maxRetries &&
+                    (error is ApiError.NetworkError ||
                      error is ApiError.TimeoutError ||
                      (error is ApiError.HttpError && error.statusCode in 500..599))
-                
+
                 if (!shouldRetry) {
                     return ApiResult.Error(error)
                 }
-                
+
                 null // Продолжаем retry
             }
-            
+
             // Если получили результат, возвращаем его
             result?.let {
                 // Сохраняем в кэш для успешных GET запросов
@@ -444,11 +474,11 @@ class ApiClient private constructor(
                 return it
             }
         }
-        
+
         // Если все попытки исчерпаны, возвращаем последнюю ошибку
         return ApiResult.Error(lastError ?: ApiError.UnknownError(Exception("Unknown error")))
     }
-    
+
     /**
      * Обрабатывает HTTP ответ
      */
@@ -487,7 +517,7 @@ class ApiClient private constructor(
             ApiResult.Error(handleException(e))
         }
     }
-    
+
     /**
      * Обрабатывает исключения
      */
@@ -513,7 +543,7 @@ class ApiClient private constructor(
             }
         }
     }
-    
+
     /**
      * Создает ключ для кэша
      */
@@ -527,23 +557,26 @@ class ApiClient private constructor(
             path
         }
     }
-    
+
     /**
      * Обновляет токен авторизации
      * Примечание: для обновления токена нужно пересоздать клиент с новой конфигурацией
+     *
+     * ВАЖНО: При использовании httpOnly cookies токены управляются сервером автоматически.
+     * Этот метод оставлен для обратной совместимости, но токены теперь хранятся в cookies.
      */
     fun updateAuthToken(token: String): ApiClient {
         val newConfig = config.copy(authToken = token)
         return create(newConfig, httpClient.engine)
     }
-    
+
     /**
      * Очищает кэш
      */
     fun clearCache() {
         cache?.clear()
     }
-    
+
     /**
      * Закрывает клиент и освобождает ресурсы
      */

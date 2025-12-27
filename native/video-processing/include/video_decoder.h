@@ -70,3 +70,4 @@ void decoded_frame_release(DecodedFrame* frame);
 
 #endif // VIDEO_DECODER_H
 
+

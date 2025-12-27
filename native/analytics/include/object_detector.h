@@ -67,3 +67,4 @@ void detection_result_release(DetectionResult* result);
 
 #endif // OBJECT_DETECTOR_H
 
+

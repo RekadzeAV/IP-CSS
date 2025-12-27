@@ -1,0 +1,24 @@
+#!/bin/sh
+
+# Post-uninstallation script for Synology DSM
+# This script runs after the package is removed
+
+INSTALL_DIR="/var/packages/ip-css/target"
+DATA_DIR="/var/packages/ip-css/var"
+CONFIG_DIR="/var/packages/ip-css/etc"
+
+# Remove systemd service if exists
+if [ -f "/etc/systemd/system/ip-css.service" ]; then
+    systemctl stop ip-css > /dev/null 2>&1
+    systemctl disable ip-css > /dev/null 2>&1
+    rm -f "/etc/systemd/system/ip-css.service"
+    systemctl daemon-reload
+fi
+
+# Optionally remove data directory (uncomment if you want to remove user data)
+# WARNING: This will delete all recordings and database!
+# rm -rf "$DATA_DIR"
+# rm -rf "$CONFIG_DIR"
+
+exit 0
+

@@ -1,7 +1,7 @@
 package com.company.ipcamera.shared.domain.repository
 
 import com.company.ipcamera.shared.domain.model.Notification
-import com.company.ipcamera.shared.domain.model.NotificationSeverity
+import com.company.ipcamera.shared.domain.model.NotificationPriority
 import com.company.ipcamera.shared.domain.model.NotificationType
 
 /**
@@ -14,45 +14,46 @@ interface NotificationRepository {
     suspend fun getNotifications(
         userId: String? = null,
         type: NotificationType? = null,
-        severity: NotificationSeverity? = null,
+        priority: NotificationPriority? = null,
         read: Boolean? = null,
         page: Int = 1,
         limit: Int = 20
     ): PaginatedResult<Notification>
-    
+
     /**
      * Получить уведомление по ID
      */
     suspend fun getNotificationById(id: String): Notification?
-    
+
     /**
      * Добавить новое уведомление
      */
     suspend fun addNotification(notification: Notification): Result<Notification>
-    
+
     /**
      * Отметить уведомление как прочитанное
      */
     suspend fun markAsRead(id: String): Result<Notification>
-    
+
     /**
      * Отметить несколько уведомлений как прочитанные
      */
     suspend fun markAsRead(ids: List<String>): Result<List<Notification>>
-    
+
     /**
      * Отметить все уведомления как прочитанные
      */
     suspend fun markAllAsRead(userId: String? = null): Result<Int>
-    
+
     /**
      * Удалить уведомление
      */
     suspend fun deleteNotification(id: String): Result<Unit>
-    
+
     /**
      * Получить количество непрочитанных уведомлений
      */
     suspend fun getUnreadCount(userId: String? = null): Int
 }
+
 

@@ -2,38 +2,26 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'ax
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
-// Создание axios instance
+// Создание axios instance с поддержкой cookies
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_URL,
   timeout: 30000,
+  withCredentials: true, // Включаем отправку cookies (httpOnly cookies)
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor для добавления токена
-apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error: AxiosError) => {
-    return Promise.reject(error);
-  }
-);
+// Request interceptor - токены теперь в httpOnly cookies, не нужно добавлять вручную
+// Cookies автоматически отправляются браузером с каждым запросом
 
 // Response interceptor для обработки ошибок
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
     if (error.response?.status === 401) {
-      // Токен истек или невалиден
+      // Токен истек или невалиден - перенаправляем на страницу входа
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
         window.location.href = '/login';
       }
     }
@@ -42,4 +30,5 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
+
 

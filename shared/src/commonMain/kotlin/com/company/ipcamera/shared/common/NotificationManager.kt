@@ -117,3 +117,4 @@ sealed class NotificationEvent {
     data class PermissionChanged(val granted: Boolean) : NotificationEvent()
 }
 
+

@@ -67,3 +67,4 @@ val appModule = module {
     viewModel { LicenseViewModel(get()) }
 }
 
+

@@ -193,3 +193,4 @@ code --install-extension streetsidesoftware.code-spell-checker-russian
 - [SQLDelight Extension](https://marketplace.visualstudio.com/items?itemName=cashapp.sqldelight)
 - [Gradle Extension](https://marketplace.visualstudio.com/items?itemName=vscjava.vscode-gradle)
 
+

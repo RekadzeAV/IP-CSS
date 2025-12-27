@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Paper, Typography, CircularProgress, IconButton, Menu, MenuItem, Tooltip } from '@mui/material';
-import { PlayArrow, Pause, Stop, Fullscreen, FullscreenExit, PhotoCamera, Settings } from '@mui/icons-material';
-import Hls from 'hls.js';
-import type { Camera } from '@/types';
 import { streamService } from '@/services/streamService';
+import type { Camera } from '@/types';
+import { Fullscreen, FullscreenExit, Pause, PhotoCamera, PlayArrow, Refresh, Settings, Stop } from '@mui/icons-material';
+import { Box, Chip, CircularProgress, IconButton, Menu, MenuItem, Paper, Tooltip, Typography } from '@mui/material';
+import Hls from 'hls.js';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface VideoPlayerProps {
   camera: Camera;
@@ -13,9 +13,12 @@ interface VideoPlayerProps {
   controls?: boolean;
   width?: string | number;
   height?: string | number;
+  streamType?: 'hls' | 'webrtc' | 'rtsp'; // Тип стрима: HLS (по умолчанию), WebRTC для низкой задержки, или RTSP для прямой трансляции
 }
 
 type StreamQuality = 'low' | 'medium' | 'high' | 'ultra';
+
+type StreamStatus = 'idle' | 'starting' | 'connected' | 'playing' | 'error' | 'stopped';
 
 export default function VideoPlayer({
   camera,
@@ -23,42 +26,209 @@ export default function VideoPlayer({
   controls = true,
   width = '100%',
   height = 'auto',
+  streamType = 'hls',
 }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const pcRef = useRef<RTCPeerConnection | null>(null); // Для WebRTC
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+  const streamActiveRef = useRef(false); // Используем ref для отслеживания состояния потока
+  const maxRetries = 3;
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [streamStarted, setStreamStarted] = useState(false);
+  const [streamStatus, setStreamStatus] = useState<StreamStatus>('idle');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [quality, setQuality] = useState<StreamQuality>('medium');
   const [qualityMenuAnchor, setQualityMenuAnchor] = useState<null | HTMLElement>(null);
+  const [streamActive, setStreamActive] = useState(false); // Для отображения в UI
+  const [reconnectTrigger, setReconnectTrigger] = useState(0); // Триггер для переподключения
 
-  // Инициализация и управление HLS потоком
+  // Инициализация и управление потоком (HLS или WebRTC)
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     let hls: Hls | null = null;
     let mounted = true;
+    let retryAttempt = 0;
+
+    const cleanup = () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+      if (hls) {
+        hls.destroy();
+        hlsRef.current = null;
+      }
+      if (pcRef.current) {
+        pcRef.current.close();
+        pcRef.current = null;
+      }
+    };
 
     const initializeStream = async () => {
+      if (!mounted) return;
+
       try {
         setLoading(true);
         setError(null);
+        setStreamStatus('starting');
 
-        // Проверяем, поддерживает ли браузер HLS нативно
+        // Сначала запускаем стрим через API
+        if (!streamActiveRef.current) {
+          try {
+            await streamService.startStream(camera.id);
+            streamActiveRef.current = true;
+            setStreamActive(true);
+            setStreamStatus('connected');
+          } catch (startError) {
+            console.error('Error starting stream via API:', startError);
+            if (mounted) {
+              setError('Не удалось запустить трансляцию. Проверьте подключение к камере.');
+              setStreamStatus('error');
+              setLoading(false);
+            }
+            return;
+          }
+        }
+
+        if (streamType === 'webrtc') {
+          // WebRTC реализация (если нужно добавить позже)
+          console.warn('WebRTC streaming not yet implemented, falling back to HLS');
+          // TODO: Реализовать WebRTC стриминг
+          return;
+        }
+
+        if (streamType === 'rtsp') {
+          // RTSP поток - в браузерах RTSP не поддерживается напрямую
+          // Бэкенд автоматически конвертирует RTSP в HLS, поэтому используем HLS URL
+          // Это обеспечивает совместимость с браузерами
+          console.log('RTSP stream type selected - using HLS conversion for browser compatibility');
+
+          // Используем HLS URL, который бэкенд генерирует из RTSP потока
+          const hlsUrl = streamService.getHlsUrl(camera.id);
+          const isNativeHlsSupported = video.canPlayType('application/vnd.apple.mpegurl');
+
+          if (Hls.isSupported()) {
+            hls = new Hls({
+              enableWorker: true,
+              lowLatencyMode: true, // Низкая задержка для RTSP потоков
+              backBufferLength: 90,
+              maxBufferLength: 30,
+              maxMaxBufferLength: 60,
+              debug: false,
+            });
+
+            hls.loadSource(hlsUrl);
+            hls.attachMedia(video);
+
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              if (mounted) {
+                setLoading(false);
+                setStreamStatus('playing');
+                retryCountRef.current = 0;
+
+                if (autoPlay) {
+                  video.play().catch((e: unknown) => {
+                    console.error('Error auto-playing video:', e);
+                    if (mounted) {
+                      setError('Не удалось автоматически начать воспроизведение');
+                    }
+                  });
+                }
+              }
+            });
+
+            hls.on(Hls.Events.ERROR, (_event: string, data: any) => {
+              if (!mounted) return;
+
+              if (data.fatal) {
+                switch (data.type) {
+                  case Hls.ErrorTypes.NETWORK_ERROR:
+                    console.error('Network error, trying to recover...');
+                    setError('Ошибка сети. Попытка восстановления...');
+
+                    if (retryAttempt < maxRetries) {
+                      retryAttempt++;
+                      retryTimeoutRef.current = setTimeout(() => {
+                        hls?.startLoad();
+                      }, 2000 * retryAttempt);
+                    } else {
+                      setStreamStatus('error');
+                      handleInternalReconnect();
+                    }
+                    break;
+                  case Hls.ErrorTypes.MEDIA_ERROR:
+                    console.error('Media error, trying to recover...');
+                    try {
+                      hls?.recoverMediaError();
+                    } catch (e) {
+                      console.error('Failed to recover from media error:', e);
+                      setStreamStatus('error');
+                      handleInternalReconnect();
+                    }
+                    break;
+                  default:
+                    console.error('Fatal error, destroying HLS instance');
+                    setError('Критическая ошибка воспроизведения');
+                    setStreamStatus('error');
+                    cleanup();
+                    handleInternalReconnect();
+                    break;
+                }
+              }
+            });
+          } else if (isNativeHlsSupported) {
+            // Используем нативную поддержку HLS (Safari)
+            video.src = hlsUrl;
+
+            const handleLoadedMetadata = () => {
+              if (mounted) {
+                setLoading(false);
+                setStreamStatus('playing');
+                retryCountRef.current = 0;
+
+                if (autoPlay) {
+                  video.play().catch((e: unknown) => {
+                    console.error('Error auto-playing video:', e);
+                  });
+                }
+              }
+            };
+
+            video.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+            video.addEventListener('error', () => {
+              if (mounted) {
+                setError('Ошибка загрузки видео');
+                setStreamStatus('error');
+                handleInternalReconnect();
+              }
+            });
+          } else {
+            throw new Error('HLS не поддерживается в этом браузере');
+          }
+
+          hlsRef.current = hls;
+          return;
+        }
+
+        // HLS стриминг
+        const hlsUrl = streamService.getHlsUrl(camera.id);
         const isNativeHlsSupported = video.canPlayType('application/vnd.apple.mpegurl');
 
-        // Получаем HLS URL
-        const hlsUrl = streamService.getHlsUrl(camera.id);
-
         if (Hls.isSupported()) {
-          // Используем HLS.js для браузеров, которые не поддерживают HLS нативно
           hls = new Hls({
             enableWorker: true,
-            lowLatencyMode: false,
+            lowLatencyMode: true, // Низкая задержка для RTSP потоков
             backBufferLength: 90,
+            maxBufferLength: 30,
+            maxMaxBufferLength: 60,
+            debug: false,
           });
 
           hls.loadSource(hlsUrl);
@@ -67,34 +237,57 @@ export default function VideoPlayer({
           hls.on(Hls.Events.MANIFEST_PARSED, () => {
             if (mounted) {
               setLoading(false);
+              setStreamStatus('playing');
+              retryCountRef.current = 0; // Сбрасываем счетчик повторных попыток
+
               if (autoPlay) {
                 video.play().catch((e: unknown) => {
                   console.error('Error auto-playing video:', e);
+                  if (mounted) {
+                    setError('Не удалось автоматически начать воспроизведение');
+                  }
                 });
               }
             }
           });
 
           hls.on(Hls.Events.ERROR, (_event: string, data: any) => {
+            if (!mounted) return;
+
             if (data.fatal) {
               switch (data.type) {
                 case Hls.ErrorTypes.NETWORK_ERROR:
                   console.error('Network error, trying to recover...');
-                  if (mounted) {
-                    setError('Ошибка сети. Попытка восстановления...');
+                  setError('Ошибка сети. Попытка восстановления...');
+
+                  // Попытка восстановления
+                  if (retryAttempt < maxRetries) {
+                    retryAttempt++;
+                    retryTimeoutRef.current = setTimeout(() => {
+                      hls?.startLoad();
+                    }, 2000 * retryAttempt); // Экспоненциальная задержка
+                  } else {
+                    // Если не удалось восстановиться, пытаемся переподключиться
+                    setStreamStatus('error');
+                    handleInternalReconnect();
                   }
-                  hls?.startLoad();
                   break;
                 case Hls.ErrorTypes.MEDIA_ERROR:
                   console.error('Media error, trying to recover...');
-                  hls?.recoverMediaError();
+                  try {
+                    hls?.recoverMediaError();
+                  } catch (e) {
+                    console.error('Failed to recover from media error:', e);
+                    setStreamStatus('error');
+                    handleInternalReconnect();
+                  }
                   break;
                 default:
                   console.error('Fatal error, destroying HLS instance');
-                  if (mounted) {
-                    setError('Критическая ошибка воспроизведения');
-                  }
-                  hls?.destroy();
+                  setError('Критическая ошибка воспроизведения');
+                  setStreamStatus('error');
+                  cleanup();
+                  handleInternalReconnect();
                   break;
               }
             }
@@ -102,14 +295,28 @@ export default function VideoPlayer({
         } else if (isNativeHlsSupported) {
           // Используем нативную поддержку HLS (Safari)
           video.src = hlsUrl;
-          video.addEventListener('loadedmetadata', () => {
+
+          const handleLoadedMetadata = () => {
             if (mounted) {
               setLoading(false);
+              setStreamStatus('playing');
+              retryCountRef.current = 0;
+
               if (autoPlay) {
                 video.play().catch((e: unknown) => {
                   console.error('Error auto-playing video:', e);
                 });
               }
+            }
+          };
+
+          video.addEventListener('loadedmetadata', handleLoadedMetadata);
+
+          video.addEventListener('error', () => {
+            if (mounted) {
+              setError('Ошибка загрузки видео');
+              setStreamStatus('error');
+              handleInternalReconnect();
             }
           });
         } else {
@@ -117,44 +324,76 @@ export default function VideoPlayer({
         }
 
         hlsRef.current = hls;
-        setStreamStarted(true);
       } catch (err) {
         console.error('Error initializing stream:', err);
         if (mounted) {
           setError(err instanceof Error ? err.message : 'Ошибка инициализации потока');
+          setStreamStatus('error');
           setLoading(false);
+
+          if (retryCountRef.current < maxRetries) {
+            handleInternalReconnect();
+          }
         }
       }
     };
 
+    const handleInternalReconnect = () => {
+      if (retryCountRef.current >= maxRetries) {
+        setError(`Не удалось подключиться после ${maxRetries} попыток`);
+        return;
+      }
+
+      retryCountRef.current++;
+      setLoading(true);
+      setError(`Попытка переподключения (${retryCountRef.current}/${maxRetries})...`);
+
+      cleanup();
+
+      retryTimeoutRef.current = setTimeout(() => {
+        initializeStream();
+      }, 3000 * retryCountRef.current); // Экспоненциальная задержка
+    };
+
+    // Инициализация при монтировании компонента
     initializeStream();
 
+    // Обработчики событий видео
     const handlePlay = () => {
       setIsPlaying(true);
+      setStreamStatus('playing');
     };
 
     const handlePause = () => {
       setIsPlaying(false);
+      setStreamStatus('connected');
     };
 
     const handleWaiting = () => {
-      setLoading(true);
+      if (mounted) {
+        setLoading(true);
+      }
     };
 
     const handleCanPlay = () => {
-      setLoading(false);
+      if (mounted) {
+        setLoading(false);
+      }
     };
 
-    const handleError = () => {
-      setLoading(false);
-      setError('Ошибка воспроизведения видео');
+    const handleVideoError = () => {
+      if (mounted) {
+        setLoading(false);
+        setError('Ошибка воспроизведения видео');
+        setStreamStatus('error');
+      }
     };
 
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
     video.addEventListener('waiting', handleWaiting);
     video.addEventListener('canplay', handleCanPlay);
-    video.addEventListener('error', handleError);
+    video.addEventListener('error', handleVideoError);
 
     return () => {
       mounted = false;
@@ -162,14 +401,11 @@ export default function VideoPlayer({
       video.removeEventListener('pause', handlePause);
       video.removeEventListener('waiting', handleWaiting);
       video.removeEventListener('canplay', handleCanPlay);
-      video.removeEventListener('error', handleError);
+      video.removeEventListener('error', handleVideoError);
 
-      if (hls) {
-        hls.destroy();
-        hlsRef.current = null;
-      }
+      cleanup();
     };
-  }, [camera.id, autoPlay]);
+  }, [camera.id, autoPlay, streamType, reconnectTrigger]);
 
   // Управление воспроизведением
   const handlePlay = useCallback(() => {
@@ -195,12 +431,61 @@ export default function VideoPlayer({
       video.pause();
       video.currentTime = 0;
     }
+
+    // Останавливаем HLS
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    // Останавливаем WebRTC если активен
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+
     try {
       await streamService.stopStream(camera.id);
-      setStreamStarted(false);
+      streamActiveRef.current = false;
+      setStreamActive(false);
+      setStreamStatus('stopped');
+      setError(null);
+      retryCountRef.current = 0;
     } catch (err) {
       console.error('Error stopping stream:', err);
+      setError('Ошибка остановки потока');
     }
+  }, [camera.id]);
+
+  const handleReconnect = useCallback(async () => {
+    // Останавливаем текущий поток
+    if (streamActiveRef.current) {
+      try {
+        await streamService.stopStream(camera.id);
+      } catch (err) {
+        console.error('Error stopping stream before reconnect:', err);
+      }
+    }
+
+    streamActiveRef.current = false;
+    setStreamActive(false);
+    setError(null);
+    retryCountRef.current = 0;
+
+    // Перезапускаем поток
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.src = '';
+    }
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    // Принудительно перезапускаем поток через изменение триггера
+    setReconnectTrigger((prev: number) => prev + 1);
   }, [camera.id]);
 
   const handleFullscreen = useCallback(() => {
@@ -228,33 +513,87 @@ export default function VideoPlayer({
 
   const handleScreenshot = useCallback(async () => {
     try {
-      const response = await fetch(`/api/v1/cameras/${camera.id}/stream/screenshot`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          // Можно открыть изображение в новой вкладке или скачать
-          window.open(data.data, '_blank');
-        }
+      const response = await streamService.captureScreenshot(camera.id);
+      if (response) {
+        // Открываем изображение в новой вкладке
+        window.open(response, '_blank');
       }
     } catch (err) {
       console.error('Error capturing screenshot:', err);
+      setError('Не удалось создать снимок экрана');
     }
   }, [camera.id]);
 
   const handleQualityChange = useCallback(async (newQuality: StreamQuality) => {
     setQuality(newQuality);
     setQualityMenuAnchor(null);
-    // TODO: Отправить запрос на изменение качества через API
-    // await streamService.setStreamQuality(camera.id, newQuality);
+
+    try {
+      // TODO: Добавить метод в streamService для изменения качества
+      // await streamService.setStreamQuality(camera.id, newQuality);
+      console.log(`Quality change requested to: ${newQuality}`);
+    } catch (err) {
+      console.error('Error changing stream quality:', err);
+      setError('Ошибка изменения качества потока');
+    }
   }, [camera.id]);
+
+  const getStatusColor = (status: StreamStatus): 'success' | 'error' | 'warning' | 'default' => {
+    switch (status) {
+      case 'playing':
+        return 'success';
+      case 'connected':
+        return 'success';
+      case 'error':
+        return 'error';
+      case 'starting':
+        return 'warning';
+      case 'stopped':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusLabel = (status: StreamStatus): string => {
+    switch (status) {
+      case 'idle':
+        return 'Ожидание';
+      case 'starting':
+        return 'Запуск...';
+      case 'connected':
+        return 'Подключено';
+      case 'playing':
+        return 'Воспроизведение';
+      case 'error':
+        return 'Ошибка';
+      case 'stopped':
+        return 'Остановлено';
+      default:
+        return 'Неизвестно';
+    }
+  };
 
   return (
     <Paper sx={{ p: 2, position: 'relative' }}>
+      {/* Статус стрима */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Chip
+          label={getStatusLabel(streamStatus)}
+          color={getStatusColor(streamStatus)}
+          size="small"
+        />
+        {streamType === 'hls' && (
+          <Chip label="HLS" size="small" variant="outlined" />
+        )}
+        {streamType === 'webrtc' && (
+          <Chip label="WebRTC" size="small" variant="outlined" color="primary" />
+        )}
+        {streamType === 'rtsp' && (
+          <Chip label="RTSP" size="small" variant="outlined" color="secondary" />
+        )}
+      </Box>
+
       {loading && (
         <Box
           sx={{
@@ -263,11 +602,19 @@ export default function VideoPlayer({
             left: '50%',
             transform: 'translate(-50%, -50%)',
             zIndex: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 2,
           }}
         >
           <CircularProgress />
+          <Typography variant="body2" color="text.secondary">
+            {streamStatus === 'starting' ? 'Запуск трансляции...' : 'Подключение...'}
+          </Typography>
         </Box>
       )}
+
       {error ? (
         <Box
           sx={{
@@ -277,14 +624,20 @@ export default function VideoPlayer({
             justifyContent: 'center',
             minHeight: 300,
             gap: 2,
+            p: 3,
           }}
         >
-          <Typography color="error" variant="h6">
+          <Typography color="error" variant="h6" align="center">
             {error}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" color="text.secondary" align="center">
             Камера: {camera.name}
           </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <IconButton color="primary" onClick={handleReconnect} title="Переподключиться">
+              <Refresh />
+            </IconButton>
+          </Box>
         </Box>
       ) : (
         <>
@@ -310,7 +663,7 @@ export default function VideoPlayer({
                 display: 'block',
               }}
             />
-            {loading && streamStarted && (
+            {loading && streamStatus === 'connected' && (
               <Box
                 sx={{
                   position: 'absolute',
@@ -319,9 +672,14 @@ export default function VideoPlayer({
                   transform: 'translate(-50%, -50%)',
                   color: '#fff',
                   zIndex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 1,
                 }}
               >
-                <Typography>Подключение к камере...</Typography>
+                <CircularProgress size={24} sx={{ color: '#fff' }} />
+                <Typography variant="body2">Буферизация...</Typography>
               </Box>
             )}
           </Box>
@@ -347,7 +705,7 @@ export default function VideoPlayer({
                 <IconButton
                   color="primary"
                   onClick={handleStop}
-                  disabled={loading || !!error || !streamStarted}
+                  disabled={loading || !!error || !streamActive}
                 >
                   <Stop />
                 </IconButton>
@@ -369,12 +727,21 @@ export default function VideoPlayer({
                   {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Quality">
+              <Tooltip title="Качество">
                 <IconButton
                   color="primary"
                   onClick={(e: React.MouseEvent<HTMLButtonElement>) => setQualityMenuAnchor(e.currentTarget)}
                 >
                   <Settings />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Переподключиться">
+                <IconButton
+                  color="primary"
+                  onClick={handleReconnect}
+                  disabled={loading}
+                >
+                  <Refresh />
                 </IconButton>
               </Tooltip>
               <Menu
@@ -383,16 +750,16 @@ export default function VideoPlayer({
                 onClose={() => setQualityMenuAnchor(null)}
               >
                 <MenuItem onClick={() => handleQualityChange('low')} selected={quality === 'low'}>
-                  Low (640x360)
+                  Низкое (640x360)
                 </MenuItem>
                 <MenuItem onClick={() => handleQualityChange('medium')} selected={quality === 'medium'}>
-                  Medium (1280x720)
+                  Среднее (1280x720)
                 </MenuItem>
                 <MenuItem onClick={() => handleQualityChange('high')} selected={quality === 'high'}>
-                  High (1920x1080)
+                  Высокое (1920x1080)
                 </MenuItem>
                 <MenuItem onClick={() => handleQualityChange('ultra')} selected={quality === 'ultra'}>
-                  Ultra (1920x1080)
+                  Максимальное (1920x1080)
                 </MenuItem>
               </Menu>
             </Box>
@@ -402,3 +769,4 @@ export default function VideoPlayer({
     </Paper>
   );
 }
+

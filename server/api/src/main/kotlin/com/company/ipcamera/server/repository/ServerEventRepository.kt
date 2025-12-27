@@ -1,5 +1,7 @@
 package com.company.ipcamera.server.repository
 
+import com.company.ipcamera.server.websocket.WebSocketManager
+import com.company.ipcamera.server.websocket.WebSocketChannel
 import com.company.ipcamera.shared.domain.model.Event
 import com.company.ipcamera.shared.domain.model.EventType
 import com.company.ipcamera.shared.domain.model.EventSeverity
@@ -7,19 +9,20 @@ import com.company.ipcamera.shared.domain.repository.EventRepository
 import com.company.ipcamera.shared.domain.repository.PaginatedResult
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.*
 import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 
 /**
  * Серверная реализация EventRepository
- * 
+ *
  * TODO: Мигрировать на SQLDelight/PostgreSQL для продакшена
  */
 class ServerEventRepository : EventRepository {
     private val events = mutableMapOf<String, Event>()
     private val mutex = Mutex()
-    
+
     override suspend fun getEvents(
         type: EventType?,
         cameraId: String?,
@@ -31,7 +34,7 @@ class ServerEventRepository : EventRepository {
         limit: Int
     ): PaginatedResult<Event> = mutex.withLock {
         var filteredEvents = events.values.toList()
-        
+
         // Фильтрация
         if (cameraId != null) {
             filteredEvents = filteredEvents.filter { it.cameraId == cameraId }
@@ -51,15 +54,15 @@ class ServerEventRepository : EventRepository {
         if (endTime != null) {
             filteredEvents = filteredEvents.filter { it.timestamp <= endTime }
         }
-        
+
         // Сортировка по времени (новые сначала)
         filteredEvents = filteredEvents.sortedByDescending { it.timestamp }
-        
+
         val total = filteredEvents.size
         val offset = (page - 1) * limit
         val paginatedItems = filteredEvents.drop(offset).take(limit)
         val hasMore = offset + limit < total
-        
+
         return PaginatedResult(
             items = paginatedItems,
             total = total,
@@ -68,22 +71,43 @@ class ServerEventRepository : EventRepository {
             hasMore = hasMore
         )
     }
-    
+
     override suspend fun getEventById(id: String): Event? = mutex.withLock {
         return events[id]
     }
-    
+
     override suspend fun addEvent(event: Event): Result<Event> = mutex.withLock {
         try {
             events[event.id] = event
             logger.info { "Event added: ${event.id} (type: ${event.type}, severity: ${event.severity})" }
+
+            // Отправляем WebSocket событие о новом событии
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.EVENTS,
+                    "event_created",
+                    jsonObject {
+                        put("eventId", event.id)
+                        put("cameraId", event.cameraId)
+                        put("cameraName", event.cameraName)
+                        put("type", event.type.name)
+                        put("severity", event.severity.name)
+                        put("timestamp", event.timestamp)
+                        put("description", event.description)
+                        put("acknowledged", event.acknowledged)
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for new event" }
+            }
+
             Result.success(event)
         } catch (e: Exception) {
             logger.error(e) { "Error adding event: ${event.id}" }
             Result.failure(e)
         }
     }
-    
+
     override suspend fun updateEvent(event: Event): Result<Event> = mutex.withLock {
         try {
             if (!events.containsKey(event.id)) {
@@ -91,13 +115,32 @@ class ServerEventRepository : EventRepository {
             }
             events[event.id] = event
             logger.info { "Event updated: ${event.id}" }
+
+            // Отправляем WebSocket событие об обновлении события
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.EVENTS,
+                    "event_updated",
+                    jsonObject {
+                        put("eventId", event.id)
+                        put("cameraId", event.cameraId)
+                        put("type", event.type.name)
+                        put("severity", event.severity.name)
+                        put("acknowledged", event.acknowledged)
+                        put("timestamp", System.currentTimeMillis())
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for event update" }
+            }
+
             Result.success(event)
         } catch (e: Exception) {
             logger.error(e) { "Error updating event: ${event.id}" }
             Result.failure(e)
         }
     }
-    
+
     override suspend fun deleteEvent(id: String): Result<Unit> = mutex.withLock {
         try {
             if (!events.containsKey(id)) {
@@ -111,7 +154,7 @@ class ServerEventRepository : EventRepository {
             Result.failure(e)
         }
     }
-    
+
     override suspend fun acknowledgeEvent(id: String, userId: String): Result<Event> = mutex.withLock {
         try {
             val event = events[id] ?: return Result.failure(IllegalArgumentException("Event not found: $id"))
@@ -122,13 +165,31 @@ class ServerEventRepository : EventRepository {
             )
             events[id] = updatedEvent
             logger.info { "Event acknowledged: $id by user: $userId" }
+
+            // Отправляем WebSocket событие о подтверждении события
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.EVENTS,
+                    "event_acknowledged",
+                    jsonObject {
+                        put("eventId", id)
+                        put("cameraId", event.cameraId)
+                        put("userId", userId)
+                        put("acknowledgedAt", updatedEvent.acknowledgedAt ?: System.currentTimeMillis())
+                        put("timestamp", System.currentTimeMillis())
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for event acknowledgment" }
+            }
+
             Result.success(updatedEvent)
         } catch (e: Exception) {
             logger.error(e) { "Error acknowledging event: $id" }
             Result.failure(e)
         }
     }
-    
+
     override suspend fun acknowledgeEvents(ids: List<String>, userId: String): Result<List<Event>> = mutex.withLock {
         try {
             val acknowledgedEvents = mutableListOf<Event>()
@@ -143,13 +204,30 @@ class ServerEventRepository : EventRepository {
                 acknowledgedEvents.add(updatedEvent)
             }
             logger.info { "Events acknowledged: ${ids.size} events by user: $userId" }
+
+            // Отправляем WebSocket событие о массовом подтверждении событий
+            try {
+                WebSocketManager.broadcastEvent(
+                    WebSocketChannel.EVENTS,
+                    "events_acknowledged",
+                    jsonObject {
+                        put("eventIds", JsonArray(ids.map { JsonPrimitive(it) }))
+                        put("userId", userId)
+                        put("count", acknowledgedEvents.size)
+                        put("timestamp", System.currentTimeMillis())
+                    }
+                )
+            } catch (e: Exception) {
+                logger.warn(e) { "Failed to send WebSocket event for bulk event acknowledgment" }
+            }
+
             Result.success(acknowledgedEvents)
         } catch (e: Exception) {
             logger.error(e) { "Error acknowledging events" }
             Result.failure(e)
         }
     }
-    
+
     override suspend fun getEventStatistics(
         cameraId: String?,
         startTime: Long?,
@@ -157,7 +235,7 @@ class ServerEventRepository : EventRepository {
     ): Result<Map<String, Any>> = mutex.withLock {
         try {
             var filteredEvents = events.values.toList()
-            
+
             if (cameraId != null) {
                 filteredEvents = filteredEvents.filter { it.cameraId == cameraId }
             }
@@ -167,7 +245,7 @@ class ServerEventRepository : EventRepository {
             if (endTime != null) {
                 filteredEvents = filteredEvents.filter { it.timestamp <= endTime }
             }
-            
+
             val statistics = mapOf(
                 "total" to filteredEvents.size,
                 "byType" to filteredEvents.groupingBy { it.type.name }.eachCount(),
@@ -175,7 +253,7 @@ class ServerEventRepository : EventRepository {
                 "acknowledged" to filteredEvents.count { it.acknowledged },
                 "unacknowledged" to filteredEvents.count { !it.acknowledged }
             )
-            
+
             Result.success(statistics)
         } catch (e: Exception) {
             logger.error(e) { "Error getting event statistics" }

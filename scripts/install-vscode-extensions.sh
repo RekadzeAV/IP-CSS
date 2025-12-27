@@ -63,8 +63,11 @@ extensions=(
     "streetsidesoftware.code-spell-checker-russian"
 
     # Project Management
-    "alefragnani.project-manager"
-    "formulahendry.auto-rename-tag"
+    "alefragnani.project-manager",
+    "formulahendry.auto-rename-tag",
+
+    # TypeScript Navigation & Code Exploration
+    "christian-kohler.path-intellisense"
 )
 
 installed=0
@@ -106,4 +109,5 @@ else
     echo ""
     echo "Некоторые расширения не удалось установить. Проверьте логи выше."
 fi
+
 

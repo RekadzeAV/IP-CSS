@@ -33,8 +33,8 @@ data class LoginRequest(
 
 @Serializable
 data class LoginResponse(
-    val token: String,
-    val refreshToken: String? = null,
+    val token: String = "", // Токены теперь в httpOnly cookies, не отправляются в теле ответа
+    val refreshToken: String? = null, // Токены теперь в httpOnly cookies
     val expiresIn: Long,
     val user: UserResponse
 )
@@ -53,5 +53,6 @@ data class RegisterResponse(
     val user: UserResponse? = null,
     val message: String? = null
 )
+
 
 

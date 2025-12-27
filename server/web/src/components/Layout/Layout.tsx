@@ -25,11 +25,12 @@ import {
   VideoLibrary as VideoLibraryIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
+  Circle as CircleIcon,
 } from '@mui/icons-material';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/store/hooks';
 import { logout } from '@/store/slices/authSlice';
-import { WebSocketProvider } from '@/components/WebSocketProvider';
+import { Box, Tooltip } from '@mui/material';
 
 const DRAWER_WIDTH = 240;
 
@@ -52,6 +53,7 @@ export default function Layout({ children }: LayoutProps) {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  const { connected, connecting } = useAppSelector((state) => state.websocket);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -119,9 +121,32 @@ export default function Layout({ children }: LayoutProps) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" noWrap component="div">
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
             Система видеонаблюдения
           </Typography>
+          <Tooltip
+            title={
+              connecting
+                ? 'Подключение к WebSocket...'
+                : connected
+                  ? 'WebSocket подключен'
+                  : 'WebSocket отключен'
+            }
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                mr: 2,
+                color: connecting ? 'warning.main' : connected ? 'success.main' : 'error.main',
+              }}
+            >
+              <CircleIcon sx={{ fontSize: 12, mr: 0.5 }} />
+              <Typography variant="caption" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                {connecting ? 'Подключение...' : connected ? 'Онлайн' : 'Офлайн'}
+              </Typography>
+            </Box>
+          </Tooltip>
         </Toolbar>
       </AppBar>
       <Box
@@ -168,9 +193,10 @@ export default function Layout({ children }: LayoutProps) {
           mt: 8,
         }}
       >
-        <WebSocketProvider>{children}</WebSocketProvider>
+        {children}
       </Box>
     </Box>
   );
 }
+
 

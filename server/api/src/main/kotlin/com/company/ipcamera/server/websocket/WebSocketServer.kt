@@ -28,20 +28,20 @@ private val logger = KotlinLogging.logger {}
 sealed class ServerWebSocketMessage {
     @Serializable
     data class AuthResponse(val success: Boolean, val message: String? = null) : ServerWebSocketMessage()
-    
+
     @Serializable
     data class SubscribeResponse(val success: Boolean, val channels: List<String>, val message: String? = null) : ServerWebSocketMessage()
-    
+
     @Serializable
     data class UnsubscribeResponse(val success: Boolean, val channels: List<String>, val message: String? = null) : ServerWebSocketMessage()
-    
+
     @Serializable
     data class EventMessage(
         val type: String,
         val channel: String,
         val data: JsonObject
     ) : ServerWebSocketMessage()
-    
+
     @Serializable
     data class ErrorMessage(val error: String, val code: String? = null) : ServerWebSocketMessage()
 }
@@ -63,7 +63,7 @@ class WebSocketSessionManager {
     private val sessions = ConcurrentHashMap<String, WebSocketSession>()
     private val sessionSubscriptions = ConcurrentHashMap<String, MutableSet<WebSocketChannel>>()
     private val channelSubscriptions = ConcurrentHashMap<WebSocketChannel, MutableSet<String>>()
-    
+
     /**
      * Добавить сессию
      */
@@ -72,7 +72,7 @@ class WebSocketSessionManager {
         sessionSubscriptions[sessionId] = mutableSetOf()
         logger.info { "WebSocket session added: $sessionId" }
     }
-    
+
     /**
      * Удалить сессию
      */
@@ -84,7 +84,7 @@ class WebSocketSessionManager {
         sessions.remove(sessionId)
         logger.info { "WebSocket session removed: $sessionId" }
     }
-    
+
     /**
      * Подписать сессию на канал
      */
@@ -92,13 +92,13 @@ class WebSocketSessionManager {
         if (!sessions.containsKey(sessionId)) {
             return false
         }
-        
+
         sessionSubscriptions.getOrPut(sessionId) { mutableSetOf() }.add(channel)
         channelSubscriptions.getOrPut(channel) { mutableSetOf() }.add(sessionId)
         logger.debug { "Session $sessionId subscribed to channel: $channel" }
         return true
     }
-    
+
     /**
      * Отписать сессию от канала
      */
@@ -108,13 +108,13 @@ class WebSocketSessionManager {
         logger.debug { "Session $sessionId unsubscribed from channel: $channel" }
         return true
     }
-    
+
     /**
      * Отправить сообщение всем подписчикам канала
      */
     suspend fun broadcastToChannel(channel: WebSocketChannel, message: String) {
         val subscribers = channelSubscriptions[channel] ?: return
-        
+
         subscribers.forEach { sessionId ->
             val session = sessions[sessionId]
             if (session != null) {
@@ -129,7 +129,7 @@ class WebSocketSessionManager {
             }
         }
     }
-    
+
     /**
      * Отправить сообщение конкретной сессии
      */
@@ -144,7 +144,7 @@ class WebSocketSessionManager {
             false
         }
     }
-    
+
     /**
      * Получить количество активных сессий
      */
@@ -156,7 +156,7 @@ class WebSocketSessionManager {
  */
 object WebSocketManager {
     val sessionManager = WebSocketSessionManager()
-    
+
     /**
      * Отправить событие в канал
      */
@@ -177,18 +177,19 @@ object WebSocketManager {
  */
 fun Application.configureWebSocket() {
     val userRepository: ServerUserRepository by inject()
-    
+
     routing {
-        webSocket("/ws") {
+        route("/api/v1") {
+            webSocket("/ws") {
             val sessionId = UUID.randomUUID().toString()
             var authenticated = false
             var userId: String? = null
-            
+
             try {
                 WebSocketManager.sessionManager.addSession(sessionId, this)
-                
+
                 logger.info { "WebSocket connection established: $sessionId" }
-                
+
                 // Обработка входящих сообщений
                 for (frame in incoming) {
                     when (frame) {
@@ -197,7 +198,7 @@ fun Application.configureWebSocket() {
                                 val text = frame.readText()
                                 val json = Json.parseToJsonElement(text).jsonObject
                                 val type = json["type"]?.jsonPrimitive?.content
-                                
+
                                 when (type) {
                                     "auth" -> {
                                         val token = json["data"]?.jsonObject?.get("token")?.jsonPrimitive?.content
@@ -206,7 +207,7 @@ fun Application.configureWebSocket() {
                                                 val verifier = JwtConfig.createVerifier()
                                                 val decodedJWT: DecodedJWT = verifier.verify(token)
                                                 userId = decodedJWT.subject
-                                                
+
                                                 // Проверяем, что пользователь существует и активен
                                                 val user = userRepository.getUserById(userId)
                                                 if (user != null && user.isActive) {
@@ -240,7 +241,7 @@ fun Application.configureWebSocket() {
                                             }
                                         }
                                     }
-                                    
+
                                     "subscribe" -> {
                                         if (!authenticated) {
                                             val response = Json.encodeToString(
@@ -252,7 +253,7 @@ fun Application.configureWebSocket() {
                                             send(Frame.Text(response))
                                             continue
                                         }
-                                        
+
                                         val channels = json["data"]?.jsonObject?.get("channels")?.jsonArray
                                         if (channels != null) {
                                             val subscribedChannels = mutableListOf<String>()
@@ -267,7 +268,7 @@ fun Application.configureWebSocket() {
                                                     logger.warn { "Invalid channel: $channelName" }
                                                 }
                                             }
-                                            
+
                                             val response = Json.encodeToString(
                                                 ServerWebSocketMessage.SubscribeResponse(
                                                     success = true,
@@ -278,7 +279,7 @@ fun Application.configureWebSocket() {
                                             send(Frame.Text(response))
                                         }
                                     }
-                                    
+
                                     "unsubscribe" -> {
                                         if (!authenticated) {
                                             val response = Json.encodeToString(
@@ -290,7 +291,7 @@ fun Application.configureWebSocket() {
                                             send(Frame.Text(response))
                                             continue
                                         }
-                                        
+
                                         val channels = json["data"]?.jsonObject?.get("channels")?.jsonArray
                                         if (channels != null) {
                                             val unsubscribedChannels = mutableListOf<String>()
@@ -305,7 +306,7 @@ fun Application.configureWebSocket() {
                                                     logger.warn { "Invalid channel: $channelName" }
                                                 }
                                             }
-                                            
+
                                             val response = Json.encodeToString(
                                                 ServerWebSocketMessage.UnsubscribeResponse(
                                                     success = true,
@@ -316,7 +317,7 @@ fun Application.configureWebSocket() {
                                             send(Frame.Text(response))
                                         }
                                     }
-                                    
+
                                     else -> {
                                         logger.warn { "Unknown message type: $type" }
                                         val response = Json.encodeToString(
@@ -343,16 +344,16 @@ fun Application.configureWebSocket() {
                                 }
                             }
                         }
-                        
+
                         is Frame.Close -> {
                             logger.info { "WebSocket close frame received: $sessionId" }
                             break
                         }
-                        
+
                         is Frame.Ping, is Frame.Pong -> {
                             // Обрабатывается автоматически Ktor
                         }
-                        
+
                         else -> {
                             logger.warn { "Unsupported frame type: ${frame::class.simpleName}" }
                         }
@@ -364,6 +365,7 @@ fun Application.configureWebSocket() {
                 WebSocketManager.sessionManager.removeSession(sessionId)
                 logger.info { "WebSocket connection closed: $sessionId" }
             }
+        }
         }
     }
 }

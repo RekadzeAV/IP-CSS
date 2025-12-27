@@ -11,10 +11,10 @@ class UserApiService(
     private val apiClient: ApiClient,
     private val basePath: String = "/api/v1/users"
 ) {
-    
+
     /**
      * Вход в систему
-     * 
+     *
      * @param request данные для входа
      * @return токен доступа и информация о пользователе
      */
@@ -25,10 +25,10 @@ class UserApiService(
             responseType = LoginResponse.serializer()
         )
     }
-    
+
     /**
      * Регистрация нового пользователя
-     * 
+     *
      * @param request данные для регистрации
      * @return результат регистрации
      */
@@ -39,7 +39,7 @@ class UserApiService(
             responseType = RegisterResponse.serializer()
         )
     }
-    
+
     /**
      * Выход из системы
      */
@@ -49,10 +49,10 @@ class UserApiService(
             responseType = ApiResponse.serializer(Unit.serializer())
         )
     }
-    
+
     /**
      * Получить информацию о текущем пользователе
-     * 
+     *
      * @return информация о пользователе
      */
     suspend fun getCurrentUser(): UserResponse {
@@ -61,10 +61,10 @@ class UserApiService(
             responseType = UserResponse.serializer()
         )
     }
-    
+
     /**
      * Обновить профиль текущего пользователя
-     * 
+     *
      * @param request данные для обновления
      * @return обновленная информация о пользователе
      */
@@ -75,10 +75,10 @@ class UserApiService(
             responseType = UserResponse.serializer()
         )
     }
-    
+
     /**
      * Получить список пользователей (только для администраторов)
-     * 
+     *
      * @param page номер страницы
      * @param limit количество элементов на странице
      * @param role фильтр по роли
@@ -93,17 +93,17 @@ class UserApiService(
         queryParams["page"] = page.toString()
         queryParams["limit"] = limit.toString()
         role?.let { queryParams["role"] = it }
-        
+
         return apiClient.get(
             path = basePath,
             queryParameters = queryParams,
             responseType = PaginatedResponse.serializer(UserResponse.serializer())
         )
     }
-    
+
     /**
      * Получить пользователя по ID (только для администраторов)
-     * 
+     *
      * @param id идентификатор пользователя
      * @return информация о пользователе
      */
@@ -113,10 +113,10 @@ class UserApiService(
             responseType = UserResponse.serializer()
         )
     }
-    
+
     /**
      * Обновить пользователя (только для администраторов)
-     * 
+     *
      * @param id идентификатор пользователя
      * @param request данные для обновления
      * @return обновленная информация о пользователе
@@ -128,10 +128,10 @@ class UserApiService(
             responseType = UserResponse.serializer()
         )
     }
-    
+
     /**
      * Удалить пользователя (только для администраторов)
-     * 
+     *
      * @param id идентификатор пользователя
      */
     suspend fun deleteUser(id: String): ApiResponse<Unit> {
@@ -140,17 +140,19 @@ class UserApiService(
             responseType = ApiResponse.serializer(Unit.serializer())
         )
     }
-    
+
     /**
      * Обновить токен доступа
-     * 
-     * @param refreshToken токен обновления
-     * @return новый токен доступа
+     *
+     * @param refreshToken токен обновления (опционально, если используется httpOnly cookie)
+     * @return новый токен доступа (токены устанавливаются в cookies сервером)
      */
-    suspend fun refreshToken(refreshToken: String): LoginResponse {
+    suspend fun refreshToken(refreshToken: String = ""): LoginResponse {
         @kotlinx.serialization.Serializable
-        data class RefreshTokenRequest(val refreshToken: String)
-        
+        data class RefreshTokenRequest(val refreshToken: String = "")
+
+        // Refresh token теперь в httpOnly cookie, отправляется автоматически
+        // Если передан refreshToken, используем его (для обратной совместимости)
         return apiClient.post(
             path = "/api/v1/auth/refresh",
             body = RefreshTokenRequest(refreshToken),

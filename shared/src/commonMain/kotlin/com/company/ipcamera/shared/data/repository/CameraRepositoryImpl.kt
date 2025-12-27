@@ -167,9 +167,9 @@ class CameraRepositoryImpl(
 
             try {
                 // OnvifClient.discoverCameras() использует WS-Discovery для обнаружения камер
-                // В текущей реализации WS-Discovery не полностью реализован,
-                // поэтому метод возвращает пустой список
-                // В будущем, когда WS-Discovery будет реализован, метод вернет список обнаруженных камер
+                // WS-Discovery полностью реализован для всех платформ (JVM, Android, iOS)
+                // Метод отправляет Probe запрос на multicast адрес 239.255.255.250:3702
+                // и собирает ответы от ONVIF устройств в сети
                 val discovered = onvifClient.discoverCameras(timeoutMillis = 5000)
 
                 logger.info { "Discovered ${discovered.size} cameras via ONVIF" }

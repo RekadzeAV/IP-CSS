@@ -1,0 +1,34 @@
+#!/bin/sh
+
+# Pre-installation script for Asustor ADM
+
+INSTALL_DIR="/usr/local/AppCentral/ip-css"
+PACKAGE_NAME="ip-css"
+
+# Check if package is already installed
+if [ -d "$INSTALL_DIR" ]; then
+    echo "Package $PACKAGE_NAME is already installed. Stopping service..."
+    /usr/local/AppCentral/ip-css/scripts/stop.sh > /dev/null 2>&1
+fi
+
+# Check available disk space (minimum 500MB)
+AVAILABLE_SPACE=$(df -m "$INSTALL_DIR" 2>/dev/null | tail -1 | awk '{print $4}')
+if [ -z "$AVAILABLE_SPACE" ] || [ "$AVAILABLE_SPACE" -lt 500 ]; then
+    echo "Error: Insufficient disk space. At least 500MB required."
+    exit 1
+fi
+
+# Check Java version (required for Ktor server)
+if ! command -v java > /dev/null 2>&1; then
+    echo "Error: Java is not installed. Please install Java 11 or later."
+    exit 1
+fi
+
+JAVA_VERSION=$(java -version 2>&1 | head -n 1 | cut -d'"' -f2 | sed '/^1\./s///' | cut -d'.' -f1)
+if [ "$JAVA_VERSION" -lt 11 ]; then
+    echo "Error: Java 11 or later is required. Found Java $JAVA_VERSION"
+    exit 1
+fi
+
+exit 0
+

@@ -1,0 +1,75 @@
+#!/bin/sh
+
+# Post-installation script for Synology DSM
+# This script runs after the package is installed
+
+INSTALL_DIR="/var/packages/ip-css/target"
+PACKAGE_NAME="ip-css"
+DATA_DIR="/var/packages/ip-css/var"
+CONFIG_DIR="/var/packages/ip-css/etc"
+
+# Create necessary directories
+mkdir -p "$DATA_DIR/db"
+mkdir -p "$DATA_DIR/recordings"
+mkdir -p "$DATA_DIR/logs"
+mkdir -p "$CONFIG_DIR"
+
+# Set permissions
+chown -R http:http "$DATA_DIR"
+chown -R http:http "$CONFIG_DIR"
+chmod -R 755 "$DATA_DIR"
+chmod -R 755 "$CONFIG_DIR"
+
+# Create default configuration if not exists
+if [ ! -f "$CONFIG_DIR/config.yaml" ]; then
+    cat > "$CONFIG_DIR/config.yaml" <<EOF
+server:
+  port: 8081
+  host: 0.0.0.0
+
+web:
+  port: 8080
+  host: 0.0.0.0
+
+database:
+  path: $DATA_DIR/db/ip-css.db
+
+storage:
+  recordings_path: $DATA_DIR/recordings
+
+logging:
+  level: INFO
+  file: $DATA_DIR/logs/ip-css.log
+EOF
+    chown http:http "$CONFIG_DIR/config.yaml"
+    chmod 644 "$CONFIG_DIR/config.yaml"
+fi
+
+# Create systemd service file (if using systemd)
+if [ -d "/etc/systemd/system" ]; then
+    cat > "/etc/systemd/system/ip-css.service" <<EOF
+[Unit]
+Description=IP Camera Surveillance System
+After=network.target
+
+[Service]
+Type=simple
+User=http
+Group=http
+WorkingDirectory=$INSTALL_DIR
+ExecStart=$INSTALL_DIR/bin/start.sh
+ExecStop=$INSTALL_DIR/bin/stop.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+fi
+
+# Start the service
+/usr/syno/bin/synopkg start "$PACKAGE_NAME" > /dev/null 2>&1
+
+exit 0
+

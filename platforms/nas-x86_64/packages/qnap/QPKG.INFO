@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QPKG>
+  <Name>ip-css</Name>
+  <Version>Alfa-0.0.1</Version>
+  <DisplayName>IP Camera Surveillance System</DisplayName>
+  <Architecture>x86_64</Architecture>
+  <Author>Company</Author>
+  <Description>Кроссплатформенная система видеонаблюдения с IP-камер. Поддержка RTSP потоков, запись видео, AI-аналитика.</Description>
+  <InstallPath>/share/CACHEDEV1_DATA/.qpkg/ip-css</InstallPath>
+  <DefaultPage>index.html</DefaultPage>
+  <Icon>icon_80.png</Icon>
+  <Type>Application</Type>
+  <Enable>TRUE</Enable>
+  <Visible>TRUE</Visible>
+  <DefaultUI>http</DefaultUI>
+  <DefaultPort>8080</DefaultPort>
+  <WebPort>8080</WebPort>
+  <WebSSL>FALSE</WebSSL>
+  <WebDir>web</WebDir>
+  <FirmwareMin>5.0</FirmwareMin>
+  <FirmwareMax>99.99</FirmwareMax>
+</QPKG>
+

@@ -42,3 +42,4 @@ interface LicenseRepository {
     suspend fun checkFeatureAvailability(featureName: String): Result<Boolean>
 }
 
+

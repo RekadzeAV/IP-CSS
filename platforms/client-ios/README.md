@@ -55,3 +55,4 @@ xcodebuild -workspace IPCameraSurveillance.xcworkspace \
 
 Приложение публикуется через App Store (iOS) и Mac App Store (macOS).
 
+

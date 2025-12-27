@@ -3,6 +3,7 @@ package com.company.ipcamera.server
 import com.auth0.jwt.JWT
 import com.company.ipcamera.server.config.JwtConfig
 import com.company.ipcamera.server.di.appModule
+import com.company.ipcamera.server.middleware.configureCookieAuth
 import com.company.ipcamera.server.websocket.configureWebSocket
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -44,11 +45,11 @@ fun Application.module() {
             ?.split(",")
             ?.map { it.trim() }
             ?: listOf("http://localhost:3000", "http://localhost:8080")
-        
+
         allowedOrigins.forEach { origin ->
             allowHost(origin, schemes = listOf("http", "https"))
         }
-        
+
         allowHeader("Content-Type")
         allowHeader("Authorization")
         allowMethod(io.ktor.http.HttpMethod.Get)
@@ -59,11 +60,18 @@ fun Application.module() {
         allowCredentials = true
     }
 
+    // Cookie Auth Middleware - читает токен из cookie и устанавливает в заголовок Authorization
+    configureCookieAuth()
+
     // JWT Authentication
     install(Authentication) {
         jwt("jwt-auth") {
             realm = JwtConfig.realm
             verifier(JwtConfig.createVerifier())
+            // Токен теперь может быть в заголовке Authorization (установлен middleware из cookie)
+            challenge { defaultScheme, realm ->
+                call.respond(io.ktor.http.HttpStatusCode.Unauthorized, "Token is invalid or expired")
+            }
             validate { credential ->
                 if (credential.payload.issuer == "ip-camera-server" &&
                     credential.payload.audience.contains("ip-camera-client")) {
@@ -82,7 +90,7 @@ fun Application.module() {
 
     // Routing
     configureRouting()
-    
+
     // WebSocket
     configureWebSocket()
 }

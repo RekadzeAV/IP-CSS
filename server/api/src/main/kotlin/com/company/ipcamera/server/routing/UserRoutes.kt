@@ -1,8 +1,12 @@
 package com.company.ipcamera.server.routing
 
 import com.company.ipcamera.server.dto.*
-import com.company.ipcamera.server.middleware.requireAdmin
+import com.company.ipcamera.server.middleware.AuthorizationMiddleware.requireAdmin
+import com.company.ipcamera.server.middleware.AuthorizationMiddleware.requireRole
+import com.company.ipcamera.server.middleware.validateRequest
 import com.company.ipcamera.server.repository.ServerUserRepository
+import com.company.ipcamera.server.security.SecurityLogger
+import com.company.ipcamera.server.validation.RequestValidator
 import com.company.ipcamera.shared.domain.model.UserRole
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -22,7 +26,7 @@ private val logger = KotlinLogging.logger {}
  */
 fun Route.userRoutes() {
     val userRepository: ServerUserRepository by inject()
-    
+
     authenticate("jwt-auth") {
         route("/users") {
             // GET /api/v1/users/me - получение текущего пользователя
@@ -38,7 +42,7 @@ fun Route.userRoutes() {
                                 message = "User not authenticated"
                             )
                         )
-                    
+
                     val user = userRepository.getUserById(userId)
                     if (user != null) {
                         call.respond(
@@ -71,41 +75,27 @@ fun Route.userRoutes() {
                     )
                 }
             }
-            
+
             // GET /api/v1/users - список пользователей (только для администраторов)
             get {
                 requireAdmin()
-                
+
                 try {
                     val page = call.request.queryParameters["page"]?.toIntOrNull() ?: 1
                     val limit = call.request.queryParameters["limit"]?.toIntOrNull() ?: 20
                     val roleStr = call.request.queryParameters["role"]
-                    val role = roleStr?.let { 
-                        try { UserRole.valueOf(it.uppercase()) } 
+                    val role = roleStr?.let {
+                        try { UserRole.valueOf(it.uppercase()) }
                         catch (e: Exception) { null }
                     }
-                    
-                    // TODO: Реализовать пагинацию в ServerUserRepository
-                    val allUsers = userRepository.getAllUsers()
-                    val filteredUsers = if (role != null) {
-                        allUsers.filter { it.role == role }
-                    } else {
-                        allUsers
-                    }
-                    
-                    val total = filteredUsers.size
-                    val offset = (page - 1) * limit
-                    val paginatedItems = filteredUsers.drop(offset).take(limit)
-                    val hasMore = offset + limit < total
-                    
-                    val paginatedResult = com.company.ipcamera.shared.domain.repository.PaginatedResult(
-                        items = paginatedItems,
-                        total = total,
+
+                    // Используем метод с пагинацией из репозитория
+                    val paginatedResult = userRepository.getUsers(
                         page = page,
                         limit = limit,
-                        hasMore = hasMore
+                        role = role
                     )
-                    
+
                     call.respond(
                         HttpStatusCode.OK,
                         ApiResponse(
@@ -126,20 +116,25 @@ fun Route.userRoutes() {
                     )
                 }
             }
-            
+
             // POST /api/v1/users - создание нового пользователя (только для администраторов)
             post {
                 requireAdmin()
-                
+
                 try {
                     val request = call.receive<CreateUserRequest>()
-                    
+
+                    // Валидация запроса
+                    if (!validateRequest(request) { RequestValidator.validateCreateUserRequest(it) }) {
+                        return@post
+                    }
+
                     val role = try {
                         UserRole.valueOf(request.role.uppercase())
                     } catch (e: Exception) {
                         UserRole.VIEWER
                     }
-                    
+
                     val user = userRepository.createUser(
                         username = request.username,
                         email = request.email,
@@ -147,9 +142,12 @@ fun Route.userRoutes() {
                         fullName = request.fullName,
                         role = role
                     )
-                    
+
+                    val principal = call.principal<io.ktor.server.auth.jwt.JWTPrincipal>()
+                    val createdBy = principal?.payload?.subject ?: "unknown"
+                    SecurityLogger.logUserCreated(createdBy, user.id, user.username)
                     logger.info { "User created: ${user.username} (id: ${user.id}) by admin" }
-                    
+
                     call.respond(
                         HttpStatusCode.Created,
                         ApiResponse(
@@ -170,12 +168,12 @@ fun Route.userRoutes() {
                     )
                 }
             }
-            
+
             route("/{id}") {
                 // GET /api/v1/users/{id} - получение пользователя по ID (только для администраторов)
                 get {
                     requireAdmin()
-                    
+
                     try {
                         val id = call.parameters["id"] ?: return@get call.respond(
                             HttpStatusCode.BadRequest,
@@ -185,7 +183,7 @@ fun Route.userRoutes() {
                                 message = "User ID is required"
                             )
                         )
-                        
+
                         val user = userRepository.getUserById(id)
                         if (user != null) {
                             call.respond(
@@ -218,11 +216,11 @@ fun Route.userRoutes() {
                         )
                     }
                 }
-                
+
                 // PUT /api/v1/users/{id} - обновление пользователя (только для администраторов)
                 put {
                     requireAdmin()
-                    
+
                     try {
                         val id = call.parameters["id"] ?: return@put call.respond(
                             HttpStatusCode.BadRequest,
@@ -232,10 +230,16 @@ fun Route.userRoutes() {
                                 message = "User ID is required"
                             )
                         )
-                        
+
                         val request = call.receive<UpdateUserRequest>()
+
+                        // Валидация запроса
+                        if (!validateRequest(request) { RequestValidator.validateUpdateUserRequest(it) }) {
+                            return@put
+                        }
+
                         val existingUser = userRepository.getUserById(id)
-                        
+
                         if (existingUser == null) {
                             call.respond(
                                 HttpStatusCode.NotFound,
@@ -247,19 +251,19 @@ fun Route.userRoutes() {
                             )
                             return@put
                         }
-                        
-                        val role = request.role?.let { 
-                            try { UserRole.valueOf(it.uppercase()) } 
+
+                        val role = request.role?.let {
+                            try { UserRole.valueOf(it.uppercase()) }
                             catch (e: Exception) { null }
                         } ?: existingUser.role
-                        
+
                         val updatedUser = existingUser.copy(
                             email = request.email ?: existingUser.email,
                             fullName = request.fullName ?: existingUser.fullName,
                             role = role,
                             isActive = request.isActive ?: existingUser.isActive
                         )
-                        
+
                         val result = userRepository.updateUser(updatedUser)
                         result.fold(
                             onSuccess = { user ->
@@ -297,11 +301,11 @@ fun Route.userRoutes() {
                         )
                     }
                 }
-                
+
                 // DELETE /api/v1/users/{id} - удаление пользователя (только для администраторов)
                 delete {
                     requireAdmin()
-                    
+
                     try {
                         val id = call.parameters["id"] ?: return@delete call.respond(
                             HttpStatusCode.BadRequest,
@@ -311,10 +315,26 @@ fun Route.userRoutes() {
                                 message = "User ID is required"
                             )
                         )
-                        
+
+                        val existingUser = userRepository.getUserById(id)
+                        if (existingUser == null) {
+                            call.respond(
+                                HttpStatusCode.NotFound,
+                                ApiResponse<Unit>(
+                                    success = false,
+                                    data = null,
+                                    message = "User not found"
+                                )
+                            )
+                            return@delete
+                        }
+
                         val result = userRepository.deleteUser(id)
                         result.fold(
                             onSuccess = {
+                                val principal = call.principal<io.ktor.server.auth.jwt.JWTPrincipal>()
+                                val deletedBy = principal?.payload?.subject ?: "unknown"
+                                SecurityLogger.logUserDeleted(deletedBy, id, existingUser.username)
                                 logger.info { "User deleted: $id by admin" }
                                 call.respond(
                                     HttpStatusCode.OK,

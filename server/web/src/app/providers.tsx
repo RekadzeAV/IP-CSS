@@ -5,6 +5,7 @@ import { store } from '@/store';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { SnackbarProvider } from 'notistack';
+import { WebSocketProvider } from '@/components/WebSocketProvider';
 
 const theme = createTheme({
   palette: {
@@ -24,10 +25,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
-          {children}
+          <WebSocketProvider>{children}</WebSocketProvider>
         </SnackbarProvider>
       </ThemeProvider>
     </Provider>
   );
 }
+
 

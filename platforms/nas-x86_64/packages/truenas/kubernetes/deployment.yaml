@@ -1,0 +1,189 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ip-css
+  namespace: default
+  labels:
+    app: ip-css
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ip-css
+  template:
+    metadata:
+      labels:
+        app: ip-css
+    spec:
+      containers:
+      - name: api
+        image: company/ip-css-api:Alfa-0.0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http-api
+          containerPort: 8081
+          protocol: TCP
+        env:
+        - name: JAVA_OPTS
+          value: "-Xmx2g -Xms512m"
+        - name: TZ
+          value: "UTC"
+        volumeMounts:
+        - name: recordings
+          mountPath: /app/recordings
+        - name: db
+          mountPath: /app/db
+        - name: config
+          mountPath: /app/config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8081
+          initialDelaySeconds: 40
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8081
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+      - name: web
+        image: company/ip-css-web:Alfa-0.0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http-web
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: API_URL
+          value: "http://localhost:8081"
+        - name: NODE_ENV
+          value: "production"
+        - name: TZ
+          value: "UTC"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+      volumes:
+      - name: recordings
+        persistentVolumeClaim:
+          claimName: ip-css-recordings
+      - name: db
+        persistentVolumeClaim:
+          claimName: ip-css-db
+      - name: config
+        persistentVolumeClaim:
+          claimName: ip-css-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ip-css-api
+  namespace: default
+  labels:
+    app: ip-css
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: http-api
+  selector:
+    app: ip-css
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ip-css-web
+  namespace: default
+  labels:
+    app: ip-css
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http-web
+    nodePort: 30080
+  selector:
+    app: ip-css
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ip-css-recordings
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: zfs-storage
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ip-css-db
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: zfs-storage
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ip-css-config
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: zfs-storage
+

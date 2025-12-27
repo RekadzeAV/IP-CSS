@@ -13,7 +13,7 @@ private val logger = KotlinLogging.logger {}
 
 /**
  * Серверная реализация UserRepository
- * 
+ *
  * TODO: Мигрировать на SQLDelight/PostgreSQL для продакшена
  * Сейчас используется in-memory хранилище для MVP
  */
@@ -22,13 +22,13 @@ class ServerUserRepository {
     private val passwordHashes = mutableMapOf<String, String>() // userId -> hashedPassword
     private val refreshTokens = mutableMapOf<String, String>() // refreshToken -> userId
     private val mutex = Mutex()
-    
+
     init {
         // Создаем дефолтного администратора для MVP
         // В продакшене это должно быть через миграцию БД или переменные окружения
         createDefaultAdmin()
     }
-    
+
     /**
      * Создает дефолтного администратора
      * Пароль: admin (должен быть изменен при первом входе!)
@@ -37,7 +37,7 @@ class ServerUserRepository {
         val adminId = UUID.randomUUID().toString()
         val adminPassword = System.getenv("ADMIN_PASSWORD") ?: "admin"
         val hashedPassword = PasswordService.hashPassword(adminPassword)
-        
+
         val admin = User(
             id = adminId,
             username = "admin",
@@ -49,13 +49,13 @@ class ServerUserRepository {
             lastLoginAt = null,
             isActive = true
         )
-        
+
         users[adminId] = admin
         passwordHashes[adminId] = hashedPassword
-        
+
         logger.warn { "Default admin user created. Username: admin, Password: $adminPassword. CHANGE THIS IN PRODUCTION!" }
     }
-    
+
     /**
      * Аутентификация пользователя
      */
@@ -65,61 +65,61 @@ class ServerUserRepository {
             logger.warn { "Authentication failed: user not found or inactive: $username" }
             return null
         }
-        
+
         val hashedPassword = passwordHashes[user.id]
         if (hashedPassword == null) {
             logger.error { "User ${user.id} has no password hash" }
             return null
         }
-        
+
         if (!PasswordService.verifyPassword(password, hashedPassword)) {
             logger.warn { "Authentication failed: invalid password for user: $username" }
             return null
         }
-        
+
         // Обновляем время последнего входа
         val updatedUser = user.copy(lastLoginAt = System.currentTimeMillis())
         users[user.id] = updatedUser
-        
+
         logger.info { "User authenticated successfully: $username" }
         return updatedUser
     }
-    
+
     /**
      * Получение пользователя по ID
      */
     suspend fun getUserById(id: String): User? = mutex.withLock {
         return users[id]
     }
-    
+
     /**
      * Получение пользователя по username
      */
     suspend fun getUserByUsername(username: String): User? = mutex.withLock {
         return users.values.find { it.username == username }
     }
-    
+
     /**
      * Сохранение refresh token
      */
     suspend fun saveRefreshToken(refreshToken: String, userId: String) = mutex.withLock {
         refreshTokens[refreshToken] = userId
     }
-    
+
     /**
      * Получение userId по refresh token
      */
     suspend fun getUserIdByRefreshToken(refreshToken: String): String? = mutex.withLock {
         return refreshTokens[refreshToken]
     }
-    
+
     /**
      * Удаление refresh token
      */
     suspend fun revokeRefreshToken(refreshToken: String) = mutex.withLock {
         refreshTokens.remove(refreshToken)
     }
-    
+
     /**
      * Создание нового пользователя (для регистрации)
      */
@@ -135,10 +135,10 @@ class ServerUserRepository {
             if (users.values.any { it.username == username }) {
                 throw IllegalArgumentException("User with username $username already exists")
             }
-            
+
             val userId = UUID.randomUUID().toString()
             val hashedPassword = PasswordService.hashPassword(password)
-            
+
             val user = User(
                 id = userId,
                 username = username,
@@ -150,22 +150,55 @@ class ServerUserRepository {
                 lastLoginAt = null,
                 isActive = true
             )
-            
+
             users[userId] = user
             passwordHashes[userId] = hashedPassword
-            
+
             logger.info { "User created: $username (id: $userId)" }
             user
         }
     }
-    
+
     /**
      * Получение всех пользователей (для администрирования)
      */
     suspend fun getAllUsers(): List<User> = mutex.withLock {
         return users.values.toList()
     }
-    
+
+    /**
+     * Получение пользователей с пагинацией
+     * @param page номер страницы (начинается с 1)
+     * @param limit количество элементов на странице
+     * @param role фильтр по роли (опционально)
+     * @return результат с пагинацией
+     */
+    suspend fun getUsers(
+        page: Int = 1,
+        limit: Int = 20,
+        role: UserRole? = null
+    ): com.company.ipcamera.shared.domain.repository.PaginatedResult<User> = mutex.withLock {
+        var filteredUsers = users.values.toList()
+
+        // Фильтрация по роли
+        if (role != null) {
+            filteredUsers = filteredUsers.filter { it.role == role }
+        }
+
+        val total = filteredUsers.size
+        val offset = (page - 1) * limit
+        val paginatedItems = filteredUsers.drop(offset).take(limit)
+        val hasMore = offset + limit < total
+
+        return com.company.ipcamera.shared.domain.repository.PaginatedResult(
+            items = paginatedItems,
+            total = total,
+            page = page,
+            limit = limit,
+            hasMore = hasMore
+        )
+    }
+
     /**
      * Обновление пользователя
      */
@@ -182,7 +215,7 @@ class ServerUserRepository {
             Result.failure(e)
         }
     }
-    
+
     /**
      * Удаление пользователя
      */

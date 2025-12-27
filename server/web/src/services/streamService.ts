@@ -72,5 +72,18 @@ export const streamService = {
   getHlsUrl(cameraId: string): string {
     return `${API_URL}/cameras/${cameraId}/stream/hls/playlist.m3u8`;
   },
+
+  /**
+   * Создать снимок экрана с потока камеры
+   */
+  async captureScreenshot(cameraId: string): Promise<string> {
+    const response = await apiClient.post<{ success: boolean; data: string; message: string }>(
+      `/cameras/${cameraId}/stream/screenshot`
+    );
+    if (response.data.success && response.data.data) {
+      return response.data.data;
+    }
+    throw new Error(response.data.message || 'Failed to capture screenshot');
+  },
 };
 

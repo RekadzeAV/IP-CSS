@@ -1057,3 +1057,4 @@ fun Route.requirePermission(permission: String, block: Route.() -> Unit) {
 **Дата:** Декабрь 2025
 **Версия отчета:** Alfa-0.0.1
 
+
