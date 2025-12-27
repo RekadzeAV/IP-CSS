@@ -6,18 +6,18 @@
 > 
 > Для изменения структуры проекта редактируйте файлы проекта, а затем запустите скрипт генерации.
 
-**Дата генерации:** 2025-12-27 20:56:03
+**Дата генерации:** 2025-12-27 20:56:25
 
 ## Статистика проекта
 
-- **Всего файлов:** 1397
+- **Всего файлов:** 1394
 - **Всего директорий:** 742
 - **Модулей:** 28
 
 ### Статистика по типам файлов
 
 - `.kt`: 575 файлов
-- `.md`: 447 файлов
+- `.md`: 444 файлов
 - `.ts`: 67 файлов
 - `.sh`: 48 файлов
 - `.tsx`: 47 файлов
@@ -63,7 +63,6 @@ IP-CSS/
 ├── DOCUMENTATION_V2_SUMMARY.md
 ├── Dockerfile
 ├── IMPLEMENTATION_TASKS.md
-├── INSTALLATION_GUIDE.md
 ├── INSTALLATION_SUMMARY.md
 ├── INSTALL_INSTRUCTIONS.md
 ├── Inf-pipeline/
@@ -99,8 +98,6 @@ IP-CSS/
 ├── PROJECT_PROMPT.md
 ├── PROJECT_REVIEW.md
 ├── PROJECT_STATUS.md
-├── PROJECT_STATUS_CONSOLIDATED.md
-├── PROJECT_STATUS_OLD.md
 ├── PROJECT_STATUS_TABLE.md
 ├── PROJECT_STRUCTURE.md
 ├── PROJECT_STRUCTURE_AUTO.md
