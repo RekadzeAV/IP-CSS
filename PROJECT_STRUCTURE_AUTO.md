@@ -6,18 +6,18 @@
 > 
 > Для изменения структуры проекта редактируйте файлы проекта, а затем запустите скрипт генерации.
 
-**Дата генерации:** 2025-12-27 20:40:09
+**Дата генерации:** 2025-12-27 20:56:03
 
 ## Статистика проекта
 
-- **Всего файлов:** 1392
-- **Всего директорий:** 741
+- **Всего файлов:** 1397
+- **Всего директорий:** 742
 - **Модулей:** 28
 
 ### Статистика по типам файлов
 
 - `.kt`: 575 файлов
-- `.md`: 442 файлов
+- `.md`: 447 файлов
 - `.ts`: 67 файлов
 - `.sh`: 48 файлов
 - `.tsx`: 47 файлов
@@ -30,8 +30,8 @@
 - `.xml`: 6 файлов
 - `.json`: 4 файлов
 - `.js`: 3 файлов
-- `.sq`: 2 файлов
 - `.py`: 2 файлов
+- `.sq`: 2 файлов
 - `.bat`: 1 файлов
 
 ## Дерево структуры проекта
@@ -54,6 +54,7 @@ IP-CSS/
 ├── DATA_LAYER_IMPLEMENTATION_PROGRESS.md
 ├── DATA_LAYER_IMPLEMENTATION_SUMMARY.md
 ├── DATA_LAYER_REFACTORING_COMPLETE.md
+├── DATA_LAYER_STATUS.md
 ├── DETAILED_DEVELOPMENT_PLAN.md
 ├── DEVELOPMENT_MAP.md
 ├── DEVELOPMENT_ROADMAP.md
@@ -62,6 +63,7 @@ IP-CSS/
 ├── DOCUMENTATION_V2_SUMMARY.md
 ├── Dockerfile
 ├── IMPLEMENTATION_TASKS.md
+├── INSTALLATION_GUIDE.md
 ├── INSTALLATION_SUMMARY.md
 ├── INSTALL_INSTRUCTIONS.md
 ├── Inf-pipeline/
@@ -87,6 +89,7 @@ IP-CSS/
 ├── NATIVE_LIBRARIES_FIXES_SUMMARY.md
 ├── NATIVE_LIBRARIES_IMPLEMENTATION_COMPLETE.md
 ├── NATIVE_LIBRARIES_INTEGRATION_COMPLETE.md
+├── NATIVE_LIBRARIES_STATUS.md
 ├── OLD-DOC-2025-01-27/
 │   ├── OLD-DOC-2025-01-27/
 │   │   └── README.md
@@ -95,8 +98,9 @@ IP-CSS/
 ├── PROJECT_DOCUMENTATION_ANALYSIS.md
 ├── PROJECT_PROMPT.md
 ├── PROJECT_REVIEW.md
-├── PROJECT_ROADMAP.md
 ├── PROJECT_STATUS.md
+├── PROJECT_STATUS_CONSOLIDATED.md
+├── PROJECT_STATUS_OLD.md
 ├── PROJECT_STATUS_TABLE.md
 ├── PROJECT_STRUCTURE.md
 ├── PROJECT_STRUCTURE_AUTO.md
@@ -286,7 +290,9 @@ IP-CSS/
 │   │   │   └── README.md
 │   │   ├── OLD-DOC-2025-01-27/
 │   │   │   ├── README.md
-│   │   └── README.md
+│   │   ├── README.md
+│   │   └── duplicates-2025-01-27/
+│   │       └── README.md
 │   ├── docs/
 │   │   ├── README.md
 │   │   ├── archive/
