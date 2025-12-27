@@ -27,6 +27,9 @@ dependencies {
     
     // JWT
     implementation("com.auth0:java-jwt:4.4.0")
+    
+    // BCrypt для хеширования паролей
+    implementation("org.mindrot:jbcrypt:0.4")
 
     // Serialization
     implementation(libs.kotlinx.serialization.json)

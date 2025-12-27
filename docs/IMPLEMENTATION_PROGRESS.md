@@ -184,6 +184,62 @@
 
 ---
 
+---
+
+## ✅ Реализовано в текущей сессии (Декабрь 2025) - Продолжение
+
+### 5. Завершение интеграции аутентификации
+
+**Статус:** ✅ Завершено
+
+**Реализовано:**
+- ✅ Сервис хеширования паролей (PasswordService.kt)
+  - Использование BCrypt для безопасного хеширования
+  - Функции hashPassword() и verifyPassword()
+  - Проверка, является ли строка хешем
+  
+- ✅ Серверная реализация UserRepository (ServerUserRepository.kt)
+  - In-memory хранилище пользователей (для MVP)
+  - Аутентификация с проверкой хешированных паролей
+  - Управление refresh токенами
+  - Создание дефолтного администратора
+  - Thread-safe операции через Mutex
+  
+- ✅ Обновление AuthRoutes для реальной аутентификации
+  - Интеграция с ServerUserRepository
+  - Проверка учетных данных через BCrypt
+  - Полная реализация refresh token endpoint
+  - Refresh token rotation (отзыв старого, выдача нового)
+  - Защита от перечисления пользователей (одинаковые сообщения об ошибках)
+  
+- ✅ Rate limiting для login endpoint
+  - RateLimitMiddleware для защиты от брутфорса
+  - 5 попыток в 15 минут
+  - Блокировка на 30 минут при превышении
+  - Автоматическая очистка старых записей
+  - Сброс лимита после успешного входа
+  
+- ✅ Логирование безопасности
+  - Логирование всех попыток входа (успешных и неуспешных)
+  - Логирование обновления токенов
+  - Логирование выхода из системы
+  - Логирование превышения rate limit
+
+**Файлы:**
+- `server/api/src/main/kotlin/com/company/ipcamera/server/service/PasswordService.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/repository/ServerUserRepository.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/middleware/RateLimitMiddleware.kt` (создан)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/routing/AuthRoutes.kt` (обновлен)
+- `server/api/src/main/kotlin/com/company/ipcamera/server/di/AppModule.kt` (обновлен)
+- `server/api/build.gradle.kts` (обновлен - добавлен BCrypt)
+
+**Требует доработки:**
+- ⚠️ Миграция на SQLDelight/PostgreSQL для продакшена (сейчас in-memory)
+- ⚠️ Миграция rate limiter на Redis для распределенных систем
+- ⚠️ Защита от timing атак (константное время для проверки пароля)
+
+---
+
 **Последнее обновление:** Декабрь 2025  
-**Следующий пересмотр:** После завершения интеграции аутентификации
+**Следующий пересмотр:** После завершения REST API endpoints
 
