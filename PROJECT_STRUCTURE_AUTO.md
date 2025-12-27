@@ -6,31 +6,31 @@
 > 
 > Для изменения структуры проекта редактируйте файлы проекта, а затем запустите скрипт генерации.
 
-**Дата генерации:** 2025-12-27 05:01:46
+**Дата генерации:** 2025-12-27 05:50:34
 
 ## Статистика проекта
 
-- **Всего файлов:** 342
-- **Всего директорий:** 259
+- **Всего файлов:** 399
+- **Всего директорий:** 263
 - **Модулей:** 12
 
 ### Статистика по типам файлов
 
-- `.kt`: 149 файлов
-- `.md`: 89 файлов
-- `.ts`: 22 файлов
+- `.kt`: 169 файлов
+- `.md`: 121 файлов
+- `.ts`: 23 файлов
 - `.tsx`: 15 файлов
 - `.h`: 14 файлов
 - `.cpp`: 14 файлов
-- `.sh`: 5 файлов
+- `.sh`: 8 файлов
 - `.yml`: 4 файлов
 - `.txt`: 4 файлов
-- `.ps1`: 3 файлов
 - `.xml`: 3 файлов
+- `.ps1`: 3 файлов
 - `.json`: 2 файлов
 - `.js`: 1 файлов
-- `.py`: 1 файлов
 - `.sq`: 1 файлов
+- `.py`: 1 файлов
 - `.bat`: 1 файлов
 
 ## Дерево структуры проекта
@@ -52,6 +52,7 @@ IP-CSS/
 ├── DUPLICATES_ANALYSIS.md
 ├── Dockerfile
 ├── EXTENSIONS_SETUP_REPORT.md
+├── IMPLEMENTATION_ANALYSIS_2025.md
 ├── IMPLEMENTATION_PROGRESS_REPORT.md
 ├── KOTLIN_VERSION_ANALYSIS.md
 ├── LICENSE
@@ -65,8 +66,24 @@ IP-CSS/
 ├── PROJECT_STRUCTURE_VISUAL.md
 ├── README.md
 ├── RESTRUCTURING_REPORT.md
+├── RTSP_ACTIVATION_CHECKLIST.md
+├── RTSP_ACTIVATION_STEPS_COMPLETED.md
+├── RTSP_CLIENT_FINAL_REPORT.md
+├── RTSP_COMPLETION_SUMMARY.md
+├── RTSP_DEPENDENCIES_STATUS.md
+├── RTSP_EXECUTION_STATUS.md
+├── RTSP_EXECUTION_SUMMARY.md
+├── RTSP_FINAL_EXECUTION_REPORT.md
+├── RTSP_FINAL_STATUS.md
+├── RTSP_IMPLEMENTATION_CHANGES_ANALYSIS.md
+├── RTSP_IMPLEMENTATION_SUMMARY.md
+├── RTSP_MANUAL_INSTALLATION.md
+├── RTSP_NEXT_STEPS.md
+├── RTSP_QUICK_SUMMARY.md
 ├── SECURITY_FIXES_REPORT.md
+├── SETUP_REQUIREMENTS.md
 ├── TIMELINE.md
+├── VIDEO_RECORDING_CHANGES_SUMMARY.md
 ├── android/
 │   └── app/
 │       ├── build.gradle.kts
@@ -124,6 +141,9 @@ IP-CSS/
 │   ├── ANALYSIS_SUMMARY_2025.md
 │   ├── API.md
 │   ├── ARCHITECTURE.md
+│   ├── BUILD_ORGANIZATION.md
+│   ├── BUILD_QUICK_REFERENCE.md
+│   ├── BUILD_TROUBLESHOOTING.md
 │   ├── CONFIGURATION.md
 │   ├── DEEP_ANALYSIS_2025.md
 │   ├── DEPLOYMENT_GUIDE.md
@@ -140,6 +160,7 @@ IP-CSS/
 │   ├── INTEGRATION_GUIDE.md
 │   ├── LIBRARIES_INTEGRATION_SUMMARY.md
 │   ├── LICENSE_SYSTEM.md
+│   ├── LOCAL_BUILD.md
 │   ├── MISSING_FUNCTIONALITY.md
 │   ├── NAS_PLATFORMS_ANALYSIS.md
 │   ├── NATIVE_LIBRARIES_INTEGRATION.md
@@ -153,8 +174,16 @@ IP-CSS/
 │   ├── README.md
 │   ├── REQUIRED_LIBRARIES.md
 │   ├── REQUIRED_LIBRARIES_SUMMARY.md
+│   ├── RTSP_BUILD_INSTRUCTIONS.md
 │   ├── RTSP_CLIENT.md
+│   ├── RTSP_CLIENT_ACTIVATION_GUIDE.md
+│   ├── RTSP_CLIENT_IMPLEMENTATION_STATUS.md
 │   ├── RTSP_CLIENT_INTEGRATION.md
+│   ├── RTSP_CLIENT_SETUP_SUMMARY.md
+│   ├── RTSP_CODE_ACTIVATION_TEMPLATE.md
+│   ├── RTSP_PLAYER_INTEGRATION_SUMMARY.md
+│   ├── RTSP_QUICK_START.md
+│   ├── RTSP_VIDEO_PLAYER_INTEGRATION.md
 │   ├── SECURITY_AUDIT_REPORT.md
 │   ├── SECURITY_REMEDIATION_PLAN.md
 │   ├── SOLUTIONS_FOR_DISCREPANCIES.md
@@ -165,6 +194,8 @@ IP-CSS/
 │   ├── TIMELINE_SETUP.md
 │   ├── USER_GUIDE.md
 │   ├── USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md
+│   ├── VIDEO_RECORDING_ENHANCEMENTS.md
+│   ├── VIDEO_RECORDING_IMPLEMENTATION.md
 │   ├── VSCODE_EXTENSIONS.md
 │   └── WEBSOCKET_CLIENT.md
 ├── gradle.properties
@@ -200,12 +231,16 @@ IP-CSS/
 │   │       └── mjpeg_codec.cpp
 │   └── video-processing/
 │       ├── CMakeLists.txt
+│       ├── README.md
 │       ├── include/
 │       │   ├── frame_processor.h
 │       │   ├── rtsp_client.h
 │       │   ├── stream_manager.h
 │       │   ├── video_decoder.h
 │       │   └── video_encoder.h
+│       ├── lib/
+│       │   ├── linux/
+│       │   └── macos/
 │       └── src/
 │           ├── frame_processor.cpp
 │           ├── rtsp_client.cpp
@@ -231,7 +266,9 @@ IP-CSS/
 │       └── README.md
 ├── scripts/
 │   ├── README.md
+│   ├── activate-rtsp-client.sh
 │   ├── build-all-platforms.sh
+│   ├── build-native-lib.sh
 │   ├── check-timeline.sh
 │   ├── cleanup-old-branches.ps1
 │   ├── create-platform-branches.ps1
@@ -239,6 +276,7 @@ IP-CSS/
 │   ├── generate-project-structure.py
 │   ├── install-vscode-extensions.ps1
 │   ├── install-vscode-extensions.sh
+│   ├── publish-local.sh
 │   └── setup-git-hooks.sh
 ├── server/
 │   ├── api/
@@ -274,7 +312,8 @@ IP-CSS/
 │       │   │   ├── cameraService.ts
 │       │   │   ├── eventService.ts
 │       │   │   ├── recordingService.ts
-│       │   │   └── settingsService.ts
+│       │   │   ├── settingsService.ts
+│       │   │   └── streamService.ts
 │       │   ├── store/
 │       │   │   ├── hooks.ts
 │       │   │   ├── index.ts
