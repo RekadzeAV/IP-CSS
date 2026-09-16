@@ -1,0 +1,15 @@
+language = C
+headers = rtsp_client.h video_decoder.h video_encoder.h frame_processor.h stream_manager.h
+headerFilter = rtsp_client.h video_decoder.h video_encoder.h frame_processor.h stream_manager.h
+package = com.company.ipcamera.core.network.native.videoprocessing
+compilerOpts = -I../../../../../native/video-processing/include -IC:/ffmpeg/include
+linkerOpts = -L../../../../../native/video-processing/lib/windows/x64 -lvideo_processing -LC:/ffmpeg/lib
+
+---
+struct RTSPClient {};
+struct RTSPStream {};
+struct VideoDecoder {};
+struct VideoEncoder {};
+struct FrameProcessor {};
+struct StreamManager {};
+

@@ -1,0 +1,40 @@
+{
+  "description": "Example matrix config for 1.8 runtime long-run smoke. Copy to video-runtime-matrix.local.json and fill real values.",
+  "defaults": {
+    "baseUrl": "http://localhost:8080",
+    "username": "admin",
+    "password": "admin123",
+    "durationMinutes": 3,
+    "intervalSec": 15,
+    "healthPath": "/api/v1/health/ready"
+  },
+  "scenarios": [
+    {
+      "name": "desktop-hls-cam-1",
+      "platform": "desktop",
+      "enabled": false,
+      "playlistUrls": [
+        "http://localhost:8080/api/v1/hls/cam-1/playlist.m3u8"
+      ]
+    },
+    {
+      "name": "android-hls-cam-2",
+      "platform": "android",
+      "enabled": false,
+      "playlistUrls": [
+        "http://localhost:8080/api/v1/hls/cam-2/playlist.m3u8"
+      ]
+    },
+    {
+      "name": "selfhosted-adaptive-master",
+      "platform": "self-hosted",
+      "enabled": false,
+      "baseUrl": "http://staging-host:8080",
+      "playlistUrls": [
+        "http://staging-host:8080/api/v1/hls/master.m3u8"
+      ],
+      "durationMinutes": 45,
+      "intervalSec": 20
+    }
+  ]
+}

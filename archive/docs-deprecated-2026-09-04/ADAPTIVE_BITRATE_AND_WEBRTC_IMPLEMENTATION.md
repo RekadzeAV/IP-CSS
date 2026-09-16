@@ -1,0 +1,1 @@
+# ADAPTIVE_BITRATE_AND_WEBRTC_IMPLEMENTATION  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/ADAPTIVE_BITRATE_AND_WEBRTC_IMPLEMENTATION.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

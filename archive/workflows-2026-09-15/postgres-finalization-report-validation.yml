@@ -1,0 +1,23 @@
+name: PostgreSQL Finalization Report Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      report_path:
+        description: "Path to generated staging final report"
+        required: true
+        default: "diagnostics/postgres-finalization/staging-final-report.md"
+        type: string
+
+jobs:
+  validate-report:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate finalization report
+        shell: pwsh
+        run: |
+          .\scripts\validate-postgres-finalization-report.ps1 `
+            -ReportPath "${{ inputs.report_path }}"

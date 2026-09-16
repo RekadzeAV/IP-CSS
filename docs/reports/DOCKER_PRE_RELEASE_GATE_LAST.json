@@ -1,0 +1,18 @@
+﻿{
+    "generatedAt":  "2026-04-28 00:53:46 +04:00",
+    "baseUrl":  "http://localhost:8080",
+    "attemptsConfigured":  1,
+    "result":  "GO",
+    "attempts":  [
+                     {
+                         "Attempt":  1,
+                         "Status":  "GO",
+                         "Report":  "docs/reports/DOCKER_PRE_RELEASE_GATE_REPORT_2026-04-28_005339.md",
+                         "ExitCode":  0,
+                         "Time":  "2026-04-28 00:53:46 +04:00"
+                     }
+                 ],
+    "lastReport":  "docs/reports/DOCKER_PRE_RELEASE_GATE_REPORT_2026-04-28_005339.md",
+    "markdownSummary":  "docs/reports/DOCKER_PRE_RELEASE_GATE_LAST.md",
+    "text":  "[IP-CSS Gate] Result=GO; BaseUrl=http://localhost:8080; Attempts=#1:GO(code=0); Report=docs/reports/DOCKER_PRE_RELEASE_GATE_REPORT_2026-04-28_005339.md; Summary=docs/reports/DOCKER_PRE_RELEASE_GATE_LAST.md"
+}

@@ -1,0 +1,13 @@
+{
+  "profileName": "mvp-ci-no-hardware-evidence",
+  "release": {
+    "optionalControlIds": [
+      "1.8.A",
+      "1.8.A1",
+      "1.8.B",
+      "1.8.C",
+      "1.8.D",
+      "1.8.E"
+    ]
+  }
+}

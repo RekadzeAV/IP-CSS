@@ -1,0 +1,1 @@
+# DOCUMENTATION_CONSOLIDATION_REPORT  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/DOCUMENTATION_CONSOLIDATION_REPORT.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

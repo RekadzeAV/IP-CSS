@@ -1,0 +1,79 @@
+#!/bin/sh
+# Synology DSM Post-install Script
+# This script runs after package installation
+
+SYNOPKG_PKGNAME="IP-CSS"
+SYNOPKG_PKGDEST="/volume1/@appstore/${SYNOPKG_PKGNAME}"
+SYNOPKG_PKGDEST_VOL="volume1"
+SYNOPKG_PKGVAR="/var/packages/${SYNOPKG_PKGNAME}/var"
+SYNOPKG_PKGPORT="8080"
+
+echo "=== IP-CSS Post-installation ==="
+
+# Create necessary directories
+mkdir -p "${SYNOPKG_PKGVAR}/data"
+mkdir -p "${SYNOPKG_PKGVAR}/recordings"
+mkdir -p "${SYNOPKG_PKGVAR}/logs"
+mkdir -p "${SYNOPKG_PKGVAR}/config"
+mkdir -p "${SYNOPKG_PKGVAR}/database"
+
+# Set permissions
+chmod 755 "${SYNOPKG_PKGVAR}"
+chmod 755 "${SYNOPKG_PKGVAR}/data"
+chmod 755 "${SYNOPKG_PKGVAR}/recordings"
+chmod 755 "${SYNOPKG_PKGVAR}/logs"
+chmod 755 "${SYNOPKG_PKGVAR}/config"
+chmod 755 "${SYNOPKG_PKGVAR}/database"
+
+# Create default configuration
+cat > "${SYNOPKG_PKGVAR}/config/application.conf" << 'EOF'
+# IP-CSS Configuration
+server {
+    port = 8080
+    host = "0.0.0.0"
+}
+
+database {
+    path = "/var/packages/IP-CSS/var/database/ip-css.db"
+}
+
+storage {
+    recordings_path = "/var/packages/IP-CSS/var/recordings"
+    data_path = "/var/packages/IP-CSS/var/data"
+}
+
+logging {
+    level = "INFO"
+    file = "/var/packages/IP-CSS/var/logs/ip-css.log"
+}
+EOF
+
+# Initialize database
+echo "Initializing database..."
+
+# Create startup script
+cat > "${SYNOPKG_PKGDEST}/bin/start-ip-css.sh" << 'EOF'
+#!/bin/sh
+cd /volume1/@appstore/IP-CSS/bin
+export JAVA_HOME=/usr/java
+export PATH=$JAVA_HOME/bin:$PATH
+export IP_CSS_HOME=/var/packages/IP-CSS/var
+export IP_CSS_CONFIG=/var/packages/IP-CSS/var/config/application.conf
+
+nohup java -jar ip-css-server.jar > /var/packages/IP-CSS/var/logs/stdout.log 2>&1 &
+echo $! > /var/packages/IP-CSS/var/ip-css.pid
+EOF
+
+chmod +x "${SYNOPKG_PKGDEST}/bin/start-ip-css.sh"
+
+# Register with Synology Service
+echo "Registering with Synology Service Manager..."
+
+# Send notification to DSM
+if [ -x /usr/syno/bin/synonotify ]; then
+    /usr/syno/bin/synonotify IP-CSS "IP-CSS has been installed successfully"
+fi
+
+echo "=== Post-installation Complete ==="
+echo "IP-CSS is ready to start from Package Center"
+exit 0

@@ -1,0 +1,99 @@
+name: Build Native Video Processing Libraries
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'native/video-processing/**'
+      - '.github/workflows/build-native-libraries.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'native/video-processing/**'
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential pkg-config
+          sudo apt-get install -y libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev
+
+      - name: Build Linux library
+        run: |
+          cd native/video-processing
+          mkdir -p build/linux-x64
+          cd build/linux-x64
+          cmake ../.. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_FFMPEG=ON \
+            -DENABLE_OPENCV=OFF
+          cmake --build . --config Release -j$(nproc)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-processing-linux-x64
+          path: native/video-processing/build/linux-x64/libvideo_processing.so
+          if-no-files-found: warn
+
+  build-macos-arm64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install cmake ffmpeg
+
+      - name: Build macOS arm64 library
+        run: |
+          cd native/video-processing
+          mkdir -p build/macos-arm64
+          cd build/macos-arm64
+          cmake ../.. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_FFMPEG=ON \
+            -DENABLE_OPENCV=OFF \
+            -DCMAKE_OSX_ARCHITECTURES=arm64
+          cmake --build . --config Release -j$(sysctl -n hw.ncpu)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-processing-macos-arm64
+          path: native/video-processing/build/macos-arm64/libvideo_processing.dylib
+          if-no-files-found: warn
+
+  build-macos-x64:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew install cmake ffmpeg
+
+      - name: Build macOS x64 library
+        run: |
+          cd native/video-processing
+          mkdir -p build/macos-x64
+          cd build/macos-x64
+          cmake ../.. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DENABLE_FFMPEG=ON \
+            -DENABLE_OPENCV=OFF \
+            -DCMAKE_OSX_ARCHITECTURES=x86_64
+          cmake --build . --config Release -j$(sysctl -n hw.ncpu)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: video-processing-macos-x64
+          path: native/video-processing/build/macos-x64/libvideo_processing.dylib
+          if-no-files-found: warn

@@ -1,0 +1,26 @@
+﻿{
+    "generatedAtUtc":  "2026-04-23T19:56:54.2490718Z",
+    "finalDecision":  "NO_GO",
+    "gates":  {
+                  "desktopSmoke":  {
+                                       "evidence":  "D:\\GitHub-Ai\\IP-CSS\\diagnostics\\platform-smoke\\desktop\\desktop-video-event-smoke-20260423-235517.json",
+                                       "status":  "PARTIAL"
+                                   },
+                  "androidSmoke":  {
+                                       "evidence":  "D:\\GitHub-Ai\\IP-CSS\\diagnostics\\platform-smoke\\android\\android-video-background-smoke-20260423-235344.json",
+                                       "status":  "PARTIAL"
+                                   },
+                  "videoProfileAware":  {
+                                            "evidence":  "D:\\GitHub-Ai\\IP-CSS\\release-build\\test\\video-e2e-go-no-go-report.md",
+                                            "status":  "GO"
+                                        },
+                  "onvif":  {
+                                "evidence":  "D:\\GitHub-Ai\\IP-CSS\\diagnostics\\onvif-events\\phase1-onvif-acceptance-20260423-235001.json",
+                                "status":  "CONDITIONAL"
+                            },
+                  "securityMvp":  {
+                                      "evidence":  "D:\\GitHub-Ai\\IP-CSS\\release-build\\test\\security-mvp-readiness-report.md",
+                                      "status":  "NO-GO"
+                                  }
+              }
+}

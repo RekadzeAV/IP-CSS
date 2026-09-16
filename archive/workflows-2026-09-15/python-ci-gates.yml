@@ -1,0 +1,40 @@
+name: Python CI Gates
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 8 * * *'  # Ежедневно в 08:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-gates:
+    name: Python CI Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Python CI checks
+        run: |
+          python scripts/ci/verify-kmp-phase1.py --ci-profile --report-json diagnostics/ci/kmp-phase1-report.json
+
+      - name: Upload verification report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kmp-phase1-report
+          path: diagnostics/ci/kmp-phase1-report.json
+          retention-days: 7

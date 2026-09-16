@@ -1,0 +1,1 @@
+# TECHNICAL_DEBT  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/TECHNICAL_DEBT.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

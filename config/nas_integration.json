@@ -1,0 +1,38 @@
+{
+  "nas": {
+    "enabled": true,
+    "hosts": [
+      "192.168.10.37",
+      "192.168.10.38",
+      "192.168.10.39",
+      "192.168.10.40"
+    ],
+    "primary_host": "192.168.10.37",
+    "protocol": "NFS",
+    "share_path": "/storage/recordings",
+    "mount_point": "/data/recordings"
+  },
+  "ldap": {
+    "enabled": true,
+    "server": "ldap://192.168.10.37:389",
+    "base_dn": "dc=surveillance,dc=local",
+    "bind_dn": "cn=admin,dc=surveillance,dc=local",
+    "user_search_filter": "(uid=%(user)s)",
+    "group_search_filter": "(member=%(user_dn)s)"
+  },
+  "storage": {
+    "first_contour": {
+      "cameras": [
+        "192.168.10.17",
+        "192.168.10.20",
+        "192.168.10.21",
+        "192.168.10.22",
+        "192.168.10.23",
+        "192.168.10.24",
+        "192.168.10.26"
+      ],
+      "retention_days": 30,
+      "recording_mode": "continuous"
+    }
+  }
+}

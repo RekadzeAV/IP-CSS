@@ -1,0 +1,17 @@
+#!/bin/sh
+# Post-uninstall: remove systemd/init.d registration
+
+if [ -f "/etc/systemd/system/ip-css.service" ]; then
+    systemctl stop ip-css 2>/dev/null || true
+    systemctl disable ip-css 2>/dev/null || true
+    rm -f "/etc/systemd/system/ip-css.service"
+    systemctl daemon-reload 2>/dev/null || true
+fi
+
+if [ -f "/etc/init.d/ip-css" ]; then
+    [ -x /usr/sbin/update-rc.d ] && update-rc.d -f ip-css remove 2>/dev/null || true
+    [ -x /usr/sbin/chkconfig ] && chkconfig --del ip-css 2>/dev/null || true
+    rm -f "/etc/init.d/ip-css"
+fi
+
+exit 0

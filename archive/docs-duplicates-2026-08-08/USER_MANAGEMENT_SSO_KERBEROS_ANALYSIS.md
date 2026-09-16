@@ -1,0 +1,1 @@
+# USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/USER_MANAGEMENT_SSO_KERBEROS_ANALYSIS.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

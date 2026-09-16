@@ -1,0 +1,269 @@
+# =============================================================================
+# GRADLE
+# =============================================================================
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+local-maven-repo/
+gradle-error.log
+gradle-projects-output.txt
+
+# Build logs (local sanity/pipeline runs)
+build-compile.log
+build-log.txt
+build-out.txt
+stage0-sanity.log
+
+# =============================================================================
+# KOTLIN / JVM
+# =============================================================================
+.kotlin/
+*.iml
+.idea/
+*.kt.swp
+*.kt~
+*.kts~
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# =============================================================================
+# ANDROID
+# =============================================================================
+*.apk
+*.ap_
+*.aab
+*.dex
+bin/
+gen/
+out/
+release/
+local.properties
+*.hprof
+captures/
+.externalNativeBuild
+.cxx/
+*.keystore
+!debug.keystore
+
+# =============================================================================
+# IOS / MACOS
+# =============================================================================
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+*.xcworkspace/*
+DerivedData/
+Pods/
+*.ipa
+*.dSYM
+.DS_Store
+.AppleDouble
+
+# =============================================================================
+# WINDOWS
+# =============================================================================
+Thumbs.db
+Desktop.ini
+*.lnk
+# Visual Studio workspace-кэши/интермедиаты (не исходники!)
+.vs/
+*.vsidx
+*.wsuo
+
+# =============================================================================
+# LINUX
+# =============================================================================
+*~
+.fuse_hidden*
+
+# =============================================================================
+# C / C++ / NATIVE
+# =============================================================================
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.obj
+*.pdb
+*.exp
+*.lib
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+native/build/
+release-build/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+build.ninja
+*.ninja_lto_time
+
+# =============================================================================
+# PYTHON
+# =============================================================================
+__pycache__/
+*.pyc
+*.egg-info/
+.venv
+venv/
+.pytest_cache/
+.coverage
+
+# =============================================================================
+# NODE.JS / WEB
+# =============================================================================
+node_modules/
+npm-debug.log*
+.next/
+dist/
+.env
+.env.local
+.env.production.local
+
+# =============================================================================
+# AI AGENTS
+# =============================================================================
+.cursor/
+.continue/
+.koda/
+.roo/
+.ai-agent/
+
+# =============================================================================
+# CREDENTIALS & SECRETS — НЕ КОММИТИТЬ!
+# =============================================================================
+.env
+.env.local
+.env.nas
+.env.docker-manual
+credentials/
+credentials.env
+credentials-all.env
+
+# SSH-ключи инфраструктуры — КРИТИЧНО, никогда не публиковать (двойная защита credentials/)
+credentials/ssh-keys/
+*.ppk
+*.ppk.bak
+secrets.env
+secrets-local/
+*.secret
+*.key
+*.pem
+*.p12
+*.crt
+onvif_cookies.txt
+
+# Config-reality env (могут содержать реальные пароли) — коммитим только *.example.env / *.example.json
+config/*.env
+!config/*.example.env
+config/*.env.*
+!config/*.example.env.*
+!config/*.example.json
+!config/*.example.json.*
+
+# Локальные env-файлы в корне (секреты) — коммитятся только *.example
+.env.*
+!.env.example
+!.env.docker-manual.example
+
+# Конфиги реальных камер (содержат рабочие учётные/URL камер сети 192.168.10.0/24) — НЕ коммитить!
+config/test-cameras*-network.json
+config/test-cameras.rtsp.json
+config/test-cameras.local.json
+config/video-e2e-acceptance-profile.local.json
+config/video-runtime-matrix.local.json
+
+# =============================================================================
+# LOGS & DEBUG
+# =============================================================================
+*.log
+hs_err_pid*.log
+logs/
+debug.log
+stage*.log
+sqldelight_error*.log
+errors.txt
+gradle-error.txt
+
+# =============================================================================
+# TEMP / CACHE
+# =============================================================================
+tmp/
+temp/
+*.bak
+*.backup
+*.old
+.tmphome/
+*.local.*
+
+# =============================================================================
+# BUILD ARTIFACTS
+# =============================================================================
+*.zip
+*.tar
+*.gz
+*.rar
+*.msi
+*.msix
+*.exe
+*.dmg
+diagnostics/
+build_output*.txt
+ktlint_*.txt
+test_output.txt
+docs_md_files.txt
+docs_temp_file_list.csv
+temp_test.kt
+.ps1
+*.mp4
+build_logs/
+build-logs/
+release-build/
+release-builds/
+opencv-prebuilt/
+_to_be_archived/
+docs/archive/
+
+# =============================================================================
+# DATABASE
+# =============================================================================
+*.db
+*.sqlite
+data/postgres/
+data/redis/
+
+# =============================================================================
+# DOCS / AUTO-GENERATED
+# =============================================================================
+docs/_build/
+PROJECT_STRUCTURE_AUTO.md
+
+# =============================================================================
+# OTHER
+# =============================================================================
+onvif_results.json
+rtsp_test_results.json
+backups/
+local_config.yaml
+.gitconfig
+
+# Dot-prefix временные/бэкап-файлы (editor atomic-write temp, не исходники).
+# ВАЖНО: широкое правило ".*" здесь запрещено — оно молча игнорирует НОВЫЕ файлы
+# в .github/, .env.example и т.п. Перечисляем только известные шумовые имена;
+# tracked dot-файлы (.gitignore, .github/*, *.example.env) остаются в git.
+.#*
+.~*
+*.swp
+
+# Git bundle бэкапы удалённых веток — большие бинарники, хранятся локально
+# (см. archive/git-branches-backup-2026-09-15/README.md)
+archive/**/*.bundle`r`n# SSH keys (WIN-VSCode and other private keys)
+id_ed25519_win-vscode
+id_ed25519_win-vscode.pub
+*.key
+*.pem
+*.ppk

@@ -1,0 +1,1087 @@
+openapi: 3.0.3
+info:
+  title: IP-CSS API
+  description: |
+    API для управления IP-камерами, записями, событиями и аналитикой.
+    Поддерживает ONVIF, RTSP, HLS, WebRTC.
+  version: 0.3.0
+  contact:
+    name: IP-CSS Team
+    url: https://github.com/RekadzeAV/IP-CSS
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+  - url: https://ipcss.local/api/v1
+    description: Production
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: /oauth2/authorize
+          tokenUrl: /oauth2/token
+          scopes:
+            openid: OpenID Connect
+            profile: User profile
+            email: User email
+
+  schemas:
+    # ========== Camera ==========
+    Camera:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "Front Door Camera"
+        url:
+          type: string
+          example: "rtsp://192.168.1.100:554/stream1"
+        username:
+          type: string
+          example: "admin"
+        status:
+          type: string
+          enum: [ONLINE, OFFLINE, ERROR]
+        createdAt:
+          type: string
+          format: date-time
+
+    CameraCreate:
+      type: object
+      required: [name, url]
+      properties:
+        name:
+          type: string
+          example: "Front Door Camera"
+        url:
+          type: string
+          example: "rtsp://192.168.1.100:554/stream1"
+        username:
+          type: string
+          example: "admin"
+        password:
+          type: string
+          example: "password123"
+
+    # ========== Recording ==========
+    Recording:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        cameraId:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+          description: Duration in seconds
+        size:
+          type: integer
+          description: File size in bytes
+        format:
+          type: string
+          example: "mp4"
+        status:
+          type: string
+          enum: [RECORDING, COMPLETED, FAILED]
+
+    # ========== Event ==========
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        cameraId:
+          type: string
+        type:
+          type: string
+          enum: [motion, object_detected, face_detected, anpr, camera_offline, recording_started, recording_stopped]
+        severity:
+          type: string
+          enum: [INFO, WARNING, CRITICAL]
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        acknowledged:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+
+    # ========== Analytics ==========
+    AnalyticsResult:
+      type: object
+      properties:
+        motion:
+          type: boolean
+        objects:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+                example: "person"
+              confidence:
+                type: number
+                format: float
+              boundingBox:
+                type: object
+                properties:
+                  x:
+                    type: integer
+                  y:
+                    type: integer
+                  width:
+                    type: integer
+                  height:
+                    type: integer
+        faces:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              confidence:
+                type: number
+        licensePlates:
+          type: array
+          items:
+            type: object
+            properties:
+              plate:
+                type: string
+              country:
+                type: string
+              confidence:
+                type: number
+
+    # ========== User ==========
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [ADMIN, OPERATOR, VIEWER]
+        createdAt:
+          type: string
+          format: date-time
+
+    # ========== Settings ==========
+    Settings:
+      type: object
+      properties:
+        recordingRetentionDays:
+          type: integer
+          example: 30
+        motionDetectionEnabled:
+          type: boolean
+        objectDetectionEnabled:
+          type: boolean
+        notificationChannels:
+          type: array
+          items:
+            type: string
+            enum: [email, telegram, push, webhook]
+        storageQuotaGb:
+          type: integer
+
+    # ========== Auth ==========
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+        expiresIn:
+          type: integer
+
+    # ========== Health ==========
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        version:
+          type: string
+        uptime:
+          type: integer
+        checks:
+          type: object
+          properties:
+            database:
+              type: string
+            redis:
+              type: string
+            storage:
+              type: string
+
+    # ========== Error ==========
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        code:
+          type: integer
+        details:
+          type: object
+          additionalProperties: true
+
+paths:
+  # ========== Health ==========
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  # ========== Auth ==========
+  /auth/login:
+    post:
+      summary: Login
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+
+  /auth/refresh:
+    post:
+      summary: Refresh token
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token refreshed
+
+  /auth/logout:
+    post:
+      summary: Logout
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Logged out
+
+  # ========== Cameras ==========
+  /cameras:
+    get:
+      summary: List all cameras
+      tags: [Cameras]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ONLINE, OFFLINE, ERROR]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Camera list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Camera'
+
+    post:
+      summary: Add a new camera
+      tags: [Cameras]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CameraCreate'
+      responses:
+        '201':
+          description: Camera created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Camera'
+
+  /cameras/{id}:
+    get:
+      summary: Get camera details
+      tags: [Cameras]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Camera details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Camera'
+
+    put:
+      summary: Update camera
+      tags: [Cameras]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CameraCreate'
+      responses:
+        '200':
+          description: Camera updated
+
+    delete:
+      summary: Delete camera
+      tags: [Cameras]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Camera deleted
+
+  /cameras/{id}/test:
+    post:
+      summary: Test camera connection
+      tags: [Cameras]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Connection test result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  latency:
+                    type: integer
+                  streams:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        resolution:
+                          type: string
+                        fps:
+                          type: integer
+
+  /cameras/{id}/ptz:
+    post:
+      summary: PTZ control
+      tags: [Cameras]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                direction:
+                  type: string
+                  enum: [UP, DOWN, LEFT, RIGHT, ZOOM_IN, ZOOM_OUT, STOP]
+                speed:
+                  type: number
+                  format: float
+                  default: 0.5
+      responses:
+        '200':
+          description: PTZ command executed
+
+  /cameras/discover:
+    get:
+      summary: Discover cameras on network
+      tags: [Cameras]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: timeout
+          in: query
+          schema:
+            type: integer
+            default: 5000
+      responses:
+        '200':
+          description: Discovered cameras
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                    name:
+                      type: string
+                    manufacturer:
+                      type: string
+                    model:
+                      type: string
+
+  # ========== Recordings ==========
+  /recordings:
+    get:
+      summary: List recordings
+      tags: [Recordings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cameraId
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Recording list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Recording'
+
+  /recordings/{id}:
+    get:
+      summary: Get recording details
+      tags: [Recordings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recording details
+
+    delete:
+      summary: Delete recording
+      tags: [Recordings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Recording deleted
+
+  /recordings/{id}/download:
+    get:
+      summary: Download recording
+      tags: [Recordings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Recording file
+          content:
+            video/mp4:
+              schema:
+                type: string
+                format: binary
+
+  /recordings/{id}/export:
+    post:
+      summary: Export recording
+      tags: [Recordings]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                format:
+                  type: string
+                  enum: [mp4, mkv, avi]
+                  default: mp4
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Export started
+
+  # ========== Events ==========
+  /events:
+    get:
+      summary: List events
+      tags: [Events]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cameraId
+          in: query
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: severity
+          in: query
+          schema:
+            type: string
+            enum: [INFO, WARNING, CRITICAL]
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Event list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+
+  /events/{id}/acknowledge:
+    post:
+      summary: Acknowledge event
+      tags: [Events]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event acknowledged
+
+  /events/statistics:
+    get:
+      summary: Event statistics
+      tags: [Events]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Event statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  byType:
+                    type: object
+                  bySeverity:
+                    type: object
+                  timeline:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        date:
+                          type: string
+                        count:
+                          type: integer
+
+  # ========== Analytics ==========
+  /analytics/detect:
+    post:
+      summary: Run analytics on video frame
+      tags: [Analytics]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
+                cameraId:
+                  type: string
+      responses:
+        '200':
+          description: Analytics result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsResult'
+
+  /analytics/rules:
+    get:
+      summary: List analytics rules
+      tags: [Analytics]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Analytics rules
+
+    post:
+      summary: Create analytics rule
+      tags: [Analytics]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Rule created
+
+  # ========== Users ==========
+  /users:
+    get:
+      summary: List users
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+    post:
+      summary: Create user
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: User created
+
+  /users/me:
+    get:
+      summary: Get current user
+      tags: [Users]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  # ========== Settings ==========
+  /settings:
+    get:
+      summary: Get settings
+      tags: [Settings]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System settings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settings'
+
+    put:
+      summary: Update settings
+      tags: [Settings]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Settings'
+      responses:
+        '200':
+          description: Settings updated
+
+  /settings/export:
+    post:
+      summary: Export settings
+      tags: [Settings]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Settings JSON file
+
+  /settings/import:
+    post:
+      summary: Import settings
+      tags: [Settings]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Settings imported
+
+  /settings/reset:
+    post:
+      summary: Reset settings to defaults
+      tags: [Settings]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Settings reset
+
+  # ========== Notifications ==========
+  /notifications:
+    get:
+      summary: List notification channels
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Notification channels
+
+    post:
+      summary: Configure notification channel
+      tags: [Notifications]
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Channel configured
+
+  # ========== Security ==========
+  /security/monitoring:
+    get:
+      summary: Security monitoring dashboard
+      tags: [Security]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Security dashboard data
+
+  /security/alerts:
+    get:
+      summary: List security alerts
+      tags: [Security]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Security alerts
+
+  /security/csp-report:
+    post:
+      summary: CSP violation report
+      tags: [Security]
+      responses:
+        '204':
+          description: Report received
+
+  # ========== Storage ==========
+  /storage/cloud:
+    get:
+      summary: Cloud storage status
+      tags: [Storage]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cloud storage status
+
+    post:
+      summary: Configure cloud storage
+      tags: [Storage]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cloud storage configured
+
+  # ========== Cluster ==========
+  /cluster/nodes:
+    get:
+      summary: List cluster nodes
+      tags: [Cluster]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cluster nodes
+
+  /cluster/health:
+    get:
+      summary: Cluster health
+      tags: [Cluster]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cluster health status
+
+  # ========== HLS Streaming ==========
+  /stream/hls/{cameraId}/playlist.m3u8:
+    get:
+      summary: Get HLS playlist
+      tags: [Streaming]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cameraId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HLS playlist
+          content:
+            application/vnd.apple.mpegurl:
+              schema:
+                type: string
+
+  /stream/hls/{cameraId}/{segment}.ts:
+    get:
+      summary: Get HLS segment
+      tags: [Streaming]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cameraId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: segment
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: HLS segment
+          content:
+            video/MP2T:
+              schema:
+                type: string
+                format: binary
+
+  # ========== WebSocket ==========
+  /ws:
+    get:
+      summary: WebSocket connection
+      tags: [Realtime]
+      description: |
+        WebSocket endpoint для real-time обновлений.
+        Поддерживает каналы: cameras, events, recordings, notifications
+      responses:
+        '101':
+          description: Switching Protocols
+
+tags:
+  - name: System
+    description: System health and monitoring
+  - name: Authentication
+    description: Login, logout, token refresh
+  - name: Cameras
+    description: Camera management and PTZ control
+  - name: Recordings
+    description: Video recording management
+  - name: Events
+    description: Security events and alerts
+  - name: Analytics
+    description: Video analytics (motion, objects, faces, ANPR)
+  - name: Users
+    description: User management
+  - name: Settings
+    description: System settings
+  - name: Notifications
+    description: Notification channels
+  - name: Security
+    description: Security monitoring and alerts
+  - name: Storage
+    description: Cloud storage management
+  - name: Cluster
+    description: Cluster management
+  - name: Streaming
+    description: HLS video streaming
+  - name: Realtime
+    description: WebSocket real-time updates

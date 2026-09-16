@@ -1,0 +1,22 @@
+// Jenkinsfile for Desktop macOS build
+// Date: 2026-07-08
+
+@Library('ipcss-build') _
+
+ipcssBuild(
+    buildType: 'desktop-macos',
+    deployTarget: params.DEPLOY_TARGET,
+    buildSteps: [
+        'chmod +x gradlew',
+        './gradlew clean :desktop:macos:jar',
+        './gradlew :desktop:macos:test'
+    ],
+    testSteps: [
+        './gradlew :desktop:macos:test'
+    ],
+    artifacts: [
+        'desktop/build/libs/*.jar',
+        'desktop/build/distributions/*.dmg',
+        'desktop/build/reports/tests/test/**/*.html'
+    ]
+)

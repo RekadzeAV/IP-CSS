@@ -1,0 +1,18 @@
+﻿{
+    "generatedAt":  "2026-04-27 23:39:34 +04:00",
+    "baseUrl":  "http://localhost:8080",
+    "result":  "GO",
+    "steps":  [
+                  {
+                      "Name":  "Auth/Discovery Smoke",
+                      "Status":  "PASS",
+                      "Error":  ""
+                  },
+                  {
+                      "Name":  "Metrics Guard",
+                      "Status":  "PASS",
+                      "Error":  ""
+                  }
+              ],
+    "reportPath":  "docs/reports/DOCKER_PRE_RELEASE_GATE_REPORT_2026-04-27_233927.md"
+}

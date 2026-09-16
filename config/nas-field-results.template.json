@@ -1,0 +1,49 @@
+{
+  "date": "2026-04-27",
+  "platforms": {
+    "synology": {
+      "s2": "PASS",
+      "s3": "PASS",
+      "s4": "PASS",
+      "s5": "PASS",
+      "s6": "PASS",
+      "result": "GO",
+      "notes": "Field run completed.",
+      "issue1": "None",
+      "issue2": "None"
+    },
+    "qnap": {
+      "s2": "PASS",
+      "s3": "PASS",
+      "s4": "PASS",
+      "s5": "PASS",
+      "s6": "PASS",
+      "result": "GO",
+      "notes": "Field run completed.",
+      "issue1": "None",
+      "issue2": "None"
+    },
+    "asustor": {
+      "s2": "PASS",
+      "s3": "PASS",
+      "s4": "PASS",
+      "s5": "PASS",
+      "s6": "PASS",
+      "result": "GO",
+      "notes": "Field run completed.",
+      "issue1": "None",
+      "issue2": "None"
+    },
+    "truenas": {
+      "s2": "PASS",
+      "s3": "PASS",
+      "s4": "PASS",
+      "s5": "PASS",
+      "s6": "PASS",
+      "result": "GO",
+      "notes": "Field run completed.",
+      "issue1": "None",
+      "issue2": "None"
+    }
+  }
+}

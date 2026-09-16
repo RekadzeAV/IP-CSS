@@ -1,0 +1,92 @@
+[
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/video-processing",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dvideo_processing_EXPORTS @CMakeFiles/video_processing.dir/includes_CXX.rsp -O3 -DNDEBUG -std=c++17 -fvisibility=default -fno-keep-inline-dllexport -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\video_processing.dir\\src\\video_decoder.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\video-processing\\src\\video_decoder.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/video-processing/src/video_decoder.cpp",
+  "output": "video-processing/CMakeFiles/video_processing.dir/src/video_decoder.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/video-processing",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dvideo_processing_EXPORTS @CMakeFiles/video_processing.dir/includes_CXX.rsp -O3 -DNDEBUG -std=c++17 -fvisibility=default -fno-keep-inline-dllexport -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\video_processing.dir\\src\\audio_decoder.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\video-processing\\src\\audio_decoder.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/video-processing/src/audio_decoder.cpp",
+  "output": "video-processing/CMakeFiles/video_processing.dir/src/audio_decoder.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/video-processing",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dvideo_processing_EXPORTS @CMakeFiles/video_processing.dir/includes_CXX.rsp -O3 -DNDEBUG -std=c++17 -fvisibility=default -fno-keep-inline-dllexport -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\video_processing.dir\\src\\video_encoder.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\video-processing\\src\\video_encoder.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/video-processing/src/video_encoder.cpp",
+  "output": "video-processing/CMakeFiles/video_processing.dir/src/video_encoder.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/video-processing",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dvideo_processing_EXPORTS @CMakeFiles/video_processing.dir/includes_CXX.rsp -O3 -DNDEBUG -std=c++17 -fvisibility=default -fno-keep-inline-dllexport -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\video_processing.dir\\src\\frame_processor.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\video-processing\\src\\frame_processor.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/video-processing/src/frame_processor.cpp",
+  "output": "video-processing/CMakeFiles/video_processing.dir/src/frame_processor.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/video-processing",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dvideo_processing_EXPORTS @CMakeFiles/video_processing.dir/includes_CXX.rsp -O3 -DNDEBUG -std=c++17 -fvisibility=default -fno-keep-inline-dllexport -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\video_processing.dir\\src\\rtsp_client.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\video-processing\\src\\rtsp_client.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/video-processing/src/rtsp_client.cpp",
+  "output": "video-processing/CMakeFiles/video_processing.dir/src/rtsp_client.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/video-processing",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dvideo_processing_EXPORTS @CMakeFiles/video_processing.dir/includes_CXX.rsp -O3 -DNDEBUG -std=c++17 -fvisibility=default -fno-keep-inline-dllexport -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\video_processing.dir\\src\\stream_manager.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\video-processing\\src\\stream_manager.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/video-processing/src/stream_manager.cpp",
+  "output": "video-processing/CMakeFiles/video_processing.dir/src/stream_manager.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/analytics",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Danalytics_EXPORTS @CMakeFiles/analytics.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -o CMakeFiles\\analytics.dir\\src\\object_detector.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\analytics\\src\\object_detector.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/analytics/src/object_detector.cpp",
+  "output": "analytics/CMakeFiles/analytics.dir/src/object_detector.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/analytics",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Danalytics_EXPORTS @CMakeFiles/analytics.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -o CMakeFiles\\analytics.dir\\src\\object_tracker.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\analytics\\src\\object_tracker.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/analytics/src/object_tracker.cpp",
+  "output": "analytics/CMakeFiles/analytics.dir/src/object_tracker.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/analytics",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Danalytics_EXPORTS @CMakeFiles/analytics.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -o CMakeFiles\\analytics.dir\\src\\anpr_engine.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\analytics\\src\\anpr_engine.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/analytics/src/anpr_engine.cpp",
+  "output": "analytics/CMakeFiles/analytics.dir/src/anpr_engine.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/analytics",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Danalytics_EXPORTS @CMakeFiles/analytics.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -o CMakeFiles\\analytics.dir\\src\\face_detector.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\analytics\\src\\face_detector.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/analytics/src/face_detector.cpp",
+  "output": "analytics/CMakeFiles/analytics.dir/src/face_detector.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/analytics",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Danalytics_EXPORTS @CMakeFiles/analytics.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -o CMakeFiles\\analytics.dir\\src\\motion_detector.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\analytics\\src\\motion_detector.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/analytics/src/motion_detector.cpp",
+  "output": "analytics/CMakeFiles/analytics.dir/src/motion_detector.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/codecs",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dcodecs_EXPORTS @CMakeFiles/codecs.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\codecs.dir\\src\\h264_codec.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\codecs\\src\\h264_codec.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/codecs/src/h264_codec.cpp",
+  "output": "codecs/CMakeFiles/codecs.dir/src/h264_codec.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/codecs",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dcodecs_EXPORTS @CMakeFiles/codecs.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\codecs.dir\\src\\h265_codec.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\codecs\\src\\h265_codec.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/codecs/src/h265_codec.cpp",
+  "output": "codecs/CMakeFiles/codecs.dir/src/h265_codec.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/codecs",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dcodecs_EXPORTS @CMakeFiles/codecs.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\codecs.dir\\src\\mjpeg_codec.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\codecs\\src\\mjpeg_codec.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/codecs/src/mjpeg_codec.cpp",
+  "output": "codecs/CMakeFiles/codecs.dir/src/mjpeg_codec.cpp.obj"
+},
+{
+  "directory": "D:/GitHub-Ai/IP-CSS/native/build/codecs",
+  "command": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BrechtSanders.WinLibs.POSIX.UCRT_Microsoft.Winget.Source_8wekyb3d8bbwe\\mingw64\\bin\\c++.exe -Dcodecs_EXPORTS @CMakeFiles/codecs.dir/includes_CXX.rsp -O3 -DNDEBUG -std=gnu++17 -Wall -Wextra -Wpedantic -O3 -march=native -o CMakeFiles\\codecs.dir\\src\\codec_manager.cpp.obj -c D:\\GitHub-Ai\\IP-CSS\\native\\codecs\\src\\codec_manager.cpp",
+  "file": "D:/GitHub-Ai/IP-CSS/native/codecs/src/codec_manager.cpp",
+  "output": "codecs/CMakeFiles/codecs.dir/src/codec_manager.cpp.obj"
+}
+]

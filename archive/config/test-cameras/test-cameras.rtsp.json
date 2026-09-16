@@ -1,0 +1,142 @@
+{
+  "cameras": [
+    {
+      "name": "Hikvision_Test_1",
+      "url": "rtsp://admin:password123@192.168.1.100:554/Streaming/Channels/101",
+      "type": "hikvision",
+      "audio": true,
+      "video_codec": "H.264",
+      "audio_codec": "AAC",
+      "description": "Hikvision IP Camera - Main stream with audio",
+      "rtsp_transport": "tcp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": true
+    },
+    {
+      "name": "Dahua_Test_1",
+      "url": "rtsp://admin:password123@192.168.1.101:554/cam/realmonitor?channel=1&subtype=0",
+      "type": "dahua",
+      "audio": true,
+      "video_codec": "H.264",
+      "audio_codec": "G.711",
+      "description": "Dahua IP Camera - Main stream with G.711 audio",
+      "rtsp_transport": "tcp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": true
+    },
+    {
+      "name": "Axis_Test_1",
+      "url": "rtsp://admin:password123@192.168.1.102:554/axis-media/media.amp",
+      "type": "axis",
+      "audio": true,
+      "video_codec": "H.264",
+      "audio_codec": "PCMU",
+      "description": "Axis Network Camera with PCMU audio",
+      "rtsp_transport": "tcp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": true
+    },
+    {
+      "name": "Sony_Test_1",
+      "url": "rtsp://admin:password123@192.168.1.103:554/onvif1",
+      "type": "sony",
+      "audio": true,
+      "video_codec": "H.265",
+      "audio_codec": "AAC",
+      "description": "Sony IP Camera with H.265 video",
+      "rtsp_transport": "tcp",
+      "timeout_ms": 15000,
+      "reconnect_enabled": true
+    },
+    {
+      "name": "MJPEG_Camera_1",
+      "url": "rtsp://admin:password123@192.168.1.104:554/mjpeg/stream1",
+      "type": "generic",
+      "audio": false,
+      "video_codec": "MJPEG",
+      "audio_codec": null,
+      "description": "Generic MJPEG Camera - video only",
+      "rtsp_transport": "tcp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": true
+    },
+    {
+      "name": "HiSilicon_Test_1",
+      "url": "rtsp://admin:password123@192.168.1.105:554/h264/stream1",
+      "type": "hisilicon",
+      "audio": true,
+      "video_codec": "H.264",
+      "audio_codec": "PCMA",
+      "description": "HiSilicon based camera with PCMA audio",
+      "rtsp_transport": "tcp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": true
+    },
+    {
+      "name": "Generic_ONVIF_1",
+      "url": "rtsp://admin:password123@192.168.1.106:554/live/ch00_0",
+      "type": "onvif",
+      "audio": true,
+      "video_codec": "H.264",
+      "audio_codec": "AAC",
+      "description": "Generic ONVIF compliant camera",
+      "rtsp_transport": "tcp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": true
+    },
+    {
+      "name": "Emulator_AAC",
+      "url": "rtsp://127.0.0.1:8554/stream/",
+      "type": "emulator",
+      "audio": true,
+      "video_codec": "H.264",
+      "audio_codec": "AAC",
+      "description": "RTSP Emulator - AAC audio test (48kHz, stereo)",
+      "rtsp_transport": "udp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": false
+    },
+    {
+      "name": "Emulator_PCMU",
+      "url": "rtsp://127.0.0.1:8555/stream/",
+      "type": "emulator",
+      "audio": true,
+      "video_codec": "H.264",
+      "audio_codec": "PCMU",
+      "description": "RTSP Emulator - PCMU audio test (8kHz, mono)",
+      "rtsp_transport": "udp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": false
+    },
+    {
+      "name": "Emulator_PCMA",
+      "url": "rtsp://127.0.0.1:8556/stream/",
+      "type": "emulator",
+      "audio": true,
+      "video_codec": "H.264",
+      "audio_codec": "PCMA",
+      "description": "RTSP Emulator - PCMA audio test (8kHz, mono)",
+      "rtsp_transport": "udp",
+      "timeout_ms": 10000,
+      "reconnect_enabled": false
+    }
+  ],
+  "test_config": {
+    "connection_timeout_ms": 10000,
+    "video_test_duration_ms": 5000,
+    "audio_test_duration_ms": 5000,
+    "reconnect_test_attempts": 3,
+    "long_run_test_duration_sec": 120,
+    "enable_video_test": true,
+    "enable_audio_test": true,
+    "enable_reconnect_test": true,
+    "enable_long_run_test": false
+  },
+  "notes": [
+    "Replace IP addresses and credentials with your actual test cameras",
+    "Ensure cameras are reachable from the test machine",
+    "Test all codec combinations: H.264/H.265 + AAC/G.711/PCMU/PCMA",
+    "MJPEG camera is for video-only testing",
+    "Long-run test is disabled by default (enable manually for stability testing)"
+  ]
+}

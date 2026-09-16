@@ -1,0 +1,25 @@
+-- Migration 2: Add license_plate table for ANPR (Phase 5)
+-- Version: 2 -> 3
+-- Date: 2026-03-01
+
+CREATE TABLE license_plate (
+    id TEXT NOT NULL PRIMARY KEY,
+    camera_id TEXT NOT NULL,
+    timestamp INTEGER NOT NULL,
+    plate_number TEXT NOT NULL,
+    confidence REAL NOT NULL,
+    country TEXT,
+    bbox_x INTEGER NOT NULL,
+    bbox_y INTEGER NOT NULL,
+    bbox_width INTEGER NOT NULL,
+    bbox_height INTEGER NOT NULL,
+    created_at INTEGER NOT NULL
+);
+
+CREATE INDEX license_plate_camera_id_index ON license_plate(camera_id);
+CREATE INDEX license_plate_timestamp_index ON license_plate(timestamp);
+CREATE INDEX license_plate_plate_number_index ON license_plate(plate_number);
+
+-- Update schema version after migration
+INSERT INTO schema_version(version, applied_at, description)
+VALUES (3, 0, 'Added table: license_plate');

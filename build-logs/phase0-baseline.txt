@@ -1,0 +1,20 @@
+PHASE 0 - BASELINE REPORT (19.07.2026)
+=====================================
+Environment:
+  Java: 17.0.17 LTS (Microsoft) OK
+  Gradle wrapper: 8.9 OK
+  Android SDK: present OK
+
+Task 0.2 compileKotlin: PASS (1m2s) - only warnings
+Task 0.3 server:test: BLOCKED - compileTestKotlin fails (13 files)
+Task 0.4 installDist: PASS - artifact at server/api/build/install/server-api
+  NOTE: no Shadow plugin; README's shadowJar command is outdated
+
+BLOCKER - test compilation errors:
+  Unit: AudioRecordingTest, NotificationServiceRoutingTest, PasswordServiceTest,
+        LdapAuthServiceTest, LdapUserDetailsServiceTest, ReplicationManagerTest
+  Integration: CameraDiscoverFallback, HlsRecordingRoutes, HlsStreamRoutes,
+        OnvifEventToWebSocket, AdvancedWebhookSender, TwilioSmsSender, WebPushSender
+
+Causes: legacy tests not updated for refactored APIs
+  (SendNotificationUseCase/NotificationService ctor, PasswordService.isHashed, AudioRecording)

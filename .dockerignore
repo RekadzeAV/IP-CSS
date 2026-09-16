@@ -1,0 +1,81 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+!README.md
+
+# Scripts (exclude from Docker context unless needed for server build)
+scripts/
+
+# Configs (local/example configs)
+config/
+*.local.json
+*.example.json
+
+# Native source (built separately, not used by server Docker image)
+native/
+
+# Platform-specific source (not needed for server image)
+android/
+ios/
+platforms/
+
+# Web UI build outputs (exclude only build artifacts, not source)
+server/web/node_modules/
+server/web/.next/
+server/web/dist/
+server/web/out/
+
+# Gradle cache
+.gradle/
+**/.gradle/
+
+# Build outputs
+build/
+**/build/
+out/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test data and recordings
+data/
+test-results/
+coverage/
+
+# Docker volumes
+data/postgres/
+data/redis/
+data/config/
+data/recordings/
+data/logs/
+data/models/
+data/tmp/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Logs
+*.log
+logs/
+
+# Published packages
+**/*.pom
+**/*.jar
+!**/build/libs/*.jar

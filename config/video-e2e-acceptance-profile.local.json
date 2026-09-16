@@ -1,0 +1,10 @@
+{
+  "profileName": "mvp-current-cameras",
+  "release": {
+    "optionalControlIds": [
+      "1.8.A1",
+      "1.8.D",
+      "1.8.E"
+    ]
+  }
+}

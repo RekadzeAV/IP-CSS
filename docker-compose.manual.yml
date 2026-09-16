@@ -1,0 +1,37 @@
+services:
+  surveillance:
+    environment:
+      - FORCE_HTTPS=false
+      - ALLOW_EXTERNAL_TLS_TERMINATION=true
+      - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - DATA_ENCRYPTION_KEY=${DATA_ENCRYPTION_KEY}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - DISCOVERY_KNOWN_HOSTS_CONFIG=/app/discovery-config/test-cameras.local.json
+      - DISCOVERY_FALLBACK_ENABLED=true
+    volumes:
+      - ./config:/app/discovery-config:ro
+      - ./data/config:/app/config
+      - ./data/recordings:/app/recordings
+      - ./data/logs:/app/logs
+      - ./data/models:/app/models
+      - ./data/tmp:/app/tmp
+    ports:
+      - "8080:8080"
+
+  postgres:
+    ports:
+      - "55432:5432"
+    volumes:
+      - postgres_manual_data:/var/lib/postgresql/data
+
+  redis:
+    ports:
+      - "56179:6379"
+    volumes:
+      - redis_manual_data:/data
+
+volumes:
+  postgres_manual_data:
+  redis_manual_data:

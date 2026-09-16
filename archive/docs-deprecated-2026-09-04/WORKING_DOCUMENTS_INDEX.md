@@ -1,0 +1,43 @@
+# WORKING DOCUMENTS INDEX
+
+**Last updated:** 27 April 2026  
+**Scope:** active working docs only (archive excluded)
+
+## Canonical status and control
+
+- [status/SOURCE_OF_TRUTH.md](status/SOURCE_OF_TRUTH.md)
+- [status/PROJECT_STATUS.md](status/PROJECT_STATUS.md)
+- [status/PROJECT_STATUS_PHASES.md](status/PROJECT_STATUS_PHASES.md)
+- [status/CURRENT_STATUS.md](status/CURRENT_STATUS.md)
+- [status/STATUS_LOCK_2026-04-27.md](status/STATUS_LOCK_2026-04-27.md)
+- [status/VIDEO_GATE_LOCK_2026-04-27.md](status/VIDEO_GATE_LOCK_2026-04-27.md)
+- [TODO.md](TODO.md)
+- [HIGH_PRIORITY_ACTIVE_DOCS.md](HIGH_PRIORITY_ACTIVE_DOCS.md)
+
+## Thematic indexes
+
+- [working/STATUS_AND_PLANNING.md](working/STATUS_AND_PLANNING.md)
+- [working/PROTOCOLS_STREAMING_AND_CLIENTS.md](working/PROTOCOLS_STREAMING_AND_CLIENTS.md)
+- [working/BUILD_RELEASE_AND_TESTING.md](working/BUILD_RELEASE_AND_TESTING.md)
+- [working/SECURITY_AND_OPERATIONS.md](working/SECURITY_AND_OPERATIONS.md)
+
+## Core technical docs
+
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [API.md](API.md)
+- [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)
+- [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md)
+- [MVP_PHASED_IMPLEMENTATION_PLAN.md](MVP_PHASED_IMPLEMENTATION_PLAN.md)
+
+## Archive references
+
+- [archive/README.md](archive/README.md)
+- [status/STATUS_ARCHIVE_REGISTRY_2026-04-27.md](status/STATUS_ARCHIVE_REGISTRY_2026-04-27.md)
+- [DEPRECATED_ROOT_STUBS.md](DEPRECATED_ROOT_STUBS.md)
+
+## Related entry points
+
+- [README.md](README.md)
+- [../DOCUMENTATION_INDEX.md](../DOCUMENTATION_INDEX.md)
+- [reports/DOCS_ACTIVE_LINK_AUDIT_2026-04-27.md](reports/DOCS_ACTIVE_LINK_AUDIT_2026-04-27.md)
+- [reports/STATUS_LOCK_AUTOMATION_MEMO_2026-04-27.md](reports/STATUS_LOCK_AUTOMATION_MEMO_2026-04-27.md)

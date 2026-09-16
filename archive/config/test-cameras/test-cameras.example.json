@@ -1,0 +1,30 @@
+{
+  "description": "Шаблон конфигурации камер для тестирования видеопотоков. Скопируйте в test-cameras.local.json и заполните. Файл test-cameras.local.json не коммитится и не входит в сборку.",
+  "cameras": [
+    {
+      "id": "camera-1",
+      "name": "Камера 1",
+      "host": "192.168.10.20",
+      "rtspPath": "/stream",
+      "rtspPort": 554,
+      "username": "YOUR_LOGIN",
+      "password": "YOUR_PASSWORD"
+    },
+    {
+      "id": "camera-17",
+      "name": "Камера 17",
+      "host": "192.168.10.17",
+      "rtspPath": "/stream",
+      "rtspPort": 554,
+      "username": "YOUR_LOGIN",
+      "password": "YOUR_PASSWORD"
+    }
+  ],
+  "defaults": {
+    "username": "YOUR_LOGIN",
+    "password": "YOUR_PASSWORD",
+    "rtspPort": 554,
+    "rtspPath": "/stream",
+    "httpPorts": [80, 8080, 443]
+  }
+}

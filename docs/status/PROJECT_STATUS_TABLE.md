@@ -1,0 +1,1 @@
+# PROJECT_STATUS_TABLE  This status document was moved to legacy archive.  - Archived location: `docs/archive/status-legacy-2026-04-27/PROJECT_STATUS_TABLE.md` - Active status set: `docs/status/STATUS_ARCHIVE_REGISTRY_2026-04-27.md`

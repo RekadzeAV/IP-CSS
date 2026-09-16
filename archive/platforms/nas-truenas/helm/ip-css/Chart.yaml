@@ -1,0 +1,25 @@
+apiVersion: v2
+name: ip-css
+description: IP Camera Surveillance System - A Helm chart for Kubernetes/TrueNAS SCALE
+type: application
+version: 0.3.0
+appVersion: "0.3.0"
+keywords:
+  - surveillance
+  - ip-camera
+  - nvr
+  - security
+  - ai-analytics
+home: https://www.ip-css.com
+sources:
+  - https://github.com/nlp-core-team/ip-css
+maintainers:
+  - name: NLP-Core-Team
+    email: team@nlp-core.team
+icon: https://www.ip-css.com/icon.png
+annotations:
+  artifacthub.io/changes: |
+    - Initial release
+    - Multi-platform support
+    - AI analytics
+    - NAS integration

@@ -1,0 +1,53 @@
+{
+    "cmake.sourceDirectory": "E:/GitHub-Ai/IP-CSS/native",
+    "java.compile.nullAnalysis.mode": "automatic",
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "git.ignoreLimitWarning": true,
+    
+    // Java Language Server memory settings
+    "java.server.memorySize": 2048,
+    "java.jdt.ls.vmargs": "-Xmx2048m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC -Dfile.encoding=UTF-8",
+    
+    // Java runtime configuration
+    "java.configuration.runtimes": [
+        {
+            "path": "C:\\Program Files\\Microsoft\\jdk-17.0.17.10-hotspot",
+            "default": true
+        }
+    ],
+    
+    // Gradle Java home
+    "java.import.gradle.java.home": "C:\\Program Files\\Microsoft\\jdk-17.0.17.10-hotspot",
+    
+    // Exclude large directories from indexing
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/.metadata/**",
+        "**/archetype-resources/**",
+        "**/build/**",
+        "**/target/**",
+        "**/.gradle/**",
+        "**/android/**",
+        "**/platforms/**",
+        "**/release-build/**"
+    ],
+    
+    // Todo-Tree ripgrep path
+    "todo-tree.ripgrep.ripgrep": "C:\\Users\\Rekad\\AppData\\Local\\Microsoft\\WinGet\\Packages\\BurntSushi.ripgrep.MSVC_Microsoft.Winget.Source_8wekyb3d8bbwe\\ripgrep-15.1.0-x86_64-pc-windows-msvc\\rg.exe",
+    "todo-tree.general.enableLogFile": false,
+    
+    // Performance optimizations
+    "files.watcherExclude": {
+        "**/build/**": true,
+        "**/target/**": true,
+        "**/.gradle/**": true,
+        "**/node_modules/**": true
+    },
+    
+    "search.exclude": {
+        "**/build/**": true,
+        "**/target/**": true,
+        "**/.gradle/**": true,
+        "**/node_modules/**": true
+    }
+}

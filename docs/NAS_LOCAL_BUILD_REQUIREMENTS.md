@@ -1,0 +1,1 @@
+# NAS_LOCAL_BUILD_REQUIREMENTS  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/NAS_LOCAL_BUILD_REQUIREMENTS.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

@@ -1,0 +1,23 @@
+// Jenkinsfile for Native Libraries build
+// Date: 2026-07-08
+
+@Library('ipcss-build') _
+
+ipcssBuild(
+    buildType: 'native-libs',
+    deployTarget: params.DEPLOY_TARGET,
+    buildSteps: [
+        'chmod +x gradlew',
+        './gradlew clean :native:build',
+        './gradlew :native:test'
+    ],
+    testSteps: [
+        './gradlew :native:test'
+    ],
+    artifacts: [
+        'native/build/**/*.so',
+        'native/build/**/*.dylib',
+        'native/build/**/*.dll',
+        'native/build/reports/tests/test/**/*.html'
+    ]
+)

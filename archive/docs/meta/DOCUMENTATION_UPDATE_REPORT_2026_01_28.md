@@ -1,0 +1,1 @@
+# DOCUMENTATION_UPDATE_REPORT_2026_01_28  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/DOCUMENTATION_UPDATE_REPORT_2026_01_28.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

@@ -1,0 +1,17 @@
+# Synology DSM Privilege Configuration
+# This file defines the permissions required by the IP-CSS package
+
+[admin]
+# Administrator has full access
+data = rw
+program = rw
+
+[users]
+# Regular users have read-only access to data
+data = ro
+program = ro
+
+[system]
+# System internal user for service management
+data = rw
+program = rw

@@ -1,0 +1,1 @@
+# DOCUMENTATION_VERSIONING  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/DOCUMENTATION_VERSIONING.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

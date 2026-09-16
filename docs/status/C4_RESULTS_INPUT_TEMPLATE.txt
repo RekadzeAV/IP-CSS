@@ -1,0 +1,4 @@
+C4_RESULTS
+cycle1: duration=75s, reconnect=yes, duplicates=no, criticalLoss=no, uiCrash=no, note=Recovered in 5s, UI stable
+cycle2: duration=80s, reconnect=yes, duplicates=no, criticalLoss=no, uiCrash=no, note=Recovered in 7s, no missing notifications
+cycle3: duration=70s, reconnect=yes, duplicates=no, criticalLoss=no, uiCrash=no, note=Recovered in 6s, no duplicate events

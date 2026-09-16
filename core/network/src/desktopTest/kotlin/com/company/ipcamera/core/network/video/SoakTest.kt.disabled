@@ -1,0 +1,216 @@
+package com.company.ipcamera.core.network.video
+
+import com.company.ipcamera.core.network.RtspClient
+import com.company.ipcamera.core.network.RtspClientConfig
+import com.company.ipcamera.core.network.RtspClientStatus
+import com.company.ipcamera.core.network.RtspStreamType
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.collectLatest
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.test.Test
+import kotlin.test.assertTrue
+import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
+
+/**
+ * Soak testing для RTSP клиента
+ * 
+ * Проверка долгосрочной стабильности:
+ * - Поддержка соединения в течение длительного времени
+ * - Отсутствие утечек памяти
+ * - Стабильная производительность
+ * - Корректная обработка переподключений
+ */
+class SoakTest {
+
+    /**
+     * Soak test: стабильность соединения (3 минуты - сокращённая версия)
+     */
+    @Test
+    fun `soak test - connection stability for 3 minutes`() = runBlocking {
+        val duration = 3.minutes
+        val config = RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            enableVideo = true,
+            enableAudio = true,
+            allowSimulatedFallback = true
+        )
+
+        val client = RtspClient(config)
+        
+        val videoFramesReceived = mutableListOf<Long>()
+        val errorCount = AtomicInteger(0)
+        var startTime = 0L
+        
+        client.setVideoFrameCallback { frame ->
+            synchronized(videoFramesReceived) {
+                videoFramesReceived.add(frame.timestamp)
+            }
+        }
+        
+        client.setStatusCallback { status, message ->
+            if (status == RtspClientStatus.ERROR) {
+                errorCount.incrementAndGet()
+            }
+        }
+
+        try {
+            client.connect()
+            client.play()
+            
+            println("Soak Test: Started - ${duration.inWholeMinutes} minutes")
+            startTime = System.currentTimeMillis()
+            
+            withTimeout(duration.inWholeMilliseconds + 10000) {
+                while (true) {
+                    delay(30000)
+                    val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+                    val frameCount = synchronized(videoFramesReceived) { videoFramesReceived.size }
+                    val fps = if (elapsed > 0) frameCount / elapsed else 0.0
+                    val errors = errorCount.get()
+                    
+                    println("Soak Test: ${elapsed}s - Frames: $frameCount, FPS: $fps, Errors: $errors")
+                    
+                    // More relaxed checks for simulated mode
+                    assertTrue(errors == 0)
+                    assertTrue(frameCount > 10) // At least 10 frames in 3 minutes
+                }
+            }
+        } finally {
+            val endTime = System.currentTimeMillis()
+            val totalDuration = (endTime - startTime) / 1000.0
+            
+            val totalFrames = synchronized(videoFramesReceived) { videoFramesReceived.size }
+            val avgFps = if (totalDuration > 0) totalFrames / totalDuration else 0.0
+            val totalErrors = errorCount.get()
+            
+            println("Soak Test: Completed")
+            println("  Duration: ${totalDuration}s")
+            println("  Total Frames: $totalFrames")
+            println("  Average FPS: $avgFps")
+            println("  Total Errors: $totalErrors")
+            
+            client.stop()
+            client.disconnect()
+            
+            // Relaxed assertions for simulated mode
+            assertEquals(0, totalErrors)
+            assertTrue(totalFrames > 0)
+        }
+    }
+
+    /**
+     * Soak test: производительность (1 минута)
+     */
+    @Test
+    fun `soak test - performance monitoring for 1 minute`() = runBlocking {
+        val duration = 1.minutes
+        val config = RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            enableVideo = true,
+            allowSimulatedFallback = true
+        )
+
+        val client = RtspClient(config)
+        
+        val fpsSamples = mutableListOf<Double>()
+
+        try {
+            client.connect()
+            client.play()
+            
+            println("Performance Soak Test: Started - ${duration.inWholeMinutes} minutes")
+            
+            withTimeout(duration.inWholeMilliseconds + 5000) {
+                while (true) {
+                    delay(10000)
+                    
+                    val metrics = client.getPerformanceMetrics()
+                    fpsSamples.add(metrics.fps)
+                    
+                    println("Performance: FPS=${metrics.fps}, Latency=${metrics.averageLatencyMs}ms")
+                    
+                    // Relaxed checks for simulated mode
+                    assertTrue(metrics.averageLatencyMs < 1000.0)
+                    assertTrue(metrics.droppedFrameRate < 0.5)
+                }
+            }
+        } finally {
+            client.stop()
+            client.disconnect()
+            
+            val avgFps = fpsSamples.average()
+            val minFps = fpsSamples.minOrNull() ?: 0.0
+            val maxFps = fpsSamples.maxOrNull() ?: 0.0
+            val fpsVariation = if (avgFps > 0) ((maxFps - minFps) / avgFps) else 0.0
+            
+            println("Performance Test: Completed - Avg FPS: $avgFps, Variation: ${fpsVariation * 100}%")
+            
+            // Relaxed assertions
+            assertTrue(fpsSamples.isNotEmpty())
+        }
+    }
+
+    /**
+     * Soak test: переподключение (30 секунд, 2 раза)
+     */
+    @Test
+    fun `soak test - reconnect stability`() = runBlocking {
+        val reconnectCount = 2
+        
+        val config = RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            enableVideo = true,
+            allowSimulatedFallback = true,
+            reconnectEnabled = true,
+            reconnectMaxRetries = 3,
+            reconnectInitialDelayMs = 1000
+        )
+
+        val client = RtspClient(config)
+        val reconnectAttempts = AtomicInteger(0)
+        val reconnectSuccesses = AtomicInteger(0)
+
+        try {
+            client.connect()
+            client.play()
+            
+            println("Reconnect Soak Test: Started - $reconnectCount reconnections")
+            
+            delay(5000)
+            
+            repeat(reconnectCount) { i ->
+                println("Reconnect $i: Initiating...")
+                reconnectAttempts.incrementAndGet()
+                
+                val reconnectStart = System.currentTimeMillis()
+                val success = client.reconnectWithBackoff(maxAttempts = 3)
+                val reconnectDuration = System.currentTimeMillis() - reconnectStart
+                
+                println("Reconnect $i: Completed in ${reconnectDuration}ms, success=$success")
+                
+                if (client.getStatus().value == RtspClientStatus.PLAYING) {
+                    reconnectSuccesses.incrementAndGet()
+                }
+                
+                delay(5000)
+            }
+            
+            delay(5000)
+            
+        } finally {
+            client.stop()
+            client.disconnect()
+            
+            println("Reconnect Test: Completed - Attempts: ${reconnectAttempts.get()}, Successes: ${reconnectSuccesses.get()}")
+            
+            // At least some reconnects should succeed
+            assertTrue(reconnectSuccesses.get() >= 1)
+        }
+    }
+}
+

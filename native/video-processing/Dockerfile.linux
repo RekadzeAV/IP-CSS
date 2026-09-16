@@ -1,0 +1,31 @@
+# Dockerfile для сборки Linux x64 библиотеки RTSP клиента
+FROM ubuntu:24.04
+
+# Установка зависимостей с аудио поддержкой
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    gcc \
+    g++ \
+    pkg-config \
+    libavformat-dev \
+    libavcodec-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
+    libssl-dev \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Рабочая директория
+WORKDIR /build
+
+# Копирование исходного кода
+COPY . /build/
+
+# Сборка с полной поддержкой (включая аудио)
+RUN mkdir -p build && cd build && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build . --config Release
+
+# Результат будет в build/lib/linux/x64/libvideo_processing.so

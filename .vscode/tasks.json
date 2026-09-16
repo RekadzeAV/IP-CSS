@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "mcp-manager: start gateway",
+      "type": "shell",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-server-manager",
+        "daemon",
+        "start",
+        "--profile",
+        "default"
+      ],
+      "group": "none",
+      "presentation": {
+        "echo": true,
+        "reveal": "never",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "problemMatcher": []
+    }
+  ]
+}
+
+

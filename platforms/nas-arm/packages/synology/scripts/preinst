@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Pre-installation script for Synology DSM (ARM)
+# This script runs before the package is installed
+
+INSTALL_DIR="/var/packages/ip-css/target"
+PACKAGE_NAME="ip-css"
+
+# Check if package is already installed
+if [ -d "$INSTALL_DIR" ]; then
+    echo "Package $PACKAGE_NAME is already installed. Stopping service..."
+    /usr/syno/bin/synopkg stop "$PACKAGE_NAME" > /dev/null 2>&1
+fi
+
+# Check available disk space (minimum 500MB)
+AVAILABLE_SPACE=$(df -m "$INSTALL_DIR" 2>/dev/null | tail -1 | awk '{print $4}')
+if [ -z "$AVAILABLE_SPACE" ] || [ "$AVAILABLE_SPACE" -lt 500 ]; then
+    echo "Error: Insufficient disk space. At least 500MB required."
+    exit 1
+fi
+
+# Check Java version (required for Ktor server)
+if ! command -v java > /dev/null 2>&1; then
+    echo "Error: Java is not installed. Please install Java 17 or later."
+    echo "You can install Java from Synology Package Center (Java Manager) or manually."
+    exit 1
+fi
+
+# Get Java version more reliably
+JAVA_VERSION_OUTPUT=$(java -version 2>&1)
+JAVA_VERSION=$(echo "$JAVA_VERSION_OUTPUT" | head -n 1 | sed -n 's/.*version "\([0-9]*\)\..*/\1/p')
+
+if [ -z "$JAVA_VERSION" ]; then
+    # Try alternative method
+    JAVA_VERSION=$(echo "$JAVA_VERSION_OUTPUT" | grep -oP 'version "?\K[0-9]+' | head -1)
+fi
+
+if [ -z "$JAVA_VERSION" ] || [ "$JAVA_VERSION" -lt 17 ]; then
+    if [ -n "$JAVA_VERSION" ]; then
+        echo "Error: Java 17 or later is required. Found Java $JAVA_VERSION"
+    else
+        echo "Error: Could not determine Java version. Please ensure Java 17+ is installed."
+    fi
+    echo "Current Java installation:"
+    java -version 2>&1
+    exit 1
+fi
+
+echo "Java $JAVA_VERSION found - OK"
+
+# Check Node.js version (required for web interface, optional)
+if command -v node > /dev/null 2>&1; then
+    NODE_VERSION=$(node -v | sed 's/v//' | cut -d'.' -f1)
+    if [ "$NODE_VERSION" -lt 18 ]; then
+        echo "Warning: Node.js 18 or later is recommended for web interface. Found Node.js $(node -v)"
+        echo "Web interface may not work correctly with Node.js $(node -v)"
+    else
+        echo "Node.js $(node -v) found - OK"
+    fi
+else
+    echo "Warning: Node.js is not installed. Web interface will not be available."
+    echo "To install Node.js, use Synology Package Center or install manually."
+    echo "Package will install, but only API server will be available."
+fi
+
+exit 0
+

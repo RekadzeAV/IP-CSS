@@ -1,0 +1,33 @@
+name: Setup JDK and Gradle cache
+description: Temurin JDK + Gradle wrapper/caches (cache key must be passed from the workflow for hashFiles support)
+
+inputs:
+  java-version:
+    description: Java major version
+    required: false
+    default: '17'
+  gradle-cache-key:
+    description: Full cache key (workflow should use hashFiles for Gradle scripts)
+    required: true
+  gradle-restore-keys:
+    description: Restore-keys for Gradle cache (e.g. one line RUNNER-OS-gradle-)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ inputs.java-version }}
+        distribution: temurin
+
+    - name: Cache Gradle
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+          ~/.kotlin-daemon
+        key: ${{ inputs.gradle-cache-key }}
+        restore-keys: ${{ inputs.gradle-restore-keys }}

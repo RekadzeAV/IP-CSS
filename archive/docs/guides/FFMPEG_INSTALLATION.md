@@ -1,0 +1,1 @@
+# FFMPEG_INSTALLATION  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/FFMPEG_INSTALLATION.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

@@ -1,0 +1,38 @@
+#!/bin/sh
+# Create TrueNAS CORE iocage jail and run IP-CSS (manual steps / template)
+# Run as root on the TrueNAS CORE host.
+
+JAIL_NAME="${JAIL_NAME:-ip-css}"
+DATA_PATH="${DATA_PATH:-/mnt/tank/ip-css}"
+JAIL_IP="${JAIL_IP:-192.168.1.200}"
+DEFAULT_GW="${DEFAULT_GW:-192.168.1.1}"
+
+echo "IP-CSS TrueNAS CORE jail setup (template)"
+echo "  Jail name: $JAIL_NAME"
+echo "  Data path: $DATA_PATH"
+echo "  Jail IP:   $JAIL_IP"
+echo ""
+echo "Manual steps (run as root on TrueNAS CORE):"
+echo ""
+echo "1. Create dataset (if not exists):"
+echo "   zfs create -o mountpoint=$DATA_PATH \$(zfs list -Ho name / | head -1)/ip-css"
+echo "   mkdir -p $DATA_PATH/db $DATA_PATH/recordings $DATA_PATH/logs $DATA_PATH/config"
+echo ""
+echo "2. Create jail:"
+echo "   iocage create -n $JAIL_NAME -r \$(iocage list -rh | head -1) ip4_addr=\"vnet0|$JAIL_IP/24\" defaultrouter=\"$DEFAULT_GW\" vnet=1 boot=on"
+echo ""
+echo "3. Mount data into jail:"
+echo "   iocage fstab -a $JAIL_NAME $DATA_PATH/db /var/db/ip-css/db nullfs rw 0 0"
+echo "   iocage fstab -a $JAIL_NAME $DATA_PATH/recordings /var/db/ip-css/recordings nullfs rw 0 0"
+echo "   iocage fstab -a $JAIL_NAME $DATA_PATH/config /var/db/ip-css/config nullfs rw 0 0"
+echo ""
+echo "4. Start jail and install Java + app:"
+echo "   iocage start $JAIL_NAME"
+echo "   iocage exec $JAIL_NAME pkg install -y openjdk17"
+echo "   # Copy server.jar and config into jail (e.g. via iocage exec or scp)"
+echo "   iocage exec $JAIL_NAME java -Xmx512m -jar /path/to/server.jar -config=/var/db/ip-css/config/config.yaml"
+echo ""
+echo "5. Open firewall for ports 8080 (web) and 8081 (API) to $JAIL_IP"
+echo ""
+echo "For automated deployment, use TrueNAS SCALE with Docker/Kubernetes instead."
+exit 0

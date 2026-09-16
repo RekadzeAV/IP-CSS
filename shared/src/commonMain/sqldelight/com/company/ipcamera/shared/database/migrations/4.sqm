@@ -1,0 +1,9 @@
+-- Migration 4: Add recording codec metadata (Phase 2 / F2-6)
+-- Version: 4 -> 5
+-- Date: 2026-04-26
+
+ALTER TABLE recording ADD COLUMN codec TEXT;
+
+-- Update schema version after migration
+INSERT INTO schema_version(version, applied_at, description)
+VALUES (5, 0, 'Added recording.codec metadata');

@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0)'
+        required: true
+        type: string
+
+env:
+  JAVA_VERSION: '17'
+  DOCKER_REGISTRY: ghcr.io
+  DOCKER_IMAGE: ${{ github.repository }}
+
+jobs:
+  # ===========================================================================
+  # Release validation
+  # ===========================================================================
+  validate:
+    name: Release Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check CHANGELOG
+        run: |
+          if ! grep -q "${{ github.ref_name }}" CHANGELOG.md; then
+            echo "Version ${{ github.ref_name }} not found in CHANGELOG.md"
+            exit 1
+          fi
+      
+      - name: Check version consistency
+        run: |
+          grep "${{ github.ref_name }}" gradle.properties || {
+            echo "Version mismatch in gradle.properties"
+            exit 1
+          }
+
+  # ===========================================================================
+  # Build all artifacts
+  # ===========================================================================
+  build:
+    name: Build Release Artifacts
+    needs: [validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+      
+      - name: Build all
+        run: |
+          ./gradlew build shadowJar --no-daemon -x test
+          chmod +x scripts/build-nas-packages.sh
+          ./scripts/build-nas-packages.sh all
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-artifacts
+          path: |
+            release-build/
+            server/api/build/libs/*.jar
+
+  # ===========================================================================
+  # Docker: build and push
+  # ===========================================================================
+  docker:
+    name: Docker Build & Push
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Login to Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.DOCKER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: platforms/nas-x86_64/Dockerfile
+          target: production
+          push: true
+          tags: |
+            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:latest
+            ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE }}:${{ github.ref_name }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ===========================================================================
+  # GitHub Release
+  # ===========================================================================
+  release:
+    name: Create Release
+    needs: [build, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts
+          path: release-artifacts/
+      
+      - name: Generate release notes
+        run: |
+          echo "## Release ${{ github.ref_name }}" > release-notes.md
+          echo "" >> release-notes.md
+          echo "### Artifacts" >> release-notes.md
+          echo "- Server JAR" >> release-notes.md
+          echo "- Docker image: ghcr.io/${{ github.repository }}:${{ github.ref_name }}" >> release-notes.md
+          echo "- NAS packages (SPK, QPKG, APK)" >> release-notes.md
+          echo "" >> release-notes.md
+          echo "### Changelog" >> release-notes.md
+          echo "" >> release-notes.md
+          tail -n +3 CHANGELOG.md | head -50 >> release-notes.md
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            release-artifacts/**/*.jar
+            release-artifacts/**/*.spk
+            release-artifacts/**/*.qpkg
+            release-artifacts/**/*.apk
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-beta') || contains(github.ref_name, '-alpha') }}

@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ipcss-it-postgres
+    environment:
+      POSTGRES_DB: ipcss_test
+      POSTGRES_USER: ipcss
+      POSTGRES_PASSWORD: ipcss
+    ports:
+      - "55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ipcss -d ipcss_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: ipcss-it-redis
+    command: redis-server --save "" --appendonly no
+    ports:
+      - "56379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

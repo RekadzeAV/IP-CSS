@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "enforce": true,
+  "certificates": {
+    "api.example.com": [
+      "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+    ],
+    "api2.example.com": [
+      "sha256/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC="
+    ]
+  },
+  "description": "Пример конфигурации certificate pinning. Замените example.com на ваши домены и добавьте реальные SHA-256 fingerprints.",
+  "instructions": {
+    "how_to_get_fingerprint": "Используйте скрипт scripts/get-certificate-fingerprint.sh или команду: openssl s_client -connect HOST:443 -showcerts | openssl x509 -fingerprint -sha256 -noout",
+    "important_notes": [
+      "Всегда используйте минимум 2 pin (основной + backup) для возможности ротации сертификатов",
+      "Установите enforce: true только после тщательного тестирования",
+      "В development можно установить enforce: false для отладки"
+    ]
+  }
+}

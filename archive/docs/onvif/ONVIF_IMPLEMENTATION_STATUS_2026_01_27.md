@@ -1,0 +1,1 @@
+# ONVIF_IMPLEMENTATION_STATUS_2026_01_27  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/ONVIF_IMPLEMENTATION_STATUS_2026_01_27.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

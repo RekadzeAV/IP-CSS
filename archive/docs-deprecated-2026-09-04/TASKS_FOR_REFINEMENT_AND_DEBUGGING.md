@@ -1,0 +1,1 @@
+# TASKS_FOR_REFINEMENT_AND_DEBUGGING  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/TASKS_FOR_REFINEMENT_AND_DEBUGGING.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

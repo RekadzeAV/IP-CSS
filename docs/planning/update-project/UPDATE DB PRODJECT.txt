@@ -1,0 +1,154 @@
+Обновленный план разработки (дополнения)
+Фаза 2: Разработка клиентских приложений
+Этап 2.3. Desktop (Compose Desktop) — дополнение
+2.3.1. Многомониторный режим (расширенные сетки)
+
+Задача	Подзадачи
+Реализация динамической сетки камер	1. Поддержка предустановленных размеров сетки: 2×2, 3×3, 4×4, 6×6, 8×8, 9×9, 10×10, 12×12, 14×14, 16×16
+2. Автоматическое масштабирование видеопотоков под размер ячейки
+3. Сохранение выбранного размера сетки в настройках пользователя
+Полноэкранный режим	1. Переключение на выбранную камеру в полноэкранный режим
+2. Возврат к сетке по Escape или клику
+Drag-and-drop камер	1. Перестановка камер между ячейками сетки
+2. Сохранение порядка камер (пользовательские предустановки)
+Примечание: Для сеток больше 4×4 рекомендуется использовать аппаратное ускорение (GPU) и ограничить битрейт потоков для снижения нагрузки на CPU.
+
+Фаза 4: Релиз, документация и эксплуатация
+Этап 4.2. Документирование и обучение — уточнение
+4.2.1. Пользовательская документация (независимые руководства)
+
+Задача	Подзадачи
+Общий обзорный документ	1. Ссылки на отдельные руководства по каждой платформе
+2. Сравнение возможностей версий (сервер vs настольный клиент)
+3. Быстрый старт (выбор платформы)
+Независимое руководство по установке для каждой платформы	1. Серверные платформы:
+   - Микрокомпьютеры ARM (Raspberry Pi, Orange Pi)
+   - Серверы x86-x64 (Linux, Windows, macOS)
+   - NAS ARM (Synology, QNAP, Asustor)
+   - NAS x86-x64 (Synology, QNAP, Asustor, TrueNAS)
+2. Клиентские платформы:
+   - Android
+   - iOS/macOS
+   - Desktop x86-x64 (Windows, Linux, macOS Intel)
+   - Desktop ARM (Linux ARM64, macOS Apple Silicon)
+Содержание каждого руководства	1. Системные требования
+2. Пошаговая установка (с скриншотами)
+3. Настройка после установки
+4. Часто задаваемые вопросы по платформе
+5. Устранение неполадок
+Промт для внесения изменений в проект по выбору и внедрению базы данных
+Ниже представлен готовый промт (текст задачи/тикета), который можно отправить команде разработчиков или использовать как описание изменений в GitHub Issue.
+
+Заголовок: Миграция серверного хранилища с in-memory на PostgreSQL + TimescaleDB
+Описание
+В настоящее время серверные репозитории (CameraRepositoryImpl, EventRepositoryImpl, RecordingRepositoryImpl, UserRepositoryImpl, SettingsRepositoryImpl, NotificationRepositoryImpl) используют in-memory хранение. Это неприемлемо для production-среды, так как данные теряются при перезапуске, отсутствует масштабирование и нет поддержки временных рядов.
+
+Необходимо внедрить постоянную СУБД с поддержкой:
+
+ACID-транзакций
+
+Эффективной работы с временными рядами (события, записи)
+
+Связей между сущностями (камеры → записи → события)
+
+Ролевой модели для пользователей
+
+Возможности горизонтального масштабирования в будущем
+
+Выбранное решение: PostgreSQL 14+ + расширение TimescaleDB (для оптимизации временных рядов) + Redis (для кэширования и сессий).
+
+Дорожная карта миграции (6 этапов, ~4 недели)
+Этап 0: Подготовка инфраструктуры (2 дня)
+Задачи	Подзадачи
+0.1. Установка и настройка PostgreSQL + TimescaleDB	- Развернуть PostgreSQL 14+ в Docker (docker-compose)
+- Установить расширение TimescaleDB
+- Настроить параметры производительности (shared_buffers, work_mem)
+0.2. Установка Redis	- Добавить Redis в docker-compose
+- Настроить политику вытеснения (allkeys-lru)
+0.3. Настройка пула соединений	- Добавить HikariCP в зависимости сервера
+- Настроить параметры (maxPoolSize=20, connectionTimeout=30000)
+0.4. Выбор Query Builder / ORM	- Утвердить Exposed (Kotlin DSL, легковесный, подходит для миграций)
+- Добавить зависимость в server/api/build.gradle.kts
+Этап 1: Проектирование схемы БД и миграции (3 дня)
+Задачи	Подзадачи
+1.1. Разработка схемы (SQL)	- Таблица cameras (id, name, rtsp_url, onvif_address, username, password, ptz_supported, created_at, updated_at)
+- Таблица recordings (id, camera_id, start_time, end_time, file_path, size_bytes, has_motion, thumbnail_path)
+- Таблица events (id, camera_id, recording_id, type, confidence, bounding_box, timestamp, acknowledged, metadata JSONB)
+- Таблица users (id, username, password_hash, role, created_at, last_login)
+- Таблица settings (key VARCHAR PRIMARY KEY, value TEXT, updated_at)
+- Таблица notifications (id, user_id, event_id, channel, sent_at, status)
+1.2. Преобразование в hypertables (TimescaleDB)	- SELECT create_hypertable('events', 'timestamp', chunk_time_interval => INTERVAL '1 day');
+- SELECT create_hypertable('recordings', 'start_time', chunk_time_interval => INTERVAL '7 days');
+1.3. Создание индексов	- CREATE INDEX idx_recordings_camera_time ON recordings(camera_id, start_time);
+- CREATE INDEX idx_events_camera_time ON events(camera_id, timestamp);
+- CREATE INDEX idx_events_type_time ON events(type, timestamp);
+- CREATE INDEX idx_users_username ON users(username);
+1.4. Настройка миграций	- Внедрить Flyway (или Liquibase)
+- Создать миграцию V1__initial_schema.sql
+- Настроить автоматический запуск миграций при старте сервера
+Этап 2: Реализация репозиториев на Exposed (5 дней)
+Задачи	Подзадачи
+2.1. Создание DAO и таблиц в коде	- Определить объекты таблиц (наследники Table)
+- Написать мапперы ResultRow → domain model
+2.2. Переписать CameraRepositoryImpl	- Реализовать CRUD: addCamera, updateCamera, deleteCamera, getCameraById, getAllCameras
+- Метод discoverCameras (ONVIF) оставить без изменений (не требует БД)
+- Метод testConnection — без изменений
+2.3. Переписать RecordingRepositoryImpl	- startRecording, stopRecording, getRecordingsByCamera, getRecordingById, deleteRecording
+- Пагинация через limit/offset
+- Поиск по временному диапазону
+2.4. Переписать EventRepositoryImpl	- addEvent, getEventsByCamera, getEventsByType, acknowledgeEvent
+- Фильтрация по времени, типу, камере
+- Агрегация статистики (количество событий по часам/дням) с использованием TimescaleDB time_bucket()
+2.5. Переписать UserRepositoryImpl	- createUser, findByUsername, updateUser, deleteUser
+- Хеширование паролей (BCrypt) — остаётся на уровне сервиса
+2.6. Переписать SettingsRepositoryImpl	- getSetting, setSetting, getAllSettings, importSettings, resetToDefault
+2.7. Переписать NotificationRepositoryImpl	- createNotification, getUnsentByUser, markAsSent
+Этап 3: Интеграция Redis для кэширования и сессий (2 дня)
+Задачи	Подзадачи
+3.1. Кэширование частых запросов	- Кэшировать getAllCameras (инвалидация при изменении камер)
+- Кэшировать getLatestEvents (TTL 5 секунд)
+- Использовать Redis для хранения JWT refresh токенов
+3.2. Сессии WebSocket	- Хранить mapping userId -> sessionId в Redis (для массовых рассылок)
+3.3. Реализация сервиса кэширования	- Создать интерфейс CacheService с реализацией RedisCacheService
+- Внедрить через DI (Koin или Dagger)
+Этап 4: Тестирование и отладка (4 дня)
+Задачи	Подзадачи
+4.1. Unit-тесты репозиториев	- Использовать Testcontainers для PostgreSQL и Redis
+- Проверить CRUD, пагинацию, фильтрацию
+4.2. Интеграционные тесты API	- Запустить сервер с реальной БД
+- Проверить все endpoint'ы (камеры, записи, события, пользователи)
+4.3. Тест производительности	- Симуляция 100 камер, 1000 событий/сек
+- Измерить время ответа API (должно быть <100 мс для 95% запросов)
+4.4. Тест отказоустойчивости	- Остановка PostgreSQL — сервер должен отдавать 503 с корректной ошибкой
+- Перезапуск БД — пул соединений должен восстановиться
+Этап 5: Миграция существующих данных (если есть) и документация (2 дня)
+Задачи	Подзадачи
+5.1. Скрипт миграции из in-memory	- Написать скрипт, который вычитывает текущие in-memory данные (если они сохранялись в JSON) и загружает в PostgreSQL
+5.2. Обновление переменных окружения	- Добавить DB_URL, DB_USER, DB_PASSWORD, REDIS_URL в .env.example
+5.3. Документация для разработчиков	- Обновить DEVELOPMENT.md — раздел о настройке БД
+- Добавить DATABASE_MIGRATION.md с описанием миграций и отката
+5.4. Обновление docker-compose.yml	- Добавить сервисы postgres и redis
+- Настроить volumes для постоянства данных
+Критерии готовности (Definition of Done)
+Все серверные репозитории используют PostgreSQL через Exposed, in-memory реализации удалены.
+
+Таблицы events и recordings являются hypertables TimescaleDB с автоматическим партиционированием.
+
+Flyway миграции применяются автоматически при старте сервера без ошибок.
+
+Redis используется для кэширования getAllCameras и JWT refresh токенов.
+
+Все существующие API endpoint'ы работают без изменений на клиентах (обратная совместимость).
+
+Проходятся все unit и интеграционные тесты (покрытие >80% для репозиториев).
+
+Обновлена документация для разработчиков и ops-инженеров.
+
+Риски и их митигация
+Риск	Вероятность	Митигация
+Потеря производительности из-за переход на диск	Средняя	Использовать TimescaleDB сжатие, индексы, кэширование через Redis
+Сложность отката	Низкая	Хранить in-memory репозитории параллельно до полного переключения (feature flag)
+Ошибки в миграциях на production	Средняя	Тестировать миграции на staging, делать бекап БД перед деплоем
+Назначить ответственного: @team-lead-backend
+Дедлайн: 4 недели с момента утверждения
+Приоритет: Высокий (блокирует production-релиз)

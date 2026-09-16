@@ -1,0 +1,43 @@
+{
+  "generatedAtUtc": "2026-04-27T14:01:00.1030567Z",
+  "decisionProfile": "MvpCi",
+  "finalDecision": "CONDITIONAL",
+  "gates": {
+    "onvif": {
+      "evidence": "D:\\GitHub-Ai\\IP-CSS\\diagnostics\\onvif-events\\phase1-onvif-acceptance-20260423-235001.json",
+      "status": "CONDITIONAL"
+    },
+    "videoProfileAware": {
+      "evidence": "D:\\GitHub-Ai\\IP-CSS\\release-build\\test\\video-e2e-go-no-go-report.md",
+      "status": "GO"
+    },
+    "desktopSmoke": {
+      "evidence": "D:\\GitHub-Ai\\IP-CSS\\diagnostics\\platform-smoke\\desktop\\desktop-video-event-smoke-20260427-120728.json",
+      "status": "PASS"
+    },
+    "recordingWsGate": {
+      "wsLifecycleStatus": null,
+      "status": "NOT_FOUND",
+      "videoGateStatus": null,
+      "evidence": null,
+      "videoGateExitCode": null,
+      "wsLifecycleExitCode": null
+    },
+    "securityMvp": {
+      "evidence": "D:\\GitHub-Ai\\IP-CSS\\release-build\\test\\security-mvp-readiness-report.md",
+      "status": "GO"
+    },
+    "androidSmoke": {
+      "evidence": "D:\\GitHub-Ai\\IP-CSS\\diagnostics\\platform-smoke\\android\\android-video-background-smoke-20260427-050218.json",
+      "status": "PARTIAL"
+    },
+    "w4PlatformGate": {
+      "androidLocalFrameAnalytics": false,
+      "platformSmokeCompileOnlyGate": false,
+      "full": false,
+      "status": "SUCCESS",
+      "runProfile": "custom",
+      "evidence": "D:\\GitHub-Ai\\IP-CSS\\diagnostics\\platform-smoke\\w4-mvp-platform-gate-20260427-002336.json"
+    }
+  }
+}

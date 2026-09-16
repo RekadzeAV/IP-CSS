@@ -1,0 +1,20 @@
+-- Migration 3: Add face_gallery table for face recognition (Phase 3)
+-- Version: 3 -> 4
+-- Date: 2026-03-27
+
+CREATE TABLE face_gallery (
+    id TEXT NOT NULL PRIMARY KEY,
+    label TEXT NOT NULL,
+    embedding_blob TEXT NOT NULL,
+    camera_id TEXT,
+    created_at INTEGER NOT NULL,
+    metadata TEXT
+);
+
+CREATE INDEX face_gallery_label_index ON face_gallery(label);
+CREATE INDEX face_gallery_camera_id_index ON face_gallery(camera_id);
+CREATE INDEX face_gallery_created_at_index ON face_gallery(created_at);
+
+-- Update schema version after migration
+INSERT INTO schema_version(version, applied_at, description)
+VALUES (4, 0, 'Added table: face_gallery');

@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ip-cam-postgres-dev
+    environment:
+      POSTGRES_DB: ipcamsys
+      POSTGRES_USER: ipcamsys
+      POSTGRES_PASSWORD: ipcamsys123
+    ports:
+      - "5432:5432"
+    networks:
+      - ipcamsys-dev-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: ip-cam-redis-dev
+    command: redis-server --appendonly no
+    ports:
+      - "6379:6379"
+    networks:
+      - ipcamsys-dev-network
+
+  server:
+    image: ip-camera-server:latest
+    container_name: ip-cam-server-dev
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ipcamsys
+      DB_USER: ipcamsys
+      DB_PASSWORD: ipcamsys123
+      DATABASE_URL: jdbc:postgresql://postgres:5432/ipcamsys
+      DATABASE_USER: ipcamsys
+      DATABASE_PASSWORD: ipcamsys123
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123secure
+      
+      # JWT
+      JWT_SECRET: your-super-secret-jwt-key-minimum-32-characters-long-for-security!!!
+      JWT_EXPIRY_MINUTES: 1440
+      
+      # Admin
+      IPCAMSYS_ADMIN_USER: admin
+      IPCAMSYS_ADMIN_PASSWORD: admin123
+      
+      # Server
+      SERVER_PORT: 8080
+      JAVA_OPTS: "-Xmx2048m -Xms512m"
+      
+      # Runtime
+      DB_MODE: postgres
+      FORCE_HTTPS: "false"
+      RATE_LIMIT_ENABLED: "false"
+      AUDIT_PERSIST_ENABLED: "false"
+    ports:
+      - "8080:8080"
+    networks:
+      - ipcamsys-dev-network
+
+networks:
+  ipcamsys-dev-network:
+    driver: bridge

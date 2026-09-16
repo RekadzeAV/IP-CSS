@@ -1,0 +1,26 @@
+CompileFlags:
+  Add:
+    - -I${workspaceFolder}/native/video-processing/include
+    - -I${workspaceFolder}/native/video-processing/src
+    - -I${workspaceFolder}/native/analytics/include
+    - -I${workspaceFolder}/native/analytics/src
+    - -I${workspaceFolder}/native/codecs/include
+    - -I${workspaceFolder}/native/codecs/src
+    - -std=c++17
+    - -D_WIN32
+    - -DENABLE_FFMPEG
+  Remove:
+    - -W*
+    - -w
+
+Diagnostics:
+  UnusedIncludes: None
+  MissingIncludes: None
+
+Index:
+  Background: Build
+
+If:
+  PathMatch: .*\.(cpp|cc|cxx|c|h|hpp|hxx)$
+CompileFlags:
+  CompilationDatabase: ${workspaceFolder}/native/video-processing/build

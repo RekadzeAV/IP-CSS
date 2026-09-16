@@ -1,0 +1,263 @@
+package com.company.ipcamera.core.network.video
+
+import com.company.ipcamera.core.network.RtspClient
+import com.company.ipcamera.core.network.RtspClientConfig
+import com.company.ipcamera.core.network.RtspClientStatus
+import com.company.ipcamera.core.network.RtspFrame
+import com.company.ipcamera.core.network.RtspStreamType
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import org.junit.Test
+import kotlin.test.*
+import kotlin.time.Duration.Companion.seconds
+
+/**
+ * Video E2E Acceptance Tests (1.4.1)
+ *
+ * Критерии acceptance для видеопотока:
+ * 1. Подключение к RTSP потоку
+ * 2. Получение видеокадров
+ * 3. Получение аудиокадров (если доступно)
+ * 4. Стабильность подключения (30 секунд)
+ * 5. Корректное отключение
+ */
+class VideoE2EAcceptanceTest {
+
+    /**
+     * A1: Подключение к RTSP потоку
+     * Критерий: Статус CONNECTED в течение 10 секунд
+     */
+    @Test
+    fun `A1 - RTSP connection established within timeout`() = runBlocking {
+        // Используем симуляцию (allowSimulatedFallback = true для тестов)
+        val client = RtspClient(RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            allowSimulatedFallback = true
+        ))
+
+        try {
+            withTimeout(10.seconds) {
+                client.connect()
+                val status = client.getStatus().first { it != RtspClientStatus.CONNECTING }
+                assertEquals(RtspClientStatus.CONNECTED, status, "Should connect within timeout")
+            }
+        } finally {
+            client.disconnect()
+        }
+    }
+
+    /**
+     * A2: Получение видеокадров
+     * Критерий: Минимум 5 видеокадров за 5 секунд
+     */
+    @Test
+    fun `A2 - Video frames received within timeout`() = runBlocking {
+        val client = RtspClient(RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            enableVideo = true,
+            allowSimulatedFallback = true
+        ))
+
+        val receivedFrames = mutableListOf<RtspFrame>()
+        client.setVideoFrameCallback { frame ->
+            receivedFrames.add(frame)
+        }
+
+        try {
+            client.connect()
+            client.play()
+
+            withTimeout(5.seconds) {
+                while (receivedFrames.size < 5) {
+                    kotlinx.coroutines.delay(100)
+                }
+            }
+
+            assertTrue(receivedFrames.size >= 5, "Should receive at least 5 video frames")
+            receivedFrames.forEach { frame ->
+                assertEquals(RtspStreamType.VIDEO, frame.streamType)
+                assertTrue(frame.data.isNotEmpty(), "Frame data should not be empty")
+            }
+        } finally {
+            client.stop()
+            client.disconnect()
+        }
+    }
+
+    /**
+     * A3: Получение аудиокадров
+     * Критерий: Минимум 3 аудиокадра за 3 секунды
+     */
+    @Test
+    fun `A3 - Audio frames received within timeout`() = runBlocking {
+        val client = RtspClient(RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            enableAudio = true,
+            allowSimulatedFallback = true
+        ))
+
+        val receivedFrames = mutableListOf<RtspFrame>()
+        client.setAudioFrameCallback { frame ->
+            receivedFrames.add(frame)
+        }
+
+        try {
+            client.connect()
+            client.play()
+
+            withTimeout(3.seconds) {
+                while (receivedFrames.size < 3) {
+                    kotlinx.coroutines.delay(100)
+                }
+            }
+
+            assertTrue(receivedFrames.size >= 3, "Should receive at least 3 audio frames")
+            receivedFrames.forEach { frame ->
+                assertEquals(RtspStreamType.AUDIO, frame.streamType)
+                assertTrue(frame.data.isNotEmpty(), "Audio frame data should not be empty")
+            }
+        } finally {
+            client.stop()
+            client.disconnect()
+        }
+    }
+
+    /**
+     * A4: Стабильность подключения (30 секунд)
+     * Критерий: Статус PLAYING без ERROR в течение 30 секунд
+     */
+    @Test
+    fun `A4 - Connection stability for 30 seconds`() = runBlocking {
+        val client = RtspClient(RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            enableVideo = true,
+            enableAudio = true,
+            allowSimulatedFallback = true
+        ))
+
+        var errorCount = 0
+        client.setStatusCallback { status, _ ->
+            if (status == RtspClientStatus.ERROR) errorCount++
+        }
+
+        try {
+            client.connect()
+            client.play()
+
+            withTimeout(30.seconds) {
+                kotlinx.coroutines.delay(30.seconds)
+            }
+
+            assertEquals(0, errorCount, "Should have no errors during 30 second stability test")
+            assertEquals(RtspClientStatus.PLAYING, client.getStatus().value, "Should remain in PLAYING state")
+        } finally {
+            client.stop()
+            client.disconnect()
+        }
+    }
+
+    /**
+     * A5: Корректное отключение
+     * Критерий: Статус DISCONNECTED после вызова disconnect()
+     */
+    @Test
+    fun `A5 - Clean disconnection`() = runBlocking {
+        val client = RtspClient(RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            allowSimulatedFallback = true
+        ))
+
+        try {
+            client.connect()
+            client.play()
+
+            withTimeout(2000) {
+                kotlinx.coroutines.delay(1000)
+            }
+
+            client.stop()
+            client.disconnect()
+
+            withTimeout(2.seconds) {
+                while (client.getStatus().value != RtspClientStatus.DISCONNECTED) {
+                    kotlinx.coroutines.delay(100)
+                }
+            }
+
+            assertEquals(RtspClientStatus.DISCONNECTED, client.getStatus().value, "Should be DISCONNECTED after disconnect()")
+        } finally {
+            client.close()
+        }
+    }
+
+    /**
+     * A6: Информация о потоках
+     * Критерий: Наличие хотя бы одного потока (видео или аудио)
+     */
+    @Test
+    fun `A6 - Stream info available`() = runBlocking {
+        val client = RtspClient(RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            enableVideo = true,
+            enableAudio = true,
+            allowSimulatedFallback = true
+        ))
+
+        try {
+            client.connect()
+
+            withTimeout(5.seconds) {
+                while (client.getStreams().isEmpty()) {
+                    kotlinx.coroutines.delay(100)
+                }
+            }
+
+            val streams = client.getStreams()
+            assertTrue(streams.isNotEmpty(), "Should have at least one stream")
+
+            val hasVideo = streams.any { it.type == RtspStreamType.VIDEO }
+            val hasAudio = streams.any { it.type == RtspStreamType.AUDIO }
+            assertTrue(hasVideo || hasAudio, "Should have video or audio stream")
+        } finally {
+            client.disconnect()
+        }
+    }
+
+    /**
+     * A7: Аудио параметры корректны
+     * Критерий: sampleRate > 0, channels > 0 для аудио потоков
+     */
+    @Test
+    fun `A7 - Audio parameters are valid`() = runBlocking {
+        val client = RtspClient(RtspClientConfig(
+            url = "rtsp://test.example.com/stream",
+            timeoutMillis = 5000,
+            enableAudio = true,
+            allowSimulatedFallback = true
+        ))
+
+        try {
+            client.connect()
+
+            withTimeout(5.seconds) {
+                while (client.getStreams().none { it.type == RtspStreamType.AUDIO }) {
+                    kotlinx.coroutines.delay(100)
+                }
+            }
+
+            val audioStream = client.getStreams().firstOrNull { it.type == RtspStreamType.AUDIO }
+            assertNotNull(audioStream, "Should have audio stream")
+            assertTrue((audioStream.sampleRate ?: 0) > 0, "Sample rate should be positive")
+            assertTrue((audioStream.channels ?: 0) > 0, "Channels should be positive")
+        } finally {
+            client.disconnect()
+        }
+    }
+}

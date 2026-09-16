@@ -1,0 +1,86 @@
+# iOS Preset for video-processing library
+# Usage: cmake --preset ios-arm64
+
+{
+  "version": {
+    "minimumVersion": "3.15.0",
+    "configuration": 1
+  },
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 15,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ios-base",
+      "hidden": true,
+      "generator": "Xcode",
+      "cacheVariables": {
+        "CMAKE_SYSTEM_NAME": "iOS",
+        "CMAKE_OSX_DEPLOYMENT_TARGET": "13.0",
+        "BUILD_SHARED_LIBS": "ON",
+        "BUILD_STATIC_LIBS": "OFF",
+        "ENABLE_H264": "ON",
+        "ENABLE_H265": "ON",
+        "ENABLE_MJPEG": "ON",
+        "ENABLE_AAC": "ON",
+        "ENABLE_G711": "ON"
+      }
+    },
+    {
+      "name": "ios-arm64",
+      "displayName": "iOS Arm64 (Device)",
+      "description": "Build for iOS devices (arm64)",
+      "inherits": "ios-base",
+      "architecture": "arm64",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "ios-x64",
+      "displayName": "iOS x64 (Simulator)",
+      "description": "Build for iOS Simulator (x64)",
+      "inherits": "ios-base",
+      "architecture": "x86_64",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "x86_64",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "ios-simulator-arm64",
+      "displayName": "iOS Simulator Arm64",
+      "description": "Build for iOS Simulator on Apple Silicon (arm64)",
+      "inherits": "ios-base",
+      "architecture": "arm64",
+      "cacheVariables": {
+        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ios-arm64",
+      "configurePreset": "ios-arm64",
+      "configuration": "Release"
+    },
+    {
+      "name": "ios-x64",
+      "configurePreset": "ios-x64",
+      "configuration": "Release"
+    },
+    {
+      "name": "ios-simulator-arm64",
+      "configurePreset": "ios-simulator-arm64",
+      "configuration": "Release"
+    }
+  ],
+  "testPresets": []
+}

@@ -1,0 +1,156 @@
+name: FFmpeg Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'native/video-processing/**'
+      - 'core/network/src/**/video/**'
+      - 'core/network/src/**/rtsp/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'native/video-processing/**'
+      - 'core/network/src/**/video/**'
+      - 'core/network/src/**/rtsp/**'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: FFmpeg Unit Tests
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            ffmpeg_install: sudo apt-get update && sudo apt-get install -y libavformat-dev libavcodec-dev libavutil-dev libswscale-dev libswresample-dev
+          - os: windows-latest
+            ffmpeg_install: choco install ffmpeg -y
+          - os: macos-latest
+            ffmpeg_install: brew install ffmpeg
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg
+        run: ${{ matrix.ffmpeg_install }}
+
+      - name: Install CMake
+        uses: jwlawson/actions-setup-cmake@v1.14
+        with:
+          cmake-version: '3.20'
+
+      - name: Build native library
+        working-directory: native/video-processing
+        shell: bash
+        run: |
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_FFMPEG=ON -DENABLE_OPENCV=OFF
+          cmake --build . --config Release -j$(nproc || echo 2)
+
+      - name: Build tests
+        working-directory: native/video-processing/test
+        shell: bash
+        run: |
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_FFMPEG=ON
+          cmake --build . --config Release -j$(nproc || echo 2)
+
+      - name: Run unit tests
+        working-directory: native/video-processing/test/build
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            ./video_processing_tests.exe
+          else
+            ./video_processing_tests
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results-${{ matrix.os }}
+          path: |
+            native/video-processing/test/build/test_results_*.txt
+            native/video-processing/test/build/*.log
+
+  integration:
+    name: FFmpeg Integration Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test-integration]')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libavformat-dev \
+            libavcodec-dev \
+            libavutil-dev \
+            libswscale-dev \
+            libswresample-dev \
+            cmake \
+            build-essential
+
+      - name: Build native library
+        working-directory: native/video-processing
+        run: |
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_FFMPEG=ON -DENABLE_OPENCV=OFF
+          cmake --build . --config Release -j$(nproc)
+
+      - name: Build tests
+        working-directory: native/video-processing/test
+        run: |
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_FFMPEG=ON
+          cmake --build . --config Release -j$(nproc)
+
+      - name: Setup test cameras
+        working-directory: native/video-processing/test
+        run: |
+          if [ -f test_config.json.example ]; then
+            cp test_config.json.example test_config.json
+            echo "Test config created. Edit with real camera settings for integration tests."
+          fi
+
+      - name: Run integration tests
+        working-directory: native/video-processing/test/build
+        env:
+          RTSP_TEST_CAMERA_URL: ${{ secrets.RTSP_TEST_CAMERA_URL }}
+          RTSP_TEST_CAMERA_USER: ${{ secrets.RTSP_TEST_CAMERA_USER }}
+          RTSP_TEST_CAMERA_PASS: ${{ secrets.RTSP_TEST_CAMERA_PASS }}
+        run: |
+          if [ -n "$RTSP_TEST_CAMERA_URL" ]; then
+            ./video_processing_tests --integration || true
+          else
+            echo "Skipping integration tests - no camera configured"
+          fi
+
+      - name: Analyze results
+        working-directory: native/video-processing/test/build
+        run: |
+          chmod +x ../../../../scripts/analyze-test-results.sh
+          for file in test_results_*.txt; do
+            if [ -f "$file" ]; then
+              ../../../../scripts/analyze-test-results.sh "$file" --html --markdown || true
+            fi
+          done
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-test-results
+          path: |
+            native/video-processing/test/build/test_results_*.txt
+            native/video-processing/test/build/*.html
+            native/video-processing/test/build/*.md

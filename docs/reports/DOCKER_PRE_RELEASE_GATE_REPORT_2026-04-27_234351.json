@@ -1,0 +1,18 @@
+﻿{
+    "generatedAt":  "2026-04-27 23:44:00 +04:00",
+    "baseUrl":  "http://localhost:8080",
+    "result":  "NO-GO",
+    "steps":  [
+                  {
+                      "Name":  "Auth/Discovery Smoke",
+                      "Status":  "FAIL",
+                      "Error":  "server-auth-discovery-smoke failed with exit code 1"
+                  },
+                  {
+                      "Name":  "Metrics Guard",
+                      "Status":  "FAIL",
+                      "Error":  "server-metrics-guard failed with exit code 1"
+                  }
+              ],
+    "reportPath":  "docs/reports/DOCKER_PRE_RELEASE_GATE_REPORT_2026-04-27_234351.md"
+}

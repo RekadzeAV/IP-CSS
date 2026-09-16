@@ -1,0 +1,248 @@
+package com.company.ipcamera.core.network.utils
+
+import com.company.ipcamera.core.network.NetworkScanner
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.assertFalse
+
+/**
+ * Тесты для NetworkScanner
+ */
+class NetworkScannerTest {
+    
+    @Test
+    fun testValidSubnetParsing() = runTest {
+        // Test /24 subnet
+        val ips24 = parseSubnetToIps("192.168.1.0/24")
+        assertTrue(ips24.isNotEmpty())
+        assertTrue(ips24.contains("192.168.1.1"))
+        assertTrue(ips24.contains("192.168.1.254"))
+        assertFalse(ips24.contains("192.168.1.0")) // Network address
+        assertFalse(ips24.contains("192.168.1.255")) // Broadcast
+        
+        // Test /16 subnet
+        val ips16 = parseSubnetToIps("10.0.0.0/16")
+        assertTrue(ips16.size > 1000)
+        assertTrue(ips16.contains("10.0.0.1"))
+        assertTrue(ips16.contains("10.0.255.254"))
+        
+        // Test /8 subnet
+        val ips8 = parseSubnetToIps("172.16.0.0/8")
+        assertTrue(ips8.size > 16000000)
+    }
+    
+    @Test
+    fun testInvalidSubnetParsing() = runTest {
+        val invalidSubnets = listOf(
+            "invalid",
+            "192.168.1.0",
+            "192.168.1.0/33",
+            "192.168.1.0/0",
+            "256.168.1.0/24",
+            "192.168.1.256/24"
+        )
+        
+        invalidSubnets.forEach { subnet ->
+            val result = parseSubnetToIps(subnet)
+            assertTrue(result.isEmpty(), "Expected empty list for invalid subnet: $subnet")
+        }
+    }
+    
+    @Test
+    fun testSubnetValidation() = runTest {
+        assertTrue(isValidSubnet("192.168.1.0/24"))
+        assertTrue(isValidSubnet("10.0.0.0/16"))
+        assertTrue(isValidSubnet("172.16.0.0/8"))
+        assertTrue(isValidSubnet("127.0.0.1/32"))
+        
+        assertFalse(isValidSubnet("invalid"))
+        assertFalse(isValidSubnet("192.168.1.0"))
+        assertFalse(isValidSubnet("192.168.1.0/33"))
+    }
+    
+    @Test
+    fun testEstimatedScanTime() = runTest {
+        val time24 = estimateScanTime(
+            subnetRange = "192.168.1.0/24",
+            timeoutPerHost = 1000,
+            ports = 1,
+            maxConcurrent = 50
+        )
+        
+        // /24 = 254 hosts, 5 batches of 50 = 5 * 1000ms = 5000ms
+        assertTrue(time24 > 0)
+        assertTrue(time24 < 10000)
+        
+        val time16 = estimateScanTime(
+            subnetRange = "10.0.0.0/16",
+            timeoutPerHost = 1000,
+            ports = 1,
+            maxConcurrent = 50
+        )
+        
+        assertTrue(time16 > time24)
+    }
+    
+    @Test
+    fun testCameraFiltering() = runTest {
+        val cameras = listOf(
+            createTestCamera("Camera 1", "Hikvision", "192.168.1.10"),
+            createTestCamera("Camera 2", "Dahua", "192.168.1.11"),
+            createTestCamera("Camera 3", "Hikvision", "192.168.2.10"),
+            createTestCamera("Camera 4", "Axis", "192.168.1.12")
+        )
+        
+        val hikvision = filterByManufacturer(cameras, "Hikvision")
+        assertEquals(2, hikvision.size)
+        
+        val dahua = filterByManufacturer(cameras, "Dahua")
+        assertEquals(1, dahua.size)
+        
+        val byName = filterByModel(cameras, "Camera")
+        assertEquals(4, byName.size)
+    }
+    
+    @Test
+    fun testCameraDeduplication() = runTest {
+        val cameras = listOf(
+            createTestCamera("Camera 1", "Hikvision", "192.168.1.10"),
+            createTestCamera("Camera 1", "Hikvision", "192.168.1.10"),
+            createTestCamera("Camera 2", "Dahua", "192.168.1.11")
+        )
+        
+        val unique = deduplicateCameras(cameras)
+        assertEquals(2, unique.size)
+    }
+    
+    @Test
+    fun testCameraSorting() = runTest {
+        val cameras = listOf(
+            createTestCamera("Zebra Camera", null, "192.168.1.10"),
+            createTestCamera("Alpha Camera", null, "192.168.1.11"),
+            createTestCamera("Beta Camera", null, "192.168.1.12")
+        )
+        
+        val sortedByName = sortCamerasByName(cameras)
+        assertEquals("Alpha Camera", sortedByName[0].name)
+        assertEquals("Beta Camera", sortedByName[1].name)
+        assertEquals("Zebra Camera", sortedByName[2].name)
+    }
+    
+    @Test
+    fun testScanStatistics() = runTest {
+        val cameras = listOf(
+            createTestCamera("Camera 1", "Hikvision", "192.168.1.10"),
+            createTestCamera("Camera 2", "Hikvision", "192.168.1.11"),
+            createTestCamera("Camera 3", "Dahua", "192.168.2.10")
+        )
+        
+        val stats = getScanStatistics(cameras)
+        
+        assertEquals(3, stats.totalCameras)
+        assertEquals(2, stats.uniqueManufacturers)
+        assertEquals(2, stats.uniqueSubnets)
+        assertEquals(2, stats.manufacturers["Hikvision"])
+        assertEquals(1, stats.manufacturers["Dahua"])
+    }
+    
+    @Test
+    fun testIpRangeFiltering() = runTest {
+        val cameras = listOf(
+            createTestCamera("Camera 1", null, "192.168.1.10"),
+            createTestCamera("Camera 2", null, "192.168.1.50"),
+            createTestCamera("Camera 3", null, "192.168.1.100"),
+            createTestCamera("Camera 4", null, "192.168.2.10")
+        )
+        
+        val filtered = filterByIpRange(
+            cameras,
+            "192.168.1.10",
+            "192.168.1.60"
+        )
+        
+        assertEquals(2, filtered.size)
+        assertTrue(filtered.any { it.ipAddress == "192.168.1.10" })
+        assertTrue(filtered.any { it.ipAddress == "192.168.1.50" })
+    }
+    
+    @Test
+    fun testCameraLookup() = runTest {
+        val cameras = listOf(
+            createTestCamera("Camera 1", "Hikvision", "192.168.1.10"),
+            createTestCamera("Camera 2", "Dahua", "192.168.1.11")
+        )
+        
+        val byIp = findByIp(cameras, "192.168.1.10")
+        assertNotNull(byIp)
+        assertEquals("Camera 1", byIp.name)
+        
+        val byName = findByName(cameras, "Camera 2")
+        assertNotNull(byName)
+        assertEquals("Dahua", byName.manufacturer)
+        
+        val notFound = findByIp(cameras, "192.168.1.99")
+        assertNull(notFound)
+    }
+    
+    @Test
+    fun testContainsIp() = runTest {
+        val cameras = listOf(
+            createTestCamera("Camera 1", null, "192.168.1.10"),
+            createTestCamera("Camera 2", null, "192.168.1.11")
+        )
+        
+        assertTrue(containsIp(cameras, "192.168.1.10"))
+        assertFalse(containsIp(cameras, "192.168.1.99"))
+    }
+    
+    @Test
+    fun testProgressExtensions() = runTest {
+        val progress = NetworkScanProgress(
+            progress = 0.75f,
+            hostsScanned = 188,
+            hostsTotal = 254,
+            camerasFound = 3,
+            currentActivity = "Scanning...",
+            remainingTimeMs = 5000L
+        )
+        
+        assertEquals(75, progress.progressPercent)
+        assertEquals(5, progress.remainingTimeSeconds)
+        assertEquals("5с", progress.remainingTimeFormatted)
+        assertFalse(progress.isCompleted)
+        
+        val completed = progress.copy(progress = 1.0f)
+        assertTrue(completed.isCompleted)
+    }
+}
+
+// Helper functions
+private fun createTestCamera(
+    name: String,
+    manufacturer: String?,
+    ipAddress: String
+) = DiscoveredCamera(
+    name = name,
+    url = "rtsp://$ipAddress:554/stream",
+    model = name,
+    manufacturer = manufacturer,
+    ipAddress = ipAddress,
+    port = 554
+)
+
+private fun assertNotNull(value: Any?, message: String = "Value should not be null") {
+    assertTrue(value != null, message)
+}
+
+private fun assertNull(value: Any?, message: String = "Value should be null") {
+    assertTrue(value == null, message)
+}

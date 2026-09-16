@@ -1,0 +1,32 @@
+# Dockerfile для кросс-компиляции macOS библиотеки (не работает напрямую)
+# Для сборки macOS библиотеки используйте нативный macOS машину или CI
+
+# Примечание: Полная кросс-компиляция macOS требует:
+# 1. macOS SDK
+# 2. Clang/LLVM с поддержкой darwin
+# 3. FFmpeg для macOS
+
+# Рекомендуется использовать GitHub Actions с macos-latest runner
+
+# Пример GitHub Actions workflow:
+# 
+# name: Build macOS RTSP Library
+# on: [push, pull_request]
+# jobs:
+#   build-macos:
+#     runs-on: macos-latest
+#     steps:
+#       - uses: actions/checkout@v3
+#       - name: Install FFmpeg
+#         run: brew install ffmpeg
+#       - name: Build
+#         run: |
+#           cd native/video-processing
+#           mkdir build && cd build
+#           cmake .. -DCMAKE_BUILD_TYPE=Release
+#           cmake --build .
+#       - name: Upload artifact
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: macos-lib
+#           path: native/video-processing/build/lib/macos/

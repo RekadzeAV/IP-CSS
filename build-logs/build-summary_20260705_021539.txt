@@ -1,0 +1,39 @@
+[02:15:39] ==========================================
+[02:15:39] Platform Build Test Suite
+[02:15:39] Started: 2026-07-05 02:15:39
+[02:15:39] ==========================================
+[02:15:39] 
+[02:15:39] ==========================================
+[02:15:39] Testing: :core:common:compileKotlinDesktop (core-common-desktop)
+[02:15:39] ==========================================
+[02:15:49] PASS: :core:common:compileKotlinDesktop completed in 10.0497746 seconds
+[02:15:49]   Log: E:\GitHub-Ai\IP-CSS\build-logs\platform-core-common-desktop-20260705_021539.log
+[02:15:49] ==========================================
+[02:15:49] Testing: :core:common:compileKotlinAndroid (core-common-android)
+[02:15:49] ==========================================
+[02:15:52] ERROR: :core:common:compileKotlinAndroid failed with exception after 2.6401635 seconds
+[02:15:52]   Error: 2026-07-05T02:15:51.992+0400 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+[02:15:52] ==========================================
+[02:15:52] Testing: :core:network:compileKotlinDesktop (core-network-desktop)
+[02:15:52] ==========================================
+[02:15:55] PASS: :core:network:compileKotlinDesktop completed in 3.5550135 seconds
+[02:15:55]   Log: E:\GitHub-Ai\IP-CSS\build-logs\platform-core-network-desktop-20260705_021539.log
+[02:15:55] ==========================================
+[02:15:55] Testing: :shared:compileKotlinDesktop (shared-desktop)
+[02:15:55] ==========================================
+[02:16:31] PASS: :shared:compileKotlinDesktop completed in 36.1007259 seconds
+[02:16:31]   Log: E:\GitHub-Ai\IP-CSS\build-logs\platform-shared-desktop-20260705_021539.log
+[02:16:31] ==========================================
+[02:16:31] Testing: :server:api:build (server-api)
+[02:16:31] ==========================================
+[02:16:45] ERROR: :server:api:build failed with exception after 13.6606255 seconds
+[02:16:45]   Error: 2026-07-05T02:16:45.363+0400 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+[02:16:45] ==========================================
+[02:16:45] Testing: :core:security:compileKotlinDesktop (core-security-desktop)
+[02:16:45] ==========================================
+[02:16:48] PASS: :core:security:compileKotlinDesktop completed in 3.4574301 seconds
+[02:16:48]   Log: E:\GitHub-Ai\IP-CSS\build-logs\platform-core-security-desktop-20260705_021539.log
+[02:16:48] 
+[02:16:48] ==========================================
+[02:16:48] Build Summary
+[02:16:48] ==========================================

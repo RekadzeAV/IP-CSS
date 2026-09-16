@@ -1,0 +1,53 @@
+language = C
+headers = object_detector.h object_tracker.h anpr_engine.h face_detector.h motion_detector.h
+headerFilter = object_detector.h object_tracker.h anpr_engine.h face_detector.h motion_detector.h
+package = com.company.ipcamera.core.network.analytics.analytics
+compilerOpts = -I../../../../native/analytics/include
+linkerOpts = -L../../../../native/analytics/lib -lanalytics
+
+# Платформо-специфичные опции линковки
+---
+staticLibraries = analytics
+libraryPaths = ../../../../native/analytics/lib
+
+# Явно указываем типы структур для правильной генерации биндингов
+---
+typedef struct ObjectDetector ObjectDetector;
+typedef struct ObjectTracker ObjectTracker;
+typedef struct ANPREngine ANPREngine;
+typedef struct FaceDetector FaceDetector;
+typedef struct MotionDetector MotionDetector;
+
+# Детекция движения
+MotionDetector* motion_detector_create(int width, int height, const MotionDetectorParams* params);
+void motion_detector_destroy(MotionDetector* detector);
+bool motion_detector_detect(MotionDetector* detector, const uint8_t* frameData, int width, int height, MotionDetectionResult* result);
+bool motion_detector_set_params(MotionDetector* detector, const MotionDetectorParams* params);
+
+# Детекция объектов
+ObjectDetector* object_detector_create(const ObjectDetectorParams* params);
+void object_detector_destroy(ObjectDetector* detector);
+bool object_detector_load_model(ObjectDetector* detector, const char* modelPath);
+bool object_detector_detect(ObjectDetector* detector, const uint8_t* frameData, int width, int height, DetectionResult* result);
+void detection_result_release(DetectionResult* result);
+bool object_detector_is_model_loaded(ObjectDetector* detector);
+
+# Детекция лиц
+FaceDetector* face_detector_create(const FaceDetectorParams* params);
+void face_detector_destroy(FaceDetector* detector);
+bool face_detector_load_cascade(FaceDetector* detector, const char* cascadePath);
+bool face_detector_detect(FaceDetector* detector, const uint8_t* frameData, int width, int height, FaceDetectionResult* result);
+void face_detection_result_release(FaceDetectionResult* result);
+
+# ANPR
+ANPREngine* anpr_engine_create(const ANPREngineParams* params);
+void anpr_engine_destroy(ANPREngine* engine);
+bool anpr_engine_init_ocr(ANPREngine* engine);
+bool anpr_engine_recognize(ANPREngine* engine, const uint8_t* frameData, int width, int height, ANPRResult* result);
+void anpr_result_release(ANPRResult* result);
+
+# Трекинг объектов
+ObjectTracker* object_tracker_create(const ObjectTrackerParams* params);
+void object_tracker_destroy(ObjectTracker* tracker);
+bool object_tracker_update(ObjectTracker* tracker, const DetectionResult* detections, int64_t frameTimestampMs, TrackingResult* result);
+void tracking_result_release(TrackingResult* result);

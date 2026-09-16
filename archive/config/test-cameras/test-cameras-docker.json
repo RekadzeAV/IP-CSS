@@ -1,0 +1,30 @@
+{
+  "cameras": [
+    {
+      "id": "camera-1",
+      "name": "Docker Test Camera 1",
+      "rtspUrl": "rtsp://172.17.0.1:8554/camera1",
+      "username": "admin",
+      "password": "test123",
+      "enabled": true,
+      "model": "Mock RTSP Camera",
+      "location": "Docker Network"
+    },
+    {
+      "id": "camera-2",
+      "name": "Docker Test Camera 2",
+      "rtspUrl": "rtsp://172.17.0.1:8554/camera2",
+      "username": "admin",
+      "password": "test123",
+      "enabled": true,
+      "model": "Mock RTSP Camera",
+      "location": "Docker Network"
+    }
+  ],
+  "metadata": {
+    "description": "Docker mock RTSP cameras for testing",
+    "created": "2026-06-09",
+    "network": "Docker bridge network",
+    "testMode": true
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "runId": "20260427-214220",
+  "generatedAtUtc": "2026-04-27T17:43:26.3264584Z",
+  "overall": "SUCCESS",
+  "rows": [
+    {
+      "taskId": "1.10.3",
+      "scenario": "DB migration + recording core integration",
+      "status": "PASS",
+      "evidence": "diagnostics/phase1-e2e-smoke/phase1-critical-e2e-smoke-20260427-214220.md",
+      "dod": "migration + recording integration checks are green"
+    },
+    {
+      "taskId": "1.10.4",
+      "scenario": "Minimal critical E2E smoke (server + shared + optional web)",
+      "status": "SUCCESS",
+      "evidence": "diagnostics/phase1-e2e-smoke/phase1-critical-e2e-smoke-20260427-214220.md",
+      "dod": "single command produces reproducible smoke evidence"
+    }
+  ]
+}

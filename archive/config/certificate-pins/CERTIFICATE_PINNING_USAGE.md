@@ -1,0 +1,1 @@
+# CERTIFICATE_PINNING_USAGE  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/CERTIFICATE_PINNING_USAGE.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

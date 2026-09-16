@@ -1,0 +1,22 @@
+// Jenkinsfile for Desktop Linux build
+// Date: 2026-07-08
+
+@Library('ipcss-build') _
+
+ipcssBuild(
+    buildType: 'desktop-linux',
+    deployTarget: params.DEPLOY_TARGET,
+    buildSteps: [
+        'chmod +x gradlew',
+        './gradlew clean :desktop:jvm:jar',
+        './gradlew :desktop:jvm:test'
+    ],
+    testSteps: [
+        './gradlew :desktop:jvm:test'
+    ],
+    artifacts: [
+        'desktop/build/libs/*.jar',
+        'desktop/build/distributions/*.zip',
+        'desktop/build/reports/tests/test/**/*.html'
+    ]
+)

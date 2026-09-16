@@ -1,0 +1,57 @@
+name: Video E2E Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Verification profile'
+        required: true
+        default: 'mvp'
+        type: choice
+        options:
+          - mvp
+          - staging
+          - strict
+  schedule:
+    - cron: '0 12 * * 1'  # Еженедельно в понедельник в 12:00 UTC
+
+jobs:
+  video-e2e-gate:
+    name: Video E2E Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build all modules
+        run: |
+          ./gradlew :shared:assemble :server:api:build --no-daemon
+
+      - name: Run video E2E validation script
+        run: |
+          python scripts/ci/validate-video-e2e-profile.py --root .
+
+      - name: Generate E2E report
+        run: |
+          mkdir -p diagnostics/e2e
+          python scripts/ci/validate-video-e2e-profile.py --root . | tee diagnostics/e2e/video-e2e-report.log
+          echo "profile: ${{ github.event.inputs.profile || 'mvp' }}" > diagnostics/e2e/video-e2e-report.meta
+          echo "date: $(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> diagnostics/e2e/video-e2e-report.meta
+
+      - name: Upload E2E report
+        uses: actions/upload-artifact@v7
+        with:
+          name: video-e2e-report
+          path: diagnostics/e2e/
+          retention-days: 14

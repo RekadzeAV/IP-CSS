@@ -1,0 +1,40 @@
+-- Motion detection configuration per camera
+CREATE TABLE motion_config (
+    id TEXT NOT NULL PRIMARY KEY,
+    camera_id TEXT NOT NULL,
+    sensitivity INTEGER NOT NULL DEFAULT 50,
+    region_of_interest TEXT,
+    motion_threshold REAL NOT NULL DEFAULT 0.1,
+    enable_motion_detection INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX motion_config_camera_id_index ON motion_config(camera_id);
+
+selectAll:
+SELECT * FROM motion_config;
+
+selectByCameraId:
+SELECT * FROM motion_config WHERE camera_id = ?;
+
+selectById:
+SELECT * FROM motion_config WHERE id = ?;
+
+insert:
+INSERT OR REPLACE INTO motion_config(
+    id, camera_id, sensitivity, region_of_interest, motion_threshold,
+    enable_motion_detection, created_at, updated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+
+delete:
+DELETE FROM motion_config WHERE id = ?;
+
+deleteByCameraId:
+DELETE FROM motion_config WHERE camera_id = ?;
+
+updateSensitivity:
+UPDATE motion_config SET sensitivity = ?, updated_at = ? WHERE id = ?;
+
+updateRegionOfInterest:
+UPDATE motion_config SET region_of_interest = ?, updated_at = ? WHERE id = ?;

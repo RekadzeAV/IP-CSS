@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0.0",
+  "releaseVersionPattern": "^(Alfa|Beta|v)-[0-9]+\\.[0-9]+\\.[0-9]+$|^v[0-9]+\\.[0-9]+\\.[0-9]+$",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "packageTypes": {
+    "synology": {
+      "extension": ".spk",
+      "namePattern": "^ip-css-(?<version>[A-Za-z0-9._-]+)-synology-(?<arch>x86_64|arm64)\\.spk$"
+    },
+    "qnap": {
+      "extension": ".qpkg",
+      "namePattern": "^ip-css-(?<version>[A-Za-z0-9._-]+)-qnap-(?<arch>x86_64|arm64)\\.qpkg$"
+    },
+    "asustor": {
+      "extension": ".apk",
+      "namePattern": "^ip-css-(?<version>[A-Za-z0-9._-]+)-asustor-(?<arch>x86_64|arm64)\\.apk$"
+    },
+    "truenas": {
+      "bundlePattern": "^truenas-(?<version>[A-Za-z0-9._-]+)(-(?<arch>x86_64|arm64))?$",
+      "archivePattern": "^truenas-(?<version>[A-Za-z0-9._-]+)-(?<arch>x86_64|arm64)\\.tar\\.gz$"
+    }
+  },
+  "checksum": {
+    "algorithm": "sha256",
+    "sidecarPattern": "^.+\\.sha256$",
+    "linePattern": "^[a-fA-F0-9]{64}[\\s\\*].+$"
+  },
+  "artifactDirectories": {
+    "packagesDir": "build",
+    "checksumsDir": "build/checksums"
+  }
+}

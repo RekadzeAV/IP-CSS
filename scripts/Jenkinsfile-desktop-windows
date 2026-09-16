@@ -1,0 +1,22 @@
+// Jenkinsfile for Desktop Windows build
+// Date: 2026-07-08
+
+@Library('ipcss-build') _
+
+ipcssBuild(
+    buildType: 'desktop-windows',
+    deployTarget: params.DEPLOY_TARGET,
+    buildSteps: [
+        'chmod +x gradlew',
+        './gradlew clean :desktop:windows:jar',
+        './gradlew :desktop:windows:test'
+    ],
+    testSteps: [
+        './gradlew :desktop:windows:test'
+    ],
+    artifacts: [
+        'desktop/build/libs/*.jar',
+        'desktop/build/distributions/*.exe',
+        'desktop/build/reports/tests/test/**/*.html'
+    ]
+)

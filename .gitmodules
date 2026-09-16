@@ -1,0 +1,6 @@
+[submodule "native/vcpkg"]
+	path = native/vcpkg
+	url = https://github.com/Microsoft/vcpkg.git
+	# Локальный toolchain-репозиторий: рабочий-деревный шум vcpkg (bootstrap/кэш) не должен
+	# пачкать git status; изменения записанного коммита по-прежнему фиксируются.
+	ignore = dirty

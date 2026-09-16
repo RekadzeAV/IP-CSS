@@ -1,0 +1,1 @@
+# OPTIMIZATION_COMPLETED  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/OPTIMIZATION_COMPLETED.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

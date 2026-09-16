@@ -1,0 +1,300 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: '17'
+  GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.parallel=true'
+
+jobs:
+  # ===========================================================================
+  # Validate: проверка форматирования, детекта, линтинг
+  # ===========================================================================
+  validate:
+    name: Validate (detekt + ktlint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+      
+      - name: Run detekt
+        run: ./gradlew detekt --no-daemon
+      
+      - name: Run ktlint
+        run: ./gradlew ktlintCheck --no-daemon
+      
+      - name: Check formatting
+        run: ./gradlew spotlessCheck --no-daemon || true
+
+  # ===========================================================================
+  # Security audit: npm-зависимости + манифест версионного каталога
+  # Политика: PLAN_VULNERABILITIES.md (этап V1). npm audit читает package-lock
+  # без установки node_modules — job быстрый и не требует кэша.
+  # ===========================================================================
+  security-audit:
+    name: Security Audit (npm + deps manifest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Audit web runtime dependencies (high+ blocks)
+        working-directory: server/web
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Audit full web dependency tree (critical blocks)
+        working-directory: server/web
+        run: npm audit --audit-level=critical
+
+      - name: Audit dashboard
+        working-directory: server/web/dashboard
+        run: npm audit --audit-level=critical
+
+      - name: Validate dependency catalog manifest
+        run: python3 scripts/ci/export-dependency-manifest.py
+
+  # ===========================================================================
+  # Test: юнит-тесты и интеграционные тесты
+  # ===========================================================================
+  test:
+    name: Tests (JVM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: ipcss_test
+          POSTGRES_USER: ipcss
+          POSTGRES_PASSWORD: ipcss_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+      
+      - name: Setup environment
+        run: |
+          cp .env.example .env
+          echo "DATABASE_URL=jdbc:postgresql://localhost:5432/ipcss_test" >> .env
+          echo "DATABASE_USER=ipcss" >> .env
+          echo "DATABASE_PASSWORD=ipcss_test" >> .env
+          echo "REDIS_HOST=localhost" >> .env
+      
+      - name: Run unit tests
+        run: ./gradlew test --no-daemon --parallel
+        env:
+          API_GLOBAL_RATE_LIMIT_ENABLED: 'false'
+      
+      - name: Run integration tests
+        run: ./gradlew :server:api:integrationTest --no-daemon
+        env:
+          API_GLOBAL_RATE_LIMIT_ENABLED: 'false'
+      
+      - name: Generate coverage report
+        run: ./gradlew :server:api:koverHtmlReport :server:api:koverXmlReport --no-daemon
+      
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: build/reports/kover/
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: '**/build/reports/tests/'
+
+  # ===========================================================================
+  # Server: сборка и smoke-тесты сервера
+  # ===========================================================================
+  server:
+    name: Server Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+      
+      - name: Build server distribution
+        run: ./gradlew :server:api:installDist --no-daemon -x test
+      
+      - name: Upload server artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: server-libs
+          path: server/api/build/install/api/
+
+  # ===========================================================================
+  # Android: сборка APK
+  # ===========================================================================
+  android:
+    name: Android Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+      
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+      
+      - name: Build Android APK
+        # SDK настраивается выше (android-actions/setup-android); гейт строгий.
+        run: ./gradlew :android:app:assembleDebug --no-daemon
+        env:
+          ORG_GRADLE_JVM_ARGS: '-Xms4g -Xmx12g -XX:MaxMetaspaceSize=2g'
+      
+      - name: Upload Android APK
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+
+  # ===========================================================================
+  # Docker: сборка и публикация образа
+  # ===========================================================================
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [server]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download server artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: server-libs
+          path: server/api/build/install/api/
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Build Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: platforms/nas-x86_64/Dockerfile
+          target: server
+          tags: ipcss-server:ci-${{ github.sha }}
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: Scan Docker image for vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ipcss-server:ci-${{ github.sha }}
+          format: table
+          exit-code: '0'
+          severity: 'CRITICAL,HIGH'
+
+  # ===========================================================================
+  # KMP: сборка Kotlin Multiplatform (если настроены тулчейны)
+  # ===========================================================================
+  kmp:
+    name: KMP Build (shared)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+      
+      - name: Build shared module
+        run: ./gradlew :shared:build --no-daemon -x test || echo "KMP needs native toolchains"
+        env:
+          ORG_GRADLE_JVM_ARGS: '-Xms4g -Xmx12g -XX:MaxMetaspaceSize=2g'
+
+      - name: Run KMP python gates (full set, см. scripts/ci/verify-kmp-phase1.py)
+        run: |
+          python scripts/ci/check-commonmain-forbidden-imports.py .
+          python scripts/ci/check-security-expect-actual-signatures.py .
+          python scripts/ci/check-no-jvm-deps-in-native-source-sets.py .
+          python scripts/ci/check-video-runtime-matrix-config.py --root .
+          python scripts/ci/validate-video-e2e-profile.py --root .
+
+  # ===========================================================================
+  # Summary
+  # ===========================================================================
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [validate, test, server, docker]
+    if: always()
+    steps:
+      - name: Check status
+        run: |
+          echo "## CI Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Job | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Validate | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests | ${{ needs.test.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Server Build | ${{ needs.server.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

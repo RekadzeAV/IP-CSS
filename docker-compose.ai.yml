@@ -1,0 +1,53 @@
+# AI Infrastructure for IP-CSS Agent System
+# Запуск: docker-compose -f docker-compose.ai.yml up -d
+# Остановка: docker-compose -f docker-compose.ai.yml down
+#
+# Примечание: Ollama работает на хосте (порт 11434), не в Docker
+# Для доступа из контейнеров используйте: host.docker.internal:11434
+
+networks:
+  ai-network:
+    driver: bridge
+
+services:
+  # ChromaDB - векторная база для памяти агента
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: ip-css-chromadb
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data/chroma:/chroma/chroma
+    networks:
+      - ai-network
+    environment:
+      - CHROMA_SERVER_AUTHN_CREDENTIALS=${CHROMA_PASSWORD:-chroma_secure_password_2026}
+      - CHROMA_SERVER_AUTHN_PROVIDER=chromadb.auth.token_authn.TokenAuthServerProvider
+    healthcheck:
+      test: ["CMD", "/usr/bin/bash", "-c", "echo > /dev/tcp/localhost/8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Redis для AI очередей (отдельный namespace)
+  # Используем порт 6380, чтобы не конфликтовать с основным Redis
+  ai-redis:
+    image: redis:7-alpine
+    container_name: ip-css-ai-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${AI_REDIS_PASSWORD:-ai_redis_secure_password_2026}
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./data/ai-redis:/data
+    networks:
+      - ai-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${AI_REDIS_PASSWORD:-ai_redis_secure_password_2026}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+

@@ -1,0 +1,188 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ip-css-api
+  labels:
+    app: ip-css-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ip-css-api
+  template:
+    metadata:
+      labels:
+        app: ip-css-api
+    spec:
+      containers:
+      - name: ip-css-api
+        image: company/ip-css-api:Alfa-0.0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+          name: http
+        env:
+        - name: JAVA_OPTS
+          value: "-Xmx2g -Xms512m"
+        - name: TZ
+          value: "UTC"
+        volumeMounts:
+        - name: db-storage
+          mountPath: /app/db
+        - name: recordings-storage
+          mountPath: /app/recordings
+        - name: config-storage
+          mountPath: /app/config
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8081
+          initialDelaySeconds: 40
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8081
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: db-storage
+        persistentVolumeClaim:
+          claimName: ip-css-db-pvc
+      - name: recordings-storage
+        persistentVolumeClaim:
+          claimName: ip-css-recordings-pvc
+      - name: config-storage
+        persistentVolumeClaim:
+          claimName: ip-css-config-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ip-css-web
+  labels:
+    app: ip-css-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ip-css-web
+  template:
+    metadata:
+      labels:
+        app: ip-css-web
+    spec:
+      containers:
+      - name: ip-css-web
+        image: company/ip-css-web:Alfa-0.0.1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: API_URL
+          value: "http://ip-css-api:8081"
+        - name: NODE_ENV
+          value: "production"
+        - name: TZ
+          value: "UTC"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 40
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ip-css-api
+  labels:
+    app: ip-css-api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: http
+  selector:
+    app: ip-css-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ip-css-web
+  labels:
+    app: ip-css-web
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: ip-css-web
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ip-css-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ip-css-recordings-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ip-css-config-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+

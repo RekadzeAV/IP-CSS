@@ -1,0 +1,61 @@
+{
+  "cameras": [
+    {
+      "id": "camera-1",
+      "name": "Living Room",
+      "rtspUrl": "rtsp://192.168.10.100:554/stream1",
+      "username": "admin",
+      "password": "test_password_123",
+      "enabled": true,
+      "model": "Generic RTSP Camera",
+      "location": "Living Room"
+    },
+    {
+      "id": "camera-2",
+      "name": "Garden",
+      "rtspUrl": "rtsp://192.168.10.101:554/live.sdp",
+      "username": "admin",
+      "password": "garden_password_456",
+      "enabled": true,
+      "model": "Generic RTSP Camera",
+      "location": "Garden"
+    },
+    {
+      "id": "camera-3",
+      "name": "Front Door",
+      "rtspUrl": "rtsp://192.168.10.102:554/cam/real",
+      "username": "admin",
+      "password": "door_password_789",
+      "enabled": true,
+      "model": "Generic RTSP Camera",
+      "location": "Front Door"
+    },
+    {
+      "id": "camera-4",
+      "name": "Garage",
+      "rtspUrl": "rtsp://192.168.10.103:554/h264Preview_01_sub",
+      "username": "admin",
+      "password": "garage_password_abc",
+      "enabled": true,
+      "model": "Generic RTSP Camera",
+      "location": "Garage"
+    },
+    {
+      "id": "camera-5",
+      "name": "Backyard",
+      "rtspUrl": "rtsp://192.168.10.104:554/stream/ch0",
+      "username": "admin",
+      "password": "backyard_password_def",
+      "enabled": true,
+      "model": "Generic RTSP Camera",
+      "location": "Backyard"
+    }
+  ],
+  "metadata": {
+    "description": "Test cameras configuration for field validation - Network 192.168.10.0/24",
+    "created": "2026-06-09",
+    "network": "192.168.10.0/24",
+    "hostIP": "192.168.10.25",
+    "testMode": true
+  }
+}

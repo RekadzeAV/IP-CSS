@@ -1,0 +1,148 @@
+name: PostgreSQL Finalization One-Command Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Staging base URL (e.g. https://staging.example.com)"
+        required: true
+        default: "http://localhost:8080"
+        type: string
+      username:
+        description: "Admin username for smoke auth"
+        required: true
+        default: "admin"
+        type: string
+      admin_password:
+        description: "Fallback admin password (optional, masked input)"
+        required: false
+        default: ""
+        type: string
+      password_env_var:
+        description: "Runner environment variable with admin password"
+        required: false
+        default: "IPCSS_ADMIN_PASSWORD"
+        type: string
+      environment:
+        description: "GitHub Environment + report label (e.g. staging, preprod)"
+        required: true
+        default: "staging"
+        type: string
+      owner:
+        description: "Owner for generated reports"
+        required: true
+        default: "backend-team"
+        type: string
+      reviewer:
+        description: "Reviewer for generated reports"
+        required: true
+        default: "qa-team"
+        type: string
+      rollback_evidence:
+        description: "Link/path to rollback rehearsal evidence"
+        required: false
+        default: "N/A"
+        type: string
+      run_on_self_hosted:
+        description: "Also run self-hosted staging variant"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  one-command-gate:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve admin password
+        id: resolve-password
+        shell: pwsh
+        env:
+          INPUT_PASSWORD: ${{ inputs.admin_password }}
+          PASSWORD_ENV_VAR: ${{ inputs.password_env_var }}
+        run: |
+          $password = [Environment]::GetEnvironmentVariable($env:PASSWORD_ENV_VAR)
+          if ([string]::IsNullOrWhiteSpace($password)) {
+            $password = $env:INPUT_PASSWORD
+          }
+          if ([string]::IsNullOrWhiteSpace($password)) {
+            throw "Admin password is empty. Set runner env var '$env:PASSWORD_ENV_VAR' or provide workflow input admin_password."
+          }
+          "admin_password=$password" >> $env:GITHUB_OUTPUT
+
+      - name: Run one-command PostgreSQL gate
+        shell: pwsh
+        run: |
+          .\scripts\run-postgres-finalization-suite.ps1 `
+            -SkipPreflight `
+            -ValidateReport `
+            -GenerateGoNoGo `
+            -FailOnNoGo `
+            -BaseUrl "${{ inputs.base_url }}" `
+            -Username "${{ inputs.username }}" `
+            -Password "${{ steps.resolve-password.outputs.admin_password }}" `
+            -Environment "${{ inputs.environment }}" `
+            -BuildCommit "${{ github.sha }}" `
+            -Owner "${{ inputs.owner }}" `
+            -Reviewer "${{ inputs.reviewer }}" `
+            -RollbackEvidence "${{ inputs.rollback_evidence }}"
+
+      - name: Upload PostgreSQL finalization diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-finalization-diagnostics-windows-${{ github.run_id }}
+          path: diagnostics/postgres-finalization/**/*.md
+          if-no-files-found: warn
+
+  one-command-gate-self-hosted:
+    if: ${{ inputs.run_on_self_hosted == true }}
+    runs-on: self-hosted
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve admin password
+        id: resolve-password
+        shell: pwsh
+        env:
+          INPUT_PASSWORD: ${{ inputs.admin_password }}
+          PASSWORD_ENV_VAR: ${{ inputs.password_env_var }}
+        run: |
+          $password = [Environment]::GetEnvironmentVariable($env:PASSWORD_ENV_VAR)
+          if ([string]::IsNullOrWhiteSpace($password)) {
+            $password = $env:INPUT_PASSWORD
+          }
+          if ([string]::IsNullOrWhiteSpace($password)) {
+            throw "Admin password is empty. Set runner env var '$env:PASSWORD_ENV_VAR' or provide workflow input admin_password."
+          }
+          "admin_password=$password" >> $env:GITHUB_OUTPUT
+
+      - name: Run one-command PostgreSQL gate (self-hosted)
+        shell: pwsh
+        run: |
+          .\scripts\run-postgres-finalization-suite.ps1 `
+            -AutoStartRuntime `
+            -ValidateReport `
+            -GenerateGoNoGo `
+            -FailOnNoGo `
+            -RuntimeStartTimeoutSec 180 `
+            -BaseUrl "${{ inputs.base_url }}" `
+            -Username "${{ inputs.username }}" `
+            -Password "${{ steps.resolve-password.outputs.admin_password }}" `
+            -Environment "${{ inputs.environment }}" `
+            -BuildCommit "${{ github.sha }}" `
+            -Owner "${{ inputs.owner }}" `
+            -Reviewer "${{ inputs.reviewer }}" `
+            -RollbackEvidence "${{ inputs.rollback_evidence }}"
+
+      - name: Upload PostgreSQL finalization diagnostics (self-hosted)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: postgres-finalization-diagnostics-selfhosted-${{ github.run_id }}
+          path: diagnostics/postgres-finalization/**/*.md
+          if-no-files-found: warn

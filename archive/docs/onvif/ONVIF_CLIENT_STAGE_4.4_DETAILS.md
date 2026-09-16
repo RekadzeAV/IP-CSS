@@ -1,0 +1,1 @@
+# ONVIF_CLIENT_STAGE_4.4_DETAILS  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/ONVIF_CLIENT_STAGE_4.4_DETAILS.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

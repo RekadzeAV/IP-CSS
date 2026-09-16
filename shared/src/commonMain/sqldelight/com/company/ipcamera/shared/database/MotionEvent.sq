@@ -1,0 +1,52 @@
+-- Motion detection events
+CREATE TABLE motion_event (
+    id TEXT NOT NULL PRIMARY KEY,
+    camera_id TEXT NOT NULL,
+    event_type TEXT NOT NULL DEFAULT 'MOTION_DETECTED',
+    confidence REAL NOT NULL DEFAULT 1.0,
+    region_of_interest TEXT,
+    snapshot_path TEXT,
+    metadata TEXT,
+    created_at INTEGER NOT NULL,
+    acknowledged INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX motion_event_camera_id_index ON motion_event(camera_id);
+CREATE INDEX motion_event_created_at_index ON motion_event(created_at);
+
+selectAll:
+SELECT * FROM motion_event ORDER BY created_at DESC;
+
+selectByCameraId:
+SELECT * FROM motion_event WHERE camera_id = ? ORDER BY created_at DESC;
+
+selectById:
+SELECT * FROM motion_event WHERE id = ?;
+
+selectRecentByCameraId:
+SELECT * FROM motion_event
+WHERE camera_id = ?
+  AND created_at > ?
+ORDER BY created_at DESC;
+
+insert:
+INSERT OR REPLACE INTO motion_event(
+    id, camera_id, event_type, confidence, region_of_interest,
+    snapshot_path, metadata, created_at, acknowledged
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+delete:
+DELETE FROM motion_event WHERE id = ?;
+
+deleteByCameraId:
+DELETE FROM motion_event WHERE camera_id = ?;
+
+acknowledge:
+UPDATE motion_event SET acknowledged = 1 WHERE id = ?;
+
+acknowledgeAllByCameraId:
+UPDATE motion_event SET acknowledged = 1 WHERE camera_id = ?;
+
+countUnacknowledgedByCameraId:
+SELECT COUNT(*) FROM motion_event
+WHERE camera_id = ? AND acknowledged = 0;

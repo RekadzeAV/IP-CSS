@@ -1,0 +1,51 @@
+{
+  "cameras": [
+    {
+      "name": "Test Camera 1 - H.264 Baseline",
+      "url": "rtsp://192.168.1.100:554/stream",
+      "username": "admin",
+      "password": "password",
+      "codec": "H264",
+      "resolution": "640x480",
+      "fps": 15,
+      "profile": "Baseline"
+    },
+    {
+      "name": "Test Camera 2 - H.264 Main",
+      "url": "rtsp://192.168.1.101:554/stream",
+      "username": "admin",
+      "password": "password",
+      "codec": "H264",
+      "resolution": "1280x720",
+      "fps": 25,
+      "profile": "Main"
+    },
+    {
+      "name": "Test Camera 3 - H.264 High",
+      "url": "rtsp://192.168.1.102:554/stream",
+      "username": "",
+      "password": "",
+      "codec": "H264",
+      "resolution": "1920x1080",
+      "fps": 30,
+      "profile": "High"
+    },
+    {
+      "name": "Test Camera 4 - H.265",
+      "url": "rtsp://192.168.1.103:554/stream",
+      "username": "admin",
+      "password": "password",
+      "codec": "H265",
+      "resolution": "1920x1080",
+      "fps": 25,
+      "profile": "Main"
+    }
+  ],
+  "test_settings": {
+    "connection_timeout_ms": 5000,
+    "frame_receive_timeout_ms": 5000,
+    "decoding_test_duration_seconds": 10,
+    "min_fps_threshold": 10.0,
+    "min_frames_received": 10
+  }
+}

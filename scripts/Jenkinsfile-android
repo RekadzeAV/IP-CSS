@@ -1,0 +1,22 @@
+// Jenkinsfile for Android build
+// Date: 2026-07-08
+
+@Library('ipcss-build') _
+
+ipcssBuild(
+    buildType: 'android',
+    deployTarget: params.DEPLOY_TARGET,
+    buildSteps: [
+        'chmod +x gradlew',
+        './gradlew clean :android:assembleRelease',
+        './gradlew :android:test'
+    ],
+    testSteps: [
+        './gradlew :android:test'
+    ],
+    artifacts: [
+        'android/app/build/outputs/apk/release/*.apk',
+        'android/app/build/outputs/bundle/release/*.aab',
+        'android/app/build/reports/tests/**/*.html'
+    ]
+)

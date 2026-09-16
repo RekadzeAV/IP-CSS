@@ -1,0 +1,1 @@
+# DESKTOP_DOCUMENTATION_UPDATE  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/DESKTOP_DOCUMENTATION_UPDATE.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

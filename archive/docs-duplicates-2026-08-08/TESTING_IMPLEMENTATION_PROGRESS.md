@@ -1,0 +1,1 @@
+# TESTING_IMPLEMENTATION_PROGRESS  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/TESTING_IMPLEMENTATION_PROGRESS.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

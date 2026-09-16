@@ -1,0 +1,16 @@
+# Markdown Linter Rules for IP-CSS Documentation
+
+# Exclude rules that are too strict or not applicable
+exclude 'MD001', 'MD007', 'MD013', 'MD024', 'MD033', 'MD036'
+
+# Include rules
+rule 'MD004', 'style' => 'consistent'  # Unordered list style
+rule 'MD009', 'br_spaces' => 2  # Trailing spaces
+rule 'MD010', 'code_blocks' => false  # Hard tabs
+rule 'MD026', 'punctuation' => '.,;:!?'  # Trailing punctuation in headings
+rule 'MD029', 'style' => 'ordered'  # Ordered list item prefix
+rule 'MD034', 'allowed_headers' => true  # Bare URL
+rule 'MD040', 'allowed_languages' => ['bash', 'json', 'yaml', 'yml', 'sql', 'xml', 'html', 'css', 'javascript', 'typescript', 'python', 'kotlin', 'java', 'md']
+
+# Line length (allow longer lines for code and URLs)
+all

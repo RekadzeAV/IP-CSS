@@ -1,0 +1,5 @@
+F2_RESULTS
+/dashboard: perf=.., lcp=.., inp_or_tbt=.., cls=.., longTasks=..
+/cameras: perf=.., lcp=.., inp_or_tbt=.., cls=.., longTasks=..
+/events: perf=.., lcp=.., inp_or_tbt=.., cls=.., longTasks=..
+/recordings: perf=.., lcp=.., inp_or_tbt=.., cls=.., longTasks=..

@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "1.0.0",
+  "required": [
+    {
+      "name": "DB_MODE",
+      "allowedValues": [
+        "sqlite",
+        "postgres"
+      ],
+      "description": "Database mode for server runtime."
+    },
+    {
+      "name": "JWT_SECRET",
+      "minLength": 32,
+      "description": "JWT signing key. Must be strong and non-default."
+    },
+    {
+      "name": "JWT_ISSUER",
+      "pattern": "^[A-Za-z0-9._:-]{3,128}$",
+      "description": "JWT issuer identifier."
+    },
+    {
+      "name": "JWT_AUDIENCE",
+      "pattern": "^[A-Za-z0-9._:-]{3,128}$",
+      "description": "JWT audience identifier."
+    },
+    {
+      "name": "CORS_ALLOWED_ORIGINS",
+      "pattern": "^[^\\s]+$",
+      "description": "Comma-separated allow-list origins without spaces."
+    }
+  ],
+  "optional": [
+    {
+      "name": "FORCE_HTTPS",
+      "allowedValues": [
+        "true",
+        "false"
+      ],
+      "default": "true"
+    },
+    {
+      "name": "DATABASE_URL",
+      "pattern": "^(jdbc:postgresql://|jdbc:sqlite:).+"
+    },
+    {
+      "name": "DATABASE_READ_REPLICA_URL",
+      "pattern": "^jdbc:postgresql://.+"
+    },
+    {
+      "name": "FFMPEG_PATH",
+      "pattern": "^.+$"
+    }
+  ],
+  "forbiddenExactValues": [
+    "changeme",
+    "change-me",
+    "default",
+    "test",
+    "password",
+    "secret"
+  ]
+}

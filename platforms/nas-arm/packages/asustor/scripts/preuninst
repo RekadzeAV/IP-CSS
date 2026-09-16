@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-uninstall: stop service before removal
+
+INSTALL_DIR="/usr/local/AppCentral/ip-css"
+DATA_DIR="/volume1/.@plugins/AppCentral/ip-css/data"
+if [ ! -d "$DATA_DIR" ]; then
+    DATA_DIR="$INSTALL_DIR/data"
+fi
+
+if [ -x "$INSTALL_DIR/bin/stop.sh" ]; then
+    "$INSTALL_DIR/bin/stop.sh" 2>/dev/null || true
+fi
+
+exit 0

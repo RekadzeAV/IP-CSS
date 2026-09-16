@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  ip-css:
+    image: ghcr.io/nlp-core-team/ip-css:latest
+    container_name: ip-css
+    restart: unless-stopped
+    ports:
+      - "8080:8080"    # HTTP API
+      - "8443:8443"    # HTTPS API
+      - "554:554"      # RTSP
+      - "8554:8554"    # RTSP over HTTP
+    environment:
+      - TZ=${TZ:-UTC}
+      - JAVA_OPTS=-Xmx2g -XX:+UseG1GC
+      - SERVER_PORT=8080
+      - DATA_PATH=/data
+      - DB_PATH=/data/database/ip-css.db
+      - RECORDINGS_PATH=/data/recordings
+      - LOG_LEVEL=INFO
+    volumes:
+      - ${DATA_PATH:-./data}:/data
+      - ${RECORDINGS_PATH:-./recordings}:/data/recordings
+      - ${CONFIG_PATH:-./config}:/data/config
+      - /etc/localtime:/etc/localtime:ro
+    devices:
+      # Intel QuickSync (optional)
+      - /dev/dri:/dev/dri
+      # NVIDIA GPU (optional)
+      # - /dev/nvidia0:/dev/nvidia0
+      # - /dev/nvidiactl:/dev/nvidiactl
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '2.0'
+          memory: 2G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - ip-css-network
+    labels:
+      - "com.ip-css.version=0.3.0"
+      - "com.ip-css.platform=truenas"
+
+  # Optional: Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: ip-css-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - ip-css-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Optional: PostgreSQL for production
+  postgres:
+    image: postgres:15-alpine
+    container_name: ip-css-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=${DB_USER:-ipcss}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-changeme}
+      - POSTGRES_DB=${DB_NAME:-ipcss}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - ip-css-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ipcss}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+networks:
+  ip-css-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+  postgres-data:

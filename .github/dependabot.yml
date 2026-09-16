@@ -1,0 +1,126 @@
+# ДАННЫЙ ФАЙЛ ОТКЛЮЧАЕТ GENERATION НОВЫХ PR DEPENDABOT
+# Dependabot всё ещё будет проверять обновления (schedule), но НЕ будет открывать PR.
+# Чтобы полностью отключить проверки — удалите весь блок updates или установите schedule: ненастроен.
+version: 2
+
+updates:
+  # npm: server/web (Next.js web dashboard + shared web assets)
+  - package-ecosystem: "npm"
+    directory: "/server/web"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # W8: typescript major bump — after 0.6.0-beta release (PLAN_VULNERABILITIES W8)
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+
+  # npm: server/web/dashboard (pure dashboard app, separate path)
+  - package-ecosystem: "npm"
+    directory: "/server/web/dashboard"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # gradle: version catalog (libs.versions.toml) — main project dependency supply
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      # W5: ktor major upgrade (2.3.x -> 3.5.x) — after release, separate wave (PLAN_VULNERABILITIES W5)
+      - dependency-name: "io.ktor:ktor-server-core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "io.ktor:ktor-client-core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "io.ktor:*"
+        update-types: ["version-update:semver-major"]
+      # W3: ktlint major (12.x -> 14.x+) until W3
+      - dependency-name: "org.jlleitschuh.gradle.ktlint"
+        update-types: ["version-update:semver-major"]
+      # W4: koin major (3.5.x -> 4.x) until W4
+      - dependency-name: "io.insert-koin:koin-core"
+        update-types: ["version-update:semver-major"]
+      # Defensive: kotlin major only after coordinated KMP alignment (not per-Dependabot)
+      - dependency-name: "org.jetbrains.kotlin"
+        update-types: ["version-update:semver-major"]
+      # Coroutines major only after review (currently pinned 1.10.x — stable for this project)
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-coroutines-core"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.jetbrains.kotlinx:kotlinx-coroutines-test"
+        update-types: ["version-update:semver-major"]
+
+  # pip: ai-agent (python dependencies, port 8000)
+  - package-ecosystem: "pip"
+    directory: "/ai-agent"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # github-actions: workflow dependencies (CI/CD actions)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    allow:
+      # Only specific actions we actually use; prevents churn on unrelated ecosystem packages
+      - dependency-type: "direct"
+        dependency-name: "actions/*"
+      - dependency-type: "direct"
+        dependency-name: "gradle/*"
+      - dependency-type: "direct"
+        dependency-name: "docker/*"
+      - dependency-type: "direct"
+        dependency-name: "github/*"
+      - dependency-type: "direct"
+        dependency-name: "android-actions/*"
+      - dependency-type: "direct"
+        dependency-name: "gitleaks/*"
+      - dependency-type: "direct"
+        dependency-name: "aquasecurity/*"
+      - dependency-type: "direct"
+        dependency-name: "softprops/*"
+      - dependency-type: "direct"
+        dependency-name: "jwlawson/*"
+      - dependency-type: "direct"
+        dependency-name: "FedericoCarboni/*"
+      - dependency-type: "direct"
+        dependency-name: "microsoft/*"
+      - dependency-type: "direct"
+        dependency-name: "egor-tensin/*"
+    ignore:
+      # Don't open PRs for these deprecated/obsolete actions (kept in archive for reference)
+      - dependency-name: "actions/create-release"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "github/codeql-action/*"
+        # codeql is managed via codeql.yml; dependabot updates not needed here
+      - dependency-name: "actions/upload-artifact"
+        # regional churn — pin manually in workflow files; bump tracked in ci.yml upkeep
+      - dependency-name: "actions/checkout"
+        # pinned v4 across all workflows intentionally
+      - dependency-name: "gradle/gradle/wrapper-validation-action"
+        # managed via gradle-wrapper-validation.yml; we already moved to gradle/actions setup
+      - dependency-name: "gradle/gradle/*"
+        # we use gradle/actions/* now

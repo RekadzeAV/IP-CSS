@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 24px 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px;
+        }
+        .message-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .message-box h2 {
+            margin-top: 0;
+            color: #333333;
+            font-size: 18px;
+        }
+        .message-box p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .info-item {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+        }
+        .info-label {
+            font-size: 12px;
+            color: #666666;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .info-value {
+            font-size: 14px;
+            color: #333333;
+            font-weight: 500;
+        }
+        .priority-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+        .priority-urgent {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+        .priority-normal {
+            background-color: #1976d2;
+            color: #ffffff;
+        }
+        .priority-low {
+            background-color: #6c757d;
+            color: #ffffff;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+            border-top: 1px solid #e0e0e0;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        @media only screen and (max-width: 600px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{title}}</h1>
+        </div>
+        
+        <div class="content">
+            <div class="icon">📹</div>
+            
+            <div class="message-box">
+                <h2>Уведомление</h2>
+                <p><strong>{{message}}</strong></p>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Тип</div>
+                    <div class="info-value">{{type}}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Приоритет</div>
+                    <div class="info-value">{{priority}}</div>
+                </div>
+                {{#if cameraId}}
+                <div class="info-item">
+                    <div class="info-label">Камера</div>
+                    <div class="info-value">{{cameraId}}</div>
+                </div>
+                {{/if}}
+                {{#if eventId}}
+                <div class="info-item">
+                    <div class="info-label">ID события</div>
+                    <div class="info-value">{{eventId}}</div>
+                </div>
+                {{/if}}
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="{{dashboardUrl}}" class="button">Открыть панель управления</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Это уведомление отправлено системой видеонаблюдения IP-CSS</p>
+            <p><a href="{{dashboardUrl}}">Перейти к панели управления</a></p>
+            <p>&copy; 2026 IP Camera Surveillance System</p>
+        </div>
+    </div>
+</body>
+</html>

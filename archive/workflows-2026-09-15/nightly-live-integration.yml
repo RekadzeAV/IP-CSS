@@ -1,0 +1,32 @@
+name: Nightly Live Integration
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK and Gradle cache
+        uses: ./.github/actions/setup-jdk-gradle
+        with:
+          gradle-cache-key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          gradle-restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Run live integration and soak suite
+        env:
+          ENABLE_RTSP_INTEGRATION_TESTS: "true"
+          TEST_RTSP_URL: ${{ secrets.TEST_RTSP_URL }}
+          TEST_RTSP_USERNAME: ${{ secrets.TEST_RTSP_USERNAME }}
+          TEST_RTSP_PASSWORD: ${{ secrets.TEST_RTSP_PASSWORD }}
+          RTSP_SOAK_DURATION_SEC: "60"
+        run: ./gradlew ciLiveIntegrationSuite --no-daemon

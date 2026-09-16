@@ -1,0 +1,1 @@
+# TEST_DOCUMENTATION  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/TEST_DOCUMENTATION.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

@@ -1,0 +1,42 @@
+#!/bin/sh
+# Synology DSM Pre-install Script
+# This script runs before package installation
+
+SYNOPKG_PKGNAME="IP-CSS"
+SYNOPKG_PKGDEST="/volume1/@appstore/${SYNOPKG_PKGNAME}"
+SYNOPKG_PKGDEST_VOL="volume1"
+SYNOPKG_PKGPORT="8080"
+
+echo "=== IP-CSS Pre-installation ==="
+echo "Package: ${SYNOPKG_PKGNAME}"
+echo "Destination: ${SYNOPKG_PKGDEST}"
+
+# Check if another instance is running
+if [ -f "/var/packages/${SYNOPKG_PKGNAME}/target/bin/ip-css-server" ]; then
+    echo "Warning: Previous installation detected"
+fi
+
+# Check available disk space (require at least 1GB)
+AVAILABLE_SPACE=$(df -k "${SYNOPKG_PKGDEST_VOL}" | tail -1 | awk '{print $4}')
+REQUIRED_SPACE=1048576  # 1GB in KB
+
+if [ "${AVAILABLE_SPACE}" -lt "${REQUIRED_SPACE}" ]; then
+    echo "Error: Insufficient disk space. Required: 1GB, Available: ${AVAILABLE_SPACE}KB"
+    exit 1
+fi
+
+echo "Disk space check: OK (${AVAILABLE_SPACE}KB available)"
+
+# Check DSM version
+DSM_VERSION=$(cat /etc.defaults/VERSION | grep majorversion | cut -d'"' -f2)
+DSM_BUILD=$(cat /etc.defaults/VERSION | grep buildnumber | cut -d'"' -f2)
+
+echo "DSM Version: ${DSM_VERSION}.${DSM_BUILD}"
+
+if [ "${DSM_VERSION}" -lt 7 ]; then
+    echo "Error: DSM 7.0 or higher required"
+    exit 1
+fi
+
+echo "=== Pre-installation Complete ==="
+exit 0

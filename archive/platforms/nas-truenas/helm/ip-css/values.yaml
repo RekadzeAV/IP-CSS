@@ -1,0 +1,193 @@
+# Default values for IP-CSS Helm Chart
+
+# Replica count
+replicaCount: 1
+
+# Image configuration
+image:
+  repository: ghcr.io/nlp-core-team/ip-css
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Pod name override
+nameOverride: ""
+fullnameOverride: ""
+
+# Service account configuration
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1001
+
+# Security context
+securityContext:
+  runAsUser: 1001
+  runAsGroup: 1001
+  runAsNonRoot: true
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+# Service configuration
+service:
+  type: LoadBalancer
+  httpPort: 8080
+  httpsPort: 8443
+  rtspPort: 554
+  annotations: {}
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: ip-css.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 4000m
+    memory: 4Gi
+  requests:
+    cpu: 2000m
+    memory: 2Gi
+
+# Horizontal Pod Autoscaler
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Environment variables
+env:
+  TZ: "UTC"
+  JAVA_OPTS: "-Xmx2g -XX:+UseG1GC"
+  SERVER_PORT: "8080"
+  LOG_LEVEL: "INFO"
+
+# Persistent storage
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 100Gi
+  annotations: {}
+
+  # Existing data PVC
+  existingClaim: ""
+
+  # Subpaths
+  dataSubPath: "data"
+  recordingsSubPath: "recordings"
+  configSubPath: "config"
+  databaseSubPath: "database"
+
+# Database configuration
+database:
+  # Use embedded SQLite (default) or external PostgreSQL
+  type: "sqlite"  # sqlite | postgresql
+  
+  # PostgreSQL configuration
+  postgresql:
+    host: ""
+    port: 5432
+    database: "ipcss"
+    username: "ipcss"
+    password: ""
+    existingSecret: ""
+
+# Redis configuration (optional caching)
+redis:
+  enabled: false
+  host: ""
+  port: 6379
+  password: ""
+  existingSecret: ""
+
+# GPU acceleration
+gpu:
+  enabled: false
+  type: "nvidia"  # nvidia | intel
+  
+  # NVIDIA GPU
+  nvidia:
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+  
+  # Intel QuickSync
+  intel:
+    devicePlugin: true
+    resources:
+      limits:
+        gpu.intel.com/i915: 1
+
+# Monitoring
+monitoring:
+  serviceMonitor:
+    enabled: false
+    namespace: ""
+    interval: 30s
+    scrapeTimeout: 10s
+  
+  prometheusRules:
+    enabled: false
+
+# Logging
+logging:
+  level: "INFO"
+  format: "json"  # json | console
+
+# Backup configuration
+backup:
+  enabled: false
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retentionDays: 30
+  destination: ""
+
+# Security settings
+security:
+  # Enable HTTPS
+  tlsEnabled: false
+  tlsSecretName: ""
+  
+  # Enable authentication
+  authEnabled: true
+  
+  # Rate limiting
+  rateLimit:
+    enabled: true
+    requestsPerMinute: 100
+
+# Network policy
+networkPolicy:
+  enabled: false
+  ingressRules: []
+  egressRules: []

@@ -1,0 +1,1 @@
+# ONVIF_UPNP  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/ONVIF_UPNP.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

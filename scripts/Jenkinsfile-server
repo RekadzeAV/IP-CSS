@@ -1,0 +1,22 @@
+// Jenkinsfile for Server build
+// Date: 2026-07-08
+
+@Library('ipcss-build') _
+
+ipcssBuild(
+    buildType: 'server',
+    deployTarget: params.DEPLOY_TARGET,
+    buildSteps: [
+        'chmod +x gradlew',
+        './gradlew clean :server:jar',
+        './gradlew :server:test'
+    ],
+    testSteps: [
+        './gradlew :server:test'
+    ],
+    artifacts: [
+        'server/build/libs/*.jar',
+        'server/build/distributions/*.zip',
+        'server/build/reports/tests/test/**/*.html'
+    ]
+)

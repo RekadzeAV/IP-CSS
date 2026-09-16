@@ -1,0 +1,6 @@
+language = C
+headers = rtsp_client.h
+headerFilter = rtsp_client.h
+package = com.company.ipcamera.core.network.rtsp
+compilerOpts = -I${projectDir}
+

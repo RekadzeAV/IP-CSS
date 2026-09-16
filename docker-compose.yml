@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: ip-camera-mediamtx
+    restart: unless-stopped
+    ports:
+      - "8554:8554"  # RTSP
+      - "8889:8889"  # HTTP (webRTC)
+      - "8890:8890"  # HLS
+      - "8891:8891"  # HLS (HTTP)
+    volumes:
+      - ./config/mediamtx:/conf
+    environment:
+      - MTX_READTIMEOUT=10s
+      - MTX_WRITEQUALITY=high
+      - MTX_RECORDS=yes
+      - MTX_RECORD_PATH=/recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+    networks:
+      - surveillance-network
+
+  surveillance:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ip-camera-surveillance
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config
+      - ./data/recordings:/app/recordings
+      - ./data/logs:/app/logs
+      - ./data/models:/app/models
+      - ./data/tmp:/app/tmp
+    environment:
+      - TZ=Europe/Moscow
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - NODE_ENV=${NODE_ENV:-production}
+      - HOST=0.0.0.0
+      - HTTP_PORT=8080
+      - DB_MODE=${DB_MODE:-postgres}
+      - DATABASE_URL=jdbc:postgresql://postgres:5432/surveillance
+      - DATABASE_USER=surveillance
+      - DB_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - DATA_ENCRYPTION_KEY=${DATA_ENCRYPTION_KEY:?DATA_ENCRYPTION_KEY is required}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET is required}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
+      - ENABLE_FLYWAY=${ENABLE_FLYWAY:-true}
+      - FORCE_HTTPS=${FORCE_HTTPS:-true}
+      - ALLOW_EXTERNAL_TLS_TERMINATION=${ALLOW_EXTERNAL_TLS_TERMINATION:-true}
+      - AUDIT_PERSIST_ENABLED=${AUDIT_PERSIST_ENABLED:-true}
+      - CAPTCHA_ENABLED=${CAPTCHA_ENABLED:-true}
+      - ALLOW_PRIVATE_CAMERA_URLS=${ALLOW_PRIVATE_CAMERA_URLS:-true}
+      # LDAP Configuration (NAS Integration)
+      - LDAP_ENABLED=${LDAP_ENABLED:-true}
+      - AUTH_LDAP_SERVER=${AUTH_LDAP_SERVER:-ldap://192.168.10.37:389}
+      - AUTH_LDAP_BASE_DN=${AUTH_LDAP_BASE_DN:-dc=surveillance,dc=local}
+      - AUTH_LDAP_BIND_DN=${AUTH_LDAP_BIND_DN:-cn=admin,dc=surveillance,dc=local}
+      - AUTH_LDAP_BIND_PASSWORD=${AUTH_LDAP_BIND_PASSWORD:-}
+      - AUTH_LDAP_USER_SEARCH_FILTER=${AUTH_LDAP_USER_SEARCH_FILTER:-$$(uid={0})}
+      - AUTH_LDAP_GROUP_SEARCH_FILTER=${AUTH_LDAP_GROUP_SEARCH_FILTER:-$$(member={0})}
+      # NAS Storage Configuration
+      - NAS_PRIMARY_HOST=${NAS_PRIMARY_HOST:-192.168.10.37}
+      - NAS_HOSTS=${NAS_HOSTS:-192.168.10.37,192.168.10.38,192.168.10.39,192.168.10.40}
+      - NAS_PROTOCOL=${NAS_PROTOCOL:-NFS}
+      - NAS_SHARE_PATH=${NAS_SHARE_PATH:-/storage/recordings}
+      - STORAGE_FIRST_CONTOUR_CAMERAS=${STORAGE_FIRST_CONTOUR_CAMERAS:-192.168.10.17,192.168.10.20,192.168.10.21,192.168.10.22,192.168.10.23,192.168.10.24,192.168.10.26}
+      - STORAGE_RETENTION_DAYS=${STORAGE_RETENTION_DAYS:-30}
+      - STORAGE_RECORDING_MODE=${STORAGE_RECORDING_MODE:-continuous}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - surveillance-network
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: surveillance-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=surveillance
+      - POSTGRES_USER=surveillance
+      - POSTGRES_PASSWORD=${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - surveillance-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U surveillance"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: surveillance-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - ./data/redis:/data
+    networks:
+      - surveillance-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  surveillance-network:
+    driver: bridge
+
+# NFS Volume for NAS Integration
+# Uncomment for production with NAS:
+# volumes:
+#   nas-recordings:
+#     driver: local
+#     driver_opts:
+#       type: nfs
+#       o: addr=192.168.10.37,rw,nolock,hard,intr
+#       device: ":/storage/recordings"

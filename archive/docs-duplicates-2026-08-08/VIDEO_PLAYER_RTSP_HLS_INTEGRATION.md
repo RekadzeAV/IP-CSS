@@ -1,0 +1,1 @@
+# VIDEO_PLAYER_RTSP_HLS_INTEGRATION  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/VIDEO_PLAYER_RTSP_HLS_INTEGRATION.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

@@ -1,0 +1,198 @@
+name: RTSP Native Library Build
+
+on:
+  push:
+    paths:
+      - 'native/video-processing/**'
+      - '.github/workflows/rtsp-native-build.yml'
+  pull_request:
+    paths:
+      - 'native/video-processing/**'
+  workflow_dispatch:
+
+env:
+  CMAKE_VERSION: '3.28.0'
+  FFmpeg_VERSION: '6.1'
+
+jobs:
+  # Windows x64 build
+  build-windows:
+    name: Build Windows x64
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure CMake
+        working-directory: native/video-processing
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DJAVA_HOME=$env:JAVA_HOME
+
+      - name: Build
+        working-directory: native/video-processing/build
+        run: |
+          cmake --build . --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: video-processing-windows-x64
+          path: native/video-processing/build/bin/windows/x64/Release/video_processing.dll
+          retention-days: 30
+
+      - name: Upload library to lib/
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-lib
+          path: native/video-processing/lib/windows/
+          retention-days: 30
+
+  # Linux x64 build
+  build-linux:
+    name: Build Linux x64
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build with Docker
+        working-directory: native/video-processing
+        run: |
+          docker build -f Dockerfile.linux -t rtsp-linux-builder .
+          
+      - name: Extract library from container
+        run: |
+          docker create --name rtsp-linux-build rtsp-linux-builder
+          docker cp rtsp-linux-build:/build/build/lib/linux/x64/libvideo_processing.so ./lib/linux/x64/
+          docker rm rtsp-linux-build
+          
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: video-processing-linux-x64
+          path: native/video-processing/lib/linux/x64/libvideo_processing.so
+          retention-days: 30
+
+  # macOS build
+  build-macos:
+    name: Build macOS
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg
+        run: brew install ffmpeg
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configure CMake
+        working-directory: native/video-processing
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DJAVA_HOME="$JAVA_HOME"
+
+      - name: Build
+        working-directory: native/video-processing/build
+        run: |
+          cmake --build . --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: video-processing-macos
+          path: native/video-processing/build/lib/macos/
+          retention-days: 30
+
+  # Run tests
+  test:
+    name: Run Tests
+    runs-on: windows-latest
+    needs: [build-windows]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Download Windows library
+        uses: actions/download-artifact@v4
+        with:
+          name: video-processing-windows-x64
+          path: native/video-processing/lib/windows/x64/
+
+      - name: Run unit tests
+        run: |
+          ./gradlew :core:network:desktopTest --tests "*RtspClientNativeMockTest*" --no-daemon
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-results
+          path: core/network/build/reports/tests/
+          retention-days: 30
+
+  # Release (only on tags)
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-windows, build-linux, build-macos, test]
+    if: startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Create release archive
+        run: |
+          mkdir -p release/native-libs
+          cp -r video-processing-windows-x64 release/native-libs/windows/
+          cp -r video-processing-linux-x64 release/native-libs/linux/
+          cp -r video-processing-macos release/native-libs/macos/
+          tar -czf rtsp-native-libs-${{ github.ref_name }}.tar.gz release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: rtsp-native-libs-${{ github.ref_name }}.tar.gz
+          generate_release_notes: true
+          draft: false
+          prerelease: false

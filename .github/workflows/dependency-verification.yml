@@ -1,0 +1,34 @@
+name: Dependency Verification
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK and Gradle cache
+        uses: ./.github/actions/setup-jdk-gradle
+        with:
+          gradle-cache-key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          gradle-restore-keys: ${{ runner.os }}-gradle-
+
+      - name: Verify dependency metadata is up-to-date
+        run: ./gradlew --write-verification-metadata sha256 help --no-daemon
+
+      - name: Upload generated dependency verification metadata
+        uses: actions/upload-artifact@v7
+        with:
+          name: dependency-verification-metadata
+          path: gradle/verification-metadata.xml
+          if-no-files-found: error

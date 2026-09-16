@@ -1,0 +1,13 @@
+{
+  "hosts": {
+    "api.example.com": [
+      "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+    ],
+    "your-api-domain.com": [
+      "sha256/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC="
+    ]
+  },
+  "enablePinning": true,
+  "enforcePinning": true
+}

@@ -1,0 +1,125 @@
+#!/bin/sh
+# Synology DSM Start/Stop/Status Script
+
+SYNOPKG_PKGNAME="IP-CSS"
+SYNOPKG_PKGDEST="/volume1/@appstore/${SYNOPKG_PKGNAME}"
+SYNOPKG_PKGVAR="/var/packages/${SYNOPKG_PKGNAME}/var"
+PID_FILE="${SYNOPKG_PKGVAR}/ip-css.pid"
+LOG_FILE="${SYNOPKG_PKGVAR}/logs/ip-css.log"
+
+start() {
+    echo "Starting IP-CSS..."
+    
+    if [ -f "${PID_FILE}" ]; then
+        PID=$(cat "${PID_FILE}")
+        if ps -p "${PID}" > /dev/null 2>&1; then
+            echo "IP-CSS is already running (PID: ${PID})"
+            exit 0
+        fi
+    fi
+    
+    # Set environment
+    export JAVA_HOME=/usr/java
+    export PATH=$JAVA_HOME/bin:$PATH
+    export IP_CSS_HOME="${SYNOPKG_PKGVAR}"
+    export IP_CSS_CONFIG="${SYNOPKG_PKGVAR}/config/application.conf"
+    
+    # Start server
+    cd "${SYNOPKG_PKGDEST}/bin"
+    nohup java -jar ip-css-server.jar > "${SYNOPKG_PKGVAR}/logs/stdout.log" 2>&1 &
+    echo $! > "${PID_FILE}"
+    
+    # Wait for startup
+    sleep 3
+    
+    if [ -f "${PID_FILE}" ]; then
+        PID=$(cat "${PID_FILE}")
+        if ps -p "${PID}" > /dev/null 2>&1; then
+            echo "IP-CSS started successfully (PID: ${PID})"
+            
+            # Notify DSM
+            if [ -x /usr/syno/bin/synonotify ]; then
+                /usr/syno/bin/synonotify IP-CSS "IP-CSS has been started"
+            fi
+            
+            exit 0
+        fi
+    fi
+    
+    echo "Failed to start IP-CSS"
+    exit 1
+}
+
+stop() {
+    echo "Stopping IP-CSS..."
+    
+    if [ -f "${PID_FILE}" ]; then
+        PID=$(cat "${PID_FILE}")
+        if ps -p "${PID}" > /dev/null 2>&1; then
+            kill "${PID}"
+            
+            # Wait for process to stop
+            for i in 1 2 3 4 5; do
+                sleep 1
+                if ! ps -p "${PID}" > /dev/null 2>&1; then
+                    echo "IP-CSS stopped successfully"
+                    rm -f "${PID_FILE}"
+                    
+                    # Notify DSM
+                    if [ -x /usr/syno/bin/synonotify ]; then
+                        /usr/syno/bin/synonotify IP-CSS "IP-CSS has been stopped"
+                    fi
+                    
+                    exit 0
+                fi
+            done
+            
+            # Force kill
+            kill -9 "${PID}"
+            echo "IP-CSS force stopped"
+            rm -f "${PID_FILE}"
+            exit 0
+        fi
+    fi
+    
+    echo "IP-CSS is not running"
+    rm -f "${PID_FILE}"
+    exit 0
+}
+
+status() {
+    if [ -f "${PID_FILE}" ]; then
+        PID=$(cat "${PID_FILE}")
+        if ps -p "${PID}" > /dev/null 2>&1; then
+            echo "IP-CSS is running (PID: ${PID})"
+            exit 0
+        else
+            echo "IP-CSS is not running (stale PID file)"
+            exit 1
+        fi
+    else
+        echo "IP-CSS is not running"
+        exit 3
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status
+        ;;
+    restart)
+        stop
+        sleep 2
+        start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|status|restart}"
+        exit 1
+        ;;
+esac

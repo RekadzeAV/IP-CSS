@@ -1,0 +1,1 @@
+# LICENSE_SYSTEM  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/LICENSE_SYSTEM.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

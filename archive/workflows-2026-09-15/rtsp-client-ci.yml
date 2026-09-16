@@ -1,0 +1,167 @@
+# CI/CD Pipeline для IP-CSS RTSP Client
+name: RTSP Client CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'native/video-processing/**'
+      - 'docs/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'native/video-processing/**'
+
+env:
+  BUILD_TYPE: Release
+  FFMPEG_VERSION: 6.0
+
+jobs:
+  # Build и тесты для Windows
+  windows-build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1
+    
+    - name: Cache FFmpeg
+      id: cache-ffmpeg
+      uses: actions/cache@v3
+      with:
+        path: ${{ github.workspace }}/ffmpeg
+        key: ffmpeg-${{ env.FFMPEG_VERSION }}-windows
+    
+    - name: Download FFmpeg
+      if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip" -OutFile "ffmpeg.zip"
+        Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg"
+        Move-Item -Path "ffmpeg/ffmpeg-*" -Destination "ffmpeg/current"
+      shell: pwsh
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+          -DFFMPEG_DIR="${{ github.workspace }}/ffmpeg/current" `
+          -DBUILD_HW_DECODER_TESTS=ON `
+          -DBUILD_INTEGRATION_TESTS=ON
+      shell: pwsh
+    
+    - name: Build
+      run: cmake --build build --config ${{ env.BUILD_TYPE }}
+      shell: pwsh
+    
+    - name: Run Unit Tests
+      run: |
+        cd build/test/hw_decoder_tests
+        .\hw_decoder_tests.exe
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: Run Integration Tests
+      run: |
+        cd build/test/integration_tests
+        .\integration_tests.exe
+      shell: pwsh
+      continue-on-error: true
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: windows-build
+        path: build/
+
+  # Build и тесты для Ubuntu
+  ubuntu-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          g++ \
+          libavformat-dev \
+          libavcodec-dev \
+          libavutil-dev \
+          libswscale-dev \
+          libswresample-dev \
+          pkg-config
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+          -DBUILD_HW_DECODER_TESTS=ON `
+          -DBUILD_INTEGRATION_TESTS=ON
+    
+    - name: Build
+      run: cmake --build build
+    
+    - name: Run Tests
+      run: |
+        cd build
+        ctest --output-on-failure
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ubuntu-build
+        path: build/
+
+  # Build для macOS
+  macos-build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Dependencies
+      run: |
+        brew install cmake ffmpeg
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} `
+          -DBUILD_HW_DECODER_TESTS=ON `
+          -DBUILD_INTEGRATION_TESTS=ON
+    
+    - name: Build
+      run: cmake --build build
+    
+    - name: Run Tests
+      run: |
+        cd build
+        ctest --output-on-failure
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: macos-build
+        path: build/
+
+  # Static analysis с clang-tidy
+  static-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Clang-Tidy
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-tidy
+    
+    - name: Run Clang-Tidy
+      run: |
+        find native/video-processing/src -name "*.cpp" -o -name "*.h" | \
+          head -20 | \
+          xargs -I {} clang-tidy {} -- \
+          -Inative/video-processing/include \
+          -Wno-error || true

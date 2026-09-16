@@ -1,0 +1,1 @@
+# DATA_LAYER_STATUS  This status document was moved to legacy archive.  - Archived location: `docs/archive/status-legacy-2026-04-27/DATA_LAYER_STATUS.md` - Active status set: `docs/status/STATUS_ARCHIVE_REGISTRY_2026-04-27.md`

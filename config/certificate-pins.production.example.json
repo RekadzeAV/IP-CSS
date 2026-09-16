@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "description": "Production certificate pinning baseline example. Keep at least two pins per host.",
+  "enablePinning": true,
+  "enforcePinning": true,
+  "hosts": {
+    "api.example.com": [
+      "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+      "sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB="
+    ],
+    "events.example.com": [
+      "sha256/CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC=",
+      "sha256/DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD="
+    ]
+  }
+}

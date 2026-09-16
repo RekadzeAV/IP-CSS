@@ -1,0 +1,5 @@
+* text=auto eol=lf
+
+# Криптографический материал: не нормализуем EOL и не показываем diff, если когда-либо попадёт в индекс
+credentials/ssh-keys/** -text -diff
+*.ppk -text -diff

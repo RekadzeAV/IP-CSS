@@ -1,0 +1,204 @@
+name: Phase 1 MVP Verification
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    - cron: '0 6 * * *'  # Ежедневно в 06:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Проверка KMP Phase 1 (Python gate)
+  verify-kmp-phase1:
+    name: Verify KMP Phase 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run KMP Phase 1 verification
+        run: |
+          python scripts/ci/verify-kmp-phase1.py --ci-profile --report-json diagnostics/ci/kmp-phase1-report.json
+
+      - name: Upload verification report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kmp-phase1-report
+          path: diagnostics/ci/kmp-phase1-report.json
+          retention-days: 7
+
+  # Сборка Desktop (Linux)
+  build-desktop:
+    name: Build Desktop (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: verify-kmp-phase1
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build shared module
+        run: |
+          ./gradlew :shared:assemble --no-daemon
+
+      - name: Build desktop client
+        run: |
+          ./gradlew :platforms:client-desktop-x86_64:app:assembleRelease --no-daemon
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release-artifacts
+          path: |
+            platforms/client-desktop-x86_64/app/dist/
+            platforms/client-desktop-x86_64/app/build/distributions/
+          retention-days: 7
+
+  # Сборка Android Debug
+  build-android:
+    name: Build Android Debug
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: verify-kmp-phase1
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build Android Debug
+        run: |
+          ./gradlew :android:app:assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 7
+
+  # Сборка серверного API
+  build-server:
+    name: Build Server API
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: verify-kmp-phase1
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build server API
+        run: |
+          ./gradlew :server:api:build --no-daemon
+
+      - name: Upload server artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-api-artifacts
+          path: server/api/build/libs/*.jar
+          retention-days: 7
+
+  # Запуск тестов (Desktop)
+  test-desktop:
+    name: Run Desktop Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [verify-kmp-phase1, build-desktop]
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run desktop tests
+        run: |
+          ./gradlew :core:common:desktopTest :core:network:desktopTest --no-daemon
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: |
+            **/build/test-results/
+            **/build/reports/tests/
+          retention-days: 7
+
+  # Итоговый статус
+  phase1-mvp-gate:
+    name: Phase 1 MVP Gate
+    runs-on: ubuntu-latest
+    needs: [verify-kmp-phase1, build-desktop, build-android, build-server, test-desktop]
+    if: always()
+    
+    steps:
+      - name: Check all jobs status
+        run: |
+          echo "Phase 1 MVP Verification Results:"
+          echo "- KMP Verify: ${{ needs.verify-kmp-phase1.result }}"
+          echo "- Desktop Build: ${{ needs.build-desktop.result }}"
+          echo "- Android Build: ${{ needs.build-android.result }}"
+          echo "- Server Build: ${{ needs.build-server.result }}"
+          echo "- Desktop Tests: ${{ needs.test-desktop.result }}"
+          
+          if [ "${{ needs.verify-kmp-phase1.result }}" != "success" ] || \
+             [ "${{ needs.build-desktop.result }}" != "success" ] || \
+             [ "${{ needs.build-android.result }}" != "success" ] || \
+             [ "${{ needs.build-server.result }}" != "success" ]; then
+            echo "::error::Phase 1 MVP Gate FAILED"
+            exit 1
+          fi
+          
+          echo "::notice::Phase 1 MVP Gate PASSED"

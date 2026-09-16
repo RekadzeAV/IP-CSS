@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Pre-uninstallation script for Synology DSM (ARM)
+# This script runs before the package is removed
+
+PACKAGE_NAME="ip-css"
+
+# Stop the service before removal
+/usr/syno/bin/synopkg stop "$PACKAGE_NAME" > /dev/null 2>&1
+
+# Wait for service to stop
+sleep 2
+
+exit 0
+

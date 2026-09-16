@@ -1,0 +1,115 @@
+# MediaMTX Configuration
+# https://github.com/bluenviron/mediamtx
+
+###############################################
+# Global settings
+###############################################
+
+# Address to listen for RTSP connections
+rtspAddress: :8554
+
+# Address to listen for RTP/RTCP connections (UDP)
+rtpAddress: :8000
+
+# RTSP authentication
+rtspAuthMethods:
+  - basic
+
+# Enable RTSP over TCP
+rtspTransports:
+  - udp
+  - tcp
+  - udpmulticast
+
+# Read buffer size
+readBufferCount: 256
+
+# Disable UDP multicast
+udpMulticastSSC: true
+
+# Disable multicast
+disableMulticast: false
+
+# Enable HLS
+hlsAddress: :8890
+
+# Enable HLS (HTTP)
+hlsAddressExternal: :8891
+
+# Enable WebRTC
+webrtcAddress: :8889
+
+# Enable WebRTC (HTTP)
+webrtcAddressExternal: :8890
+
+# Enable SRT
+srtAddress: :8892
+
+# Enable RTSP source
+sourceProtocol: tcp
+
+# Enable automatic recording
+record: yes
+
+# Record path
+recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+
+# Record format
+recordFormat: fmp4
+
+# Record part duration
+recordPartDuration: 1s
+
+# Record segment duration
+recordSegment: 1m
+
+# Record delete after
+recordDeleteAfter: 24h
+
+# Path configuration
+paths:
+  # Default path - accepts any stream
+  all:
+    # Allow publishing without authentication
+    source: forceTcp
+    # Enable recording
+    record: yes
+    # Enable HLS
+    hls: yes
+    # Enable WebRTC
+    webrtc: yes
+    # Enable RTSP
+    rtsp: yes
+    # Disable authentication for testing
+    sourceUser: ""
+    sourcePass: ""
+    # Allow any IP to publish
+    sourceIPs: ["0.0.0.0/0", "::/0"]
+
+  # Demo path with test stream
+  demo:
+    # Redirect to test stream
+    source: rtsp://example.com:8554/test
+    # Enable recording
+    record: yes
+    # Enable HLS
+    hls: yes
+    # Enable WebRTC
+    webrtc: yes
+
+###############################################
+# Logging
+###############################################
+
+logLevel: info
+logDestinations:
+  - file
+logFile: ./mediamtx.log
+
+###############################################
+# Authentication
+###############################################
+
+# Disable authentication for local testing
+runOnConnect: ""
+runOnDisconnect: ""

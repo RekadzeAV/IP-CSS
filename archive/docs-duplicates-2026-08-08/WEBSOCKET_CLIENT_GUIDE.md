@@ -1,0 +1,1 @@
+# WEBSOCKET_CLIENT_GUIDE  This document was moved to legacy archive.  - Archived location: `docs/archive/docs-legacy-2026-04-27/WEBSOCKET_CLIENT_GUIDE.md` - Archive registry: `docs/archive/docs-legacy-2026-04-27/REGISTRY.md`

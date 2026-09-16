@@ -1,0 +1,56 @@
+# Скомпилированные библиотеки
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+
+# Каталоги библиотек
+lib/windows/
+lib/linux/
+lib/macos/
+
+# Каталоги сборки
+build/
+cmake-build-*/
+.vscode/
+
+# IDE файлы
+*.iml
+.idea/
+*.swp
+*.swo
+*~
+
+# CMake файлы
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+
+# FFmpeg временные файлы
+*.log
+*.tmp
+
+# Тестовые файлы
+test-*.mp4
+test-*.avi
+*.h264
+*.h265
+
+# Окружение
+.env
+.env.local
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~

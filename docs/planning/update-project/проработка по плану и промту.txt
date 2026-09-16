@@ -1,0 +1,1522 @@
+Полный план реорганизации и доработки проекта IP-CSS
+Введение
+IP-CSS (IP Camera Surveillance System) — кроссплатформенная система видеонаблюдения с веб-интерфейсом, AI-аналитикой, поддержкой IP-камер. Текущий статус: альфа-версия (~77% готовности). Основные проблемы: недоработано видеоядро (RTSP, ONVIF, запись), нестабильная структура, отсутствие многих функций, критичных для реального использования.
+
+Данный план разработан для одного разработчика (full-stack, C++, Kotlin, DevOps). Цель: получить стабильную, функциональную систему, готовую к пилотному внедрению.
+
+Принципы выполнения
+Итеративность: каждый этап даёт работающий инкремент.
+
+Приоритеты: сначала критическое ядро, потом улучшения.
+
+Автоматизация: скрипты, Docker, CI для уменьшения рутины.
+
+Документирование: вести документацию по ходу.
+
+Этап 0: Подготовка и инфраструктура (1–2 недели)
+Цель: Создать удобное окружение для разработки, настроить структуру репозитория, CI, управление конфигурацией.
+
+0.1. Скрипты установки зависимостей
+scripts/install-deps.sh (для Linux/macOS)
+bash
+#!/bin/bash
+set -e
+
+echo "Установка зависимостей для IP-CSS (Linux/macOS)..."
+
+check_command() {
+    if ! command -v $1 &> /dev/null; then
+        echo "Ошибка: $1 не установлен. Установите $1 вручную."
+        exit 1
+    fi
+}
+
+check_command java
+check_command git
+check_command docker
+check_command cmake
+check_command curl
+
+OS="$(uname -s)"
+case "${OS}" in
+    Linux*)
+        if command -v apt-get &> /dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y build-essential libssl-dev libffi-dev \
+                python3-dev python3-pip ffmpeg libusb-1.0-0-dev wiringpi
+        elif command -v yum &> /dev/null; then
+            sudo yum groupinstall -y "Development Tools"
+            sudo yum install -y openssl-devel libffi-devel python3-devel \
+                python3-pip ffmpeg libusb-devel wiringpi
+        else
+            echo "Неизвестный пакетный менеджер. Установите вручную: build-essential, cmake, ffmpeg, libusb, wiringpi"
+        fi
+        ;;
+    Darwin*)
+        if ! command -v brew &> /dev/null; then
+            echo "Установите Homebrew: https://brew.sh"
+            exit 1
+        fi
+        brew update
+        brew install cmake ffmpeg libusb
+        ;;
+    *)
+        echo "Неизвестная ОС: ${OS}"
+        exit 1
+        ;;
+esac
+
+pip3 install --user onnxruntime opencv-python
+
+echo "Установка завершена."
+scripts/install-deps.ps1 (для Windows)
+powershell
+Write-Host "Установка зависимостей для IP-CSS (Windows)..."
+
+if (!(Get-Command choco -ErrorAction SilentlyContinue)) {
+    Write-Host "Chocolatey не установлен. Установка Chocolatey..."
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+}
+
+choco install -y openjdk17 git docker-desktop cmake ffmpeg vcpkg
+
+if (!(Test-Path "$env:USERPROFILE\vcpkg")) {
+    git clone https://github.com/Microsoft/vcpkg.git $env:USERPROFILE\vcpkg
+    & "$env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat"
+}
+$env:PATH = "$env:USERPROFILE\vcpkg;$env:PATH"
+
+vcpkg install libusb wiringpi:x86-windows
+
+choco install -y python3
+pip install onnxruntime opencv-python
+
+Write-Host "Установка завершена."
+0.2. Реорганизация структуры репозитория
+Создаём ветку develop и новую структуру:
+
+text
+IP-CSS/
+├── core/                 # C++ нативные библиотеки
+├── shared/                # Kotlin Multiplatform (оставить как есть)
+├── platforms/
+│   ├── server-jvm/        # новый серверный модуль (скопировать из server/)
+│   ├── web/                # веб-интерфейс (server/web) — перенести
+│   ├── mobile/             # заглушка
+│   └── desktop-compose/    # заглушка
+├── integration-tests/      # новый модуль
+├── scripts/                # вспомогательные скрипты
+├── docker-compose.yml
+└── ...
+Команды:
+
+bash
+git checkout -b develop
+mkdir -p platforms/server-jvm platforms/web platforms/mobile platforms/desktop-compose integration-tests
+cp -r server/* platforms/server-jvm/
+cp -r server/web platforms/web
+Обновить settings.gradle.kts в корне:
+
+kotlin
+rootProject.name = "ip-css"
+
+include(
+    "shared",
+    "platforms:server-jvm",
+    "platforms:web",
+    "integration-tests"
+)
+Корневой build.gradle.kts:
+
+kotlin
+plugins {
+    id("io.gitlab.arturbosch.detekt") version "1.23.1" apply false
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+    }
+}
+
+subprojects {
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+        kotlinOptions.jvmTarget = "17"
+    }
+}
+0.3. Настройка CI (GitHub Actions)
+Файл .github/workflows/build.yml:
+
+yaml
+name: Build
+
+on:
+  push:
+    branches: [ develop, main ]
+  pull_request:
+    branches: [ develop ]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build shared and server
+        run: |
+          ./gradlew :shared:build :platforms:server-jvm:build
+      - name: Lint
+        run: ./gradlew detekt
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Cache Gradle
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+      - name: Build shared and server (Windows)
+        run: ./gradlew :shared:build :platforms:server-jvm:build
+
+  update-structure:
+    runs-on: ubuntu-latest
+    needs: build-linux
+    if: github.ref == 'refs/heads/develop'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Generate project structure
+        run: |
+          chmod +x scripts/generate-structure.sh
+          ./scripts/generate-structure.sh
+      - name: Commit changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/PROJECT_STRUCTURE_AUTO.md
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update project structure"
+          git push
+Скрипт scripts/generate-structure.sh:
+
+bash
+#!/bin/bash
+echo "# Project Structure (Auto-generated)" > docs/PROJECT_STRUCTURE_AUTO.md
+echo "" >> docs/PROJECT_STRUCTURE_AUTO.md
+echo "\`\`\`" >> docs/PROJECT_STRUCTURE_AUTO.md
+tree -I 'build|target|.git|.gradle|.idea|*.iml' --dirsfirst >> docs/PROJECT_STRUCTURE_AUTO.md
+echo "\`\`\`" >> docs/PROJECT_STRUCTURE_AUTO.md
+0.4. Управление конфигурацией (12-factor)
+Файл .env.example (в корне)
+ini
+# Database
+DATABASE_URL=jdbc:postgresql://postgres:5432/ipcss
+DATABASE_USER=ipcss
+DATABASE_PASSWORD=strong_password_here
+
+# JWT
+JWT_SECRET=change_this_in_production_with_a_long_random_string
+
+# MediaMTX
+MEDIA_MTX_URL=http://mediamtx:8888
+
+# AI Engine
+AI_ENGINE_URL=http://ai-engine:5000
+
+# Server
+SERVER_PORT=8080
+Скрипты копирования .env
+scripts/setup-env.sh:
+
+bash
+#!/bin/bash
+if [ ! -f .env ]; then
+    cp .env.example .env
+    echo ".env file created. Please edit it with your actual configuration."
+else
+    echo ".env already exists. Skipping."
+fi
+scripts/setup-env.ps1:
+
+powershell
+if (!(Test-Path .env)) {
+    Copy-Item .env.example .env
+    Write-Host ".env file created. Please edit it with your actual configuration."
+} else {
+    Write-Host ".env already exists. Skipping."
+}
+Настройка docker-compose.yml (базовая)
+yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: ipcss-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ipcss
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ipcss-net
+
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: ipcss-mediamtx
+    restart: unless-stopped
+    ports:
+      - "8554:8554"
+      - "8888:8888"
+      - "8889:8889"
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml
+      - ./recordings:/recordings
+    environment:
+      - MTX_AUTHMETHOD=external
+      - MTX_AUTHEXTERNALADDRESS=http://server-jvm:8080/api/auth/stream
+    networks:
+      - ipcss-net
+
+  server-jvm:
+    build:
+      context: .
+      dockerfile: platforms/server-jvm/Dockerfile
+    container_name: ipcss-server
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - mediamtx
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - MEDIA_MTX_URL=${MEDIA_MTX_URL}
+      - AI_ENGINE_URL=${AI_ENGINE_URL}
+      - SERVER_PORT=${SERVER_PORT}
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./recordings:/recordings
+    networks:
+      - ipcss-net
+
+networks:
+  ipcss-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+Внедрение dotenv в Ktor
+Добавить зависимость в platforms/server-jvm/build.gradle.kts:
+
+kotlin
+implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+В Application.kt:
+
+kotlin
+import io.github.cdimascio.dotenv.Dotenv
+
+fun main() {
+    if (System.getenv("ENV") != "production") {
+        Dotenv.configure().ignoreIfMissing().load().entries().forEach {
+            System.setProperty(it.key, it.value)
+        }
+    }
+    embeddedServer(Netty, port = System.getenv("SERVER_PORT")?.toInt() ?: 8080) {
+        // модули
+    }.start(wait = true)
+}
+Этап 1: Ядро (Core MVP) — видео, запись, ONVIF, медиа-сервер (8–10 недель)
+Цель: Реализовать работающий цикл: обнаружение камеры → получение RTSP-потока → live-просмотр через веб → запись по требованию. Использовать MediaMTX как медиа-сервер, ONVIF-клиент для обнаружения и получения RTSP-URL.
+
+1.1. Интеграция ONVIF-клиента (2 недели)
+1.1.1. Подключение onvif_cpp
+bash
+cd core
+git submodule add https://github.com/tonyOreglia/onvif_cpp.git onvif
+1.1.2. C++ обёртка
+core/onvif_wrapper/onvif_wrapper.h
+
+cpp
+#ifndef ONVIF_WRAPPER_H
+#define ONVIF_WRAPPER_H
+
+#include <vector>
+#include <string>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct {
+    char** urls;
+    int count;
+} StringArray;
+
+void free_string_array(StringArray* arr);
+StringArray discover_cameras(int timeout_ms);
+char* get_stream_uri(const char* ip, const char* username, const char* password);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+core/onvif_wrapper/onvif_wrapper.cpp
+
+cpp
+#include "onvif_wrapper.h"
+#include <onvifclient.h>
+#include <iostream>
+#include <cstring>
+#include <vector>
+
+using namespace std;
+
+extern "C" {
+
+StringArray discover_cameras(int timeout_ms) {
+    StringArray result = {nullptr, 0};
+    try {
+        ONVIFClient client;
+        auto devices = client.discoverDevices(timeout_ms);
+        if (!devices.empty()) {
+            result.count = devices.size();
+            result.urls = new char*[result.count];
+            for (size_t i = 0; i < devices.size(); ++i) {
+                string addr = devices[i].getXAddrs()[0];
+                result.urls[i] = new char[addr.length() + 1];
+                strcpy(result.urls[i], addr.c_str());
+            }
+        }
+    } catch (const exception& e) {
+        cerr << "ONVIF discovery error: " << e.what() << endl;
+    }
+    return result;
+}
+
+char* get_stream_uri(const char* ip, const char* username, const char* password) {
+    try {
+        ONVIFClient client(ip, username, password);
+        auto profiles = client.getProfiles();
+        if (profiles.empty()) return nullptr;
+        string token = profiles[0].getToken();
+        string uri = client.getStreamUri(token);
+        char* result = new char[uri.length() + 1];
+        strcpy(result, uri.c_str());
+        return result;
+    } catch (const exception& e) {
+        cerr << "ONVIF getStreamUri error: " << e.what() << endl;
+        return nullptr;
+    }
+}
+
+void free_string_array(StringArray* arr) {
+    if (arr->urls) {
+        for (int i = 0; i < arr->count; ++i) {
+            delete[] arr->urls[i];
+        }
+        delete[] arr->urls;
+        arr->urls = nullptr;
+        arr->count = 0;
+    }
+}
+
+} // extern "C"
+1.1.3. CMakeLists.txt для сборки обёртки
+core/onvif_wrapper/CMakeLists.txt
+
+cmake
+cmake_minimum_required(VERSION 3.15)
+project(onvif_wrapper)
+
+set(ONVIF_CPP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../onvif)
+add_subdirectory(${ONVIF_CPP_DIR} onvif_cpp_build)
+
+add_library(onvif_wrapper STATIC onvif_wrapper.cpp)
+target_link_libraries(onvif_wrapper PUBLIC onvif_cpp curl ssl crypto)
+target_include_directories(onvif_wrapper PUBLIC ${ONVIF_CPP_DIR}/include)
+Сборка вручную (позже автоматизируем):
+
+bash
+cd core/onvif_wrapper
+mkdir build && cd build
+cmake ..
+make
+cp libonvif_wrapper.a ../prebuilt/linux-x86_64/   # создать папку
+1.1.4. Kotlin/Native cinterop
+shared/src/nativeInterop/cinterop/onvif.def
+
+text
+headers = onvif_wrapper.h
+headerFilter = onvif_wrapper.h
+
+compilerOpts.linux = -I$projectDir/../../core/onvif_wrapper
+linkerOpts.linux = -L$projectDir/../../core/prebuilt/linux-x86_64 -lonvif_wrapper -lcurl -lssl -lcrypto -l:libonvif_cpp.a
+
+compilerOpts.mingw = -I$projectDir/../../core/onvif_wrapper
+linkerOpts.mingw = -L$projectDir/../../core/prebuilt/windows-x86_64 -lonvif_wrapper -lcurl -lssl -lcrypto -lonvif_cpp
+
+compilerOpts.macos = -I$projectDir/../../core/onvif_wrapper
+linkerOpts.macos = -L$projectDir/../../core/prebuilt/macos-x86_64 -lonvif_wrapper -lcurl -lssl -lcrypto -lonvif_cpp
+1.1.5. Настройка shared/build.gradle.kts для cinterop
+kotlin
+kotlin {
+    linuxX64 {
+        compilations.getByName("main") {
+            cinterops.create("onvif")
+        }
+    }
+    mingwX64 {
+        compilations.getByName("main") {
+            cinterops.create("onvif")
+        }
+    }
+    macosX64 {
+        compilations.getByName("main") {
+            cinterops.create("onvif")
+        }
+    }
+
+    sourceSets {
+        val nativeMain by creating {
+            dependsOn(commonMain)
+        }
+        linuxX64().compilations["main"].defaultSourceSet.dependsOn(nativeMain)
+        mingwX64().compilations["main"].defaultSourceSet.dependsOn(nativeMain)
+        macosX64().compilations["main"].defaultSourceSet.dependsOn(nativeMain)
+    }
+}
+1.1.6. Ожидаемый и фактический классы в shared
+shared/src/commonMain/kotlin/com/ipcss/onvif/OnvifDiscover.kt (expect)
+
+kotlin
+package com.ipcss.onvif
+
+expect class OnvifDiscover {
+    fun discoverCameras(timeoutMs: Int): List<String>
+    fun getStreamUri(ip: String, username: String?, password: String?): String?
+}
+shared/src/nativeMain/kotlin/com/ipcss/onvif/OnvifDiscover.kt (actual)
+
+kotlin
+package com.ipcss.onvif
+
+import kotlinx.cinterop.*
+
+actual class OnvifDiscover {
+    actual fun discoverCameras(timeoutMs: Int): List<String> {
+        val result = mutableListOf<String>()
+        val discoveryResult = discover_cameras(timeoutMs) ?: return result
+        try {
+            for (i in 0 until discoveryResult.count) {
+                val url = discoveryResult.urls!![i]?.toKString()
+                if (url != null) result.add(url)
+            }
+        } finally {
+            free_string_array(discoveryResult.ptr)
+        }
+        return result
+    }
+
+    actual fun getStreamUri(ip: String, username: String?, password: String?): String? {
+        val cIp = ip.cstr
+        val cUser = username?.cstr ?: null
+        val cPass = password?.cstr ?: null
+        val uriPtr = get_stream_uri(cIp, cUser, cPass)
+        return uriPtr?.toKString()?.also { platform.posix.free(uriPtr) }
+    }
+}
+1.1.7. Интеграция с DiscoverCamerasUseCase
+В shared/src/commonMain/kotlin/com/ipcss/domain/DiscoverCamerasUseCase.kt:
+
+kotlin
+class DiscoverCamerasUseCase(
+    private val onvifDiscover: OnvifDiscover,
+    private val cameraRepository: CameraRepository
+) {
+    suspend operator fun invoke(): List<Camera> = withContext(Dispatchers.IO) {
+        val discoveredUrls = onvifDiscover.discoverCameras(3000)
+        val cameras = discoveredUrls.mapNotNull { url ->
+            val ip = extractIpFromUrl(url)
+            val rtspUrl = onvifDiscover.getStreamUri(ip, null, null)
+            if (rtspUrl != null) {
+                Camera(
+                    id = generateId(),
+                    name = "Camera at $ip",
+                    ip = ip,
+                    rtspUrl = rtspUrl,
+                    username = null,
+                    password = null
+                )
+            } else null
+        }
+        cameraRepository.addCameras(cameras)
+        cameras
+    }
+
+    private fun extractIpFromUrl(url: String): String {
+        // Пример: http://192.168.1.100:8080/onvif/device_service
+        return url.substringAfter("//").substringBefore(":").substringBefore("/")
+    }
+}
+1.1.8. Простой тест
+В shared/src/linuxX64Main/kotlin/Main.kt (временный файл для проверки):
+
+kotlin
+fun main() {
+    val onvif = OnvifDiscover()
+    println("Discovering cameras...")
+    val cameras = onvif.discoverCameras(3000)
+    println("Found ${cameras.size} cameras:")
+    cameras.forEach { url ->
+        println("  $url")
+        val ip = url.substringAfter("//").substringBefore(":")
+        val rtsp = onvif.getStreamUri(ip, null, null)
+        println("    RTSP: $rtsp")
+    }
+}
+Сборка и запуск:
+
+bash
+./gradlew :shared:linuxX64Binaries
+./shared/build/bin/linuxX64/debugExecutable/shared.kexe
+1.2. Настройка MediaMTX
+1.2.1. Конфигурационный файл mediamtx.yml (в корне)
+yaml
+rtspAddress: :8554
+hlsAddress: :8888
+webrtcAddress: :8889
+
+authMethod: external
+authExternalAddress: http://server-jvm:8080/api/auth/stream
+
+record: yes
+recordPath: /recordings/%Y/%m/%d/%path
+recordFormat: mp4
+recordAppend: yes
+
+paths:
+  all:
+    publishUser: any
+    publishPass: any
+    readUser: any
+    readPass: any
+1.2.2. Добавление сервиса в docker-compose.yml (уже сделано выше)
+1.2.3. Эндпоинт аутентификации в Ktor
+Создать файл platforms/server-jvm/src/main/kotlin/com/ipcss/routes/StreamAuth.kt:
+
+kotlin
+package com.ipcss.routes
+
+import io.ktor.http.*
+import io.ktor.server.application.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import java.util.Base64
+
+fun Route.streamAuth() {
+    get("/api/auth/stream") {
+        val authHeader = call.request.headers["Authorization"]
+            ?: return@get call.respond(HttpStatusCode.Unauthorized, "Missing Authorization header")
+
+        if (!authHeader.startsWith("Basic ")) {
+            return@get call.respond(HttpStatusCode.Unauthorized, "Invalid auth scheme")
+        }
+
+        val base64 = authHeader.substring(6)
+        val decoded = try {
+            String(Base64.getDecoder().decode(base64))
+        } catch (e: IllegalArgumentException) {
+            return@get call.respond(HttpStatusCode.Unauthorized, "Invalid base64")
+        }
+
+        val parts = decoded.split(":", limit = 2)
+        if (parts.size != 2) {
+            return@get call.respond(HttpStatusCode.Unauthorized, "Invalid credentials format")
+        }
+
+        val password = parts[1] // JWT токен
+
+        val userId = validateJwtAndGetUserId(password)
+        if (userId == null) {
+            return@get call.respond(HttpStatusCode.Unauthorized, "Invalid token")
+        }
+
+        val path = call.request.queryParameters["path"]
+        val action = call.request.queryParameters["action"]
+
+        if (path != null && action != null) {
+            val hasPermission = checkCameraPermission(userId, path, action)
+            if (!hasPermission) {
+                return@get call.respond(HttpStatusCode.Forbidden, "Access denied")
+            }
+        }
+
+        call.respond(HttpStatusCode.OK)
+    }
+}
+
+private fun validateJwtAndGetUserId(token: String): String? {
+    // Заглушка: замените реальной проверкой JWT
+    return if (token.length > 10) "user-123" else null
+}
+
+private suspend fun checkCameraPermission(userId: String, cameraId: String, action: String): Boolean {
+    // Заглушка: проверка доступа в БД
+    return true
+}
+Подключить в Application.kt:
+
+kotlin
+routing {
+    streamAuth()
+    // ...
+}
+1.3. Адаптация веб-интерфейса под HLS
+1.3.1. Установка HLS.js
+bash
+cd platforms/web
+npm install hls.js
+1.3.2. Компонент HLSPlayer.tsx
+tsx
+import React, { useRef, useEffect } from 'react';
+import Hls from 'hls.js';
+
+interface HLSPlayerProps {
+  src: string;
+  autoPlay?: boolean;
+  controls?: boolean;
+}
+
+const HLSPlayer: React.FC<HLSPlayerProps> = ({ src, autoPlay = true, controls = true }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+      video.src = src;
+    } else if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      return () => hls.destroy();
+    } else {
+      console.error('HLS not supported in this browser');
+    }
+  }, [src]);
+
+  return <video ref={videoRef} autoPlay={autoPlay} controls={controls} style={{ width: '100%' }} />;
+};
+
+export default HLSPlayer;
+1.3.3. Использование на странице камеры
+В pages/cameras/[id].tsx:
+
+tsx
+import { useRouter } from 'next/router';
+import HLSPlayer from '../../components/HLSPlayer';
+
+const CameraView: React.FC = () => {
+  const router = useRouter();
+  const { id } = router.query;
+  const hlsUrl = `${process.env.NEXT_PUBLIC_MEDIA_MTX_URL}/${id}/index.m3u8`;
+
+  if (!id) return <div>Loading...</div>;
+
+  return (
+    <div>
+      <h1>Camera {id}</h1>
+      <HLSPlayer src={hlsUrl} />
+    </div>
+  );
+};
+
+export default CameraView;
+В .env.local добавить:
+
+text
+NEXT_PUBLIC_MEDIA_MTX_URL=http://localhost:8888
+1.4. Настройка записи через MediaMTX
+1.4.1. HTTP-клиент для MediaMTX API
+Добавить зависимость в server-jvm/build.gradle.kts:
+
+kotlin
+implementation("io.ktor:ktor-client-core:2.3.12")
+implementation("io.ktor:ktor-client-cio:2.3.12")
+Создать services/MediaMtxService.kt:
+
+kotlin
+package com.ipcss.services
+
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
+
+class MediaMtxService(private val client: HttpClient, private val baseUrl: String) {
+    suspend fun startRecording(cameraId: String): Boolean {
+        val response = client.post("$baseUrl/v3/paths/$cameraId/startrecord")
+        return response.status.isSuccess()
+    }
+
+    suspend fun stopRecording(cameraId: String): Boolean {
+        val response = client.post("$baseUrl/v3/paths/$cameraId/stoprecord")
+        return response.status.isSuccess()
+    }
+}
+Инициализация в Application.kt:
+
+kotlin
+val mediamtxClient = HttpClient(CIO)
+val mediamtxService = MediaMtxService(mediamtxClient, "http://mediamtx:8888")
+1.4.2. Маршруты для записи
+В routes/Recordings.kt:
+
+kotlin
+fun Route.recordings(mediamtxService: MediaMtxService) {
+    route("/api/recordings") {
+        post("/start/{cameraId}") {
+            val cameraId = call.parameters["cameraId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+            val success = mediamtxService.startRecording(cameraId)
+            if (success) call.respond(HttpStatusCode.OK) else call.respond(HttpStatusCode.InternalServerError)
+        }
+        post("/stop/{cameraId}") {
+            val cameraId = call.parameters["cameraId"] ?: return@post call.respond(HttpStatusCode.BadRequest)
+            val success = mediamtxService.stopRecording(cameraId)
+            if (success) {
+                // Обновить время окончания в БД
+                call.respond(HttpStatusCode.OK)
+            } else {
+                call.respond(HttpStatusCode.InternalServerError)
+            }
+        }
+    }
+}
+Подключить в Application.kt:
+
+kotlin
+routing {
+    recordings(mediamtxService)
+}
+1.4.3. Индексация записанных файлов
+Создать services/RecordingScanner.kt:
+
+kotlin
+package com.ipcss.services
+
+import com.ipcss.db.RecordingRepository
+import kotlinx.coroutines.*
+import java.io.File
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.*
+
+class RecordingScanner(
+    private val recordingsDir: String,
+    private val repository: RecordingRepository
+) {
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
+
+    fun start() {
+        scope.launch {
+            while (true) {
+                delay(60_000) // каждую минуту
+                scan()
+            }
+        }
+    }
+
+    private suspend fun scan() {
+        val baseDir = File(recordingsDir)
+        if (!baseDir.exists()) return
+
+        val allFiles = baseDir.walk().filter { it.extension == "mp4" }.toList()
+        val existingPaths = repository.getAllFilePaths()
+
+        val newFiles = allFiles.filter { it.absolutePath !in existingPaths }
+
+        for (file in newFiles) {
+            val cameraId = extractCameraIdFromPath(file.absolutePath)
+            val startTime = extractStartTimeFromFileName(file.name)
+            repository.addRecording(
+                id = UUID.randomUUID().toString(),
+                cameraId = cameraId,
+                filePath = file.absolutePath,
+                startTime = startTime,
+                endTime = null
+            )
+        }
+    }
+
+    private fun extractCameraIdFromPath(path: String): String {
+        val parts = path.split(File.separator)
+        return parts[parts.size - 2]
+    }
+
+    private fun extractStartTimeFromFileName(fileName: String): LocalDateTime {
+        val baseName = fileName.removeSuffix(".mp4")
+        return LocalDateTime.parse(baseName, dateFormatter)
+    }
+}
+Запустить сканер в Application.kt:
+
+kotlin
+val scanner = RecordingScanner("/recordings", recordingRepository)
+scanner.start()
+1.5. Интеграция с PostgreSQL
+1.5.1. Изменение диалекта SQLDelight в shared/build.gradle.kts
+kotlin
+sqldelight {
+    databases {
+        create("Database") {
+            packageName.set("com.ipcss.db")
+            dialect("app.cash.sqldelight:postgresql-dialect:2.0.2")
+        }
+    }
+}
+
+kotlin {
+    sourceSets {
+        commonMain.dependencies {
+            implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
+            implementation("app.cash.sqldelight:postgresql-driver:2.0.2")
+        }
+    }
+}
+1.5.2. SQL-схема
+shared/src/commonMain/sqldelight/com/ipcss/db/Database.sq:
+
+sql
+CREATE TABLE cameras (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    ip TEXT NOT NULL,
+    username TEXT,
+    password TEXT,
+    rtsp_url TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE recordings (
+    id TEXT PRIMARY KEY,
+    camera_id TEXT REFERENCES cameras(id),
+    file_path TEXT NOT NULL,
+    start_time TIMESTAMP,
+    end_time TIMESTAMP
+);
+
+CREATE TABLE events (
+    id TEXT PRIMARY KEY,
+    camera_id TEXT REFERENCES cameras(id),
+    type TEXT,
+    data TEXT,
+    timestamp TIMESTAMP
+);
+
+CREATE TABLE users (
+    id TEXT PRIMARY KEY,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL,
+    totp_secret TEXT
+);
+
+CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
+1.5.3. Драйвер PostgreSQL для сервера
+В server-jvm создать db/PostgresDriverFactory.kt:
+
+kotlin
+package com.ipcss.db
+
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.jdbc.JdbcDriver
+import com.zaxxer.hikari.HikariDataSource
+
+class PostgresDriverFactory(
+    private val jdbcUrl: String,
+    private val username: String,
+    private val password: String
+) {
+    fun createDriver(): SqlDriver {
+        val dataSource = HikariDataSource().apply {
+            this.jdbcUrl = jdbcUrl
+            this.username = username
+            this.password = password
+            maximumPoolSize = 10
+            isAutoCommit = false
+        }
+        return JdbcDriver(dataSource)
+    }
+}
+Использовать при создании экземпляра базы данных.
+
+1.5.4. Миграции Flyway
+Добавить зависимость в server-jvm/build.gradle.kts:
+
+kotlin
+implementation("org.flywaydb:flyway-core:10.17.0")
+Создать папку src/main/resources/db/migration и файл V1__create_tables.sql с SQL из п.1.5.2.
+
+В Application.kt выполнить миграции перед запуском:
+
+kotlin
+fun migrateDatabase() {
+    val flyway = Flyway.configure()
+        .dataSource(System.getenv("DATABASE_URL"), System.getenv("DATABASE_USER"), System.getenv("DATABASE_PASSWORD"))
+        .load()
+    flyway.migrate()
+}
+Этап 2: Структурные изменения и улучшения разработки (3–4 недели)
+Цель: Упорядочить код, автоматизировать сборку нативных библиотек, внедрить OpenAPI, унифицировать конфигурацию.
+
+2.1. Перестройка структуры platforms/server-jvm
+Создать многомодульный проект внутри server-jvm:
+
+text
+server-jvm/
+├── api/
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/... (Ktor application)
+├── core/
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/... (business logic, use cases)
+├── infrastructure/
+│   ├── build.gradle.kts
+│   └── src/main/kotlin/... (repositories, clients)
+└── build.gradle.kts (общий)
+server-jvm/settings.gradle.kts:
+
+kotlin
+rootProject.name = "server-jvm"
+include(":api", ":core", ":infrastructure")
+api/build.gradle.kts:
+
+kotlin
+plugins {
+    kotlin("jvm")
+    application
+}
+
+dependencies {
+    implementation(project(":core"))
+    implementation(project(":infrastructure"))
+    implementation("io.ktor:ktor-server-netty:2.3.12")
+    implementation("io.ktor:ktor-server-content-negotiation:2.3.12")
+    implementation("io.ktor:ktor-serialization-jackson:2.3.12")
+    // ... другие зависимости
+}
+
+application {
+    mainClass.set("com.ipcss.ApplicationKt")
+}
+core/build.gradle.kts:
+
+kotlin
+plugins {
+    kotlin("jvm")
+}
+
+dependencies {
+    // только бизнес-логика, без фреймворков
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+}
+infrastructure/build.gradle.kts:
+
+kotlin
+plugins {
+    kotlin("jvm")
+}
+
+dependencies {
+    implementation(project(":core"))
+    implementation("app.cash.sqldelight:jdbc-driver:2.0.2")
+    implementation("org.postgresql:postgresql:42.7.4")
+    implementation("com.zaxxer:HikariCP:5.1.0")
+    implementation("io.ktor:ktor-client-cio:2.3.12")
+}
+Перенести код соответственно.
+
+2.2. Интеграция нативных библиотек в Gradle
+2.2.1. Задачи сборки в shared/build.gradle.kts
+Добавить задачи для сборки onvif_wrapper и FFmpeg перед компиляцией native-таргетов.
+
+kotlin
+task("buildOnvifWrapper") {
+    doLast {
+        val target = when (System.getProperty("os.name").toLowerCase()) {
+            "linux" -> "linux-x86_64"
+            "windows" -> "windows-x86_64"
+            "mac os x" -> "macos-x86_64"
+            else -> throw GradleException("Unsupported OS")
+        }
+        exec {
+            workingDir("${rootDir}/core/onvif_wrapper")
+            commandLine("bash", "-c", """
+                mkdir -p build/$target &&
+                cd build/$target &&
+                cmake ../.. -DCMAKE_BUILD_TYPE=Release &&
+                make -j4
+            """.trimIndent())
+        }
+        copy {
+            from("${rootDir}/core/onvif_wrapper/build/$target/libonvif_wrapper.a")
+            into("${rootDir}/core/prebuilt/$target")
+        }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile>().configureEach {
+    dependsOn("buildOnvifWrapper")
+}
+Аналогично для FFmpeg (можно пока пропустить, если используем MediaMTX для записи).
+
+2.3. Внедрение OpenAPI и генерация клиента
+2.3.1. Подключение OpenAPI в Ktor
+В api/build.gradle.kts добавить:
+
+kotlin
+implementation("io.ktor:ktor-server-openapi:2.3.12")
+В Application.kt:
+
+kotlin
+import io.ktor.server.plugins.openapi.*
+
+fun Application.module() {
+    install(OpenAPI) {
+        info {
+            title = "IP-CSS API"
+            version = "1.0.0"
+            description = "API for IP Camera Surveillance System"
+        }
+    }
+    routing {
+        // ...
+    }
+}
+Доступно по /openapi.json и /openapi.
+
+2.3.2. Генерация TypeScript-клиента
+В .github/workflows/build.yml добавить шаг:
+
+yaml
+- name: Generate OpenAPI client
+  run: |
+    curl -o openapi.json http://localhost:8080/openapi.json
+    npx openapi-typescript-codegen -i openapi.json -o platforms/web/src/api/generated --useOptions
+В локальной разработке можно добавить скрипт в package.json.
+
+2.4. Унификация конфигураций
+Везде использовать переменные окружения. Удалить хардкод.
+
+Пример application.conf в api/src/main/resources/application.conf:
+
+text
+ktor {
+    deployment {
+        port = ${?SERVER_PORT}
+    }
+    jwt {
+        secret = ${?JWT_SECRET}
+    }
+    database {
+        url = ${?DATABASE_URL}
+        user = ${?DATABASE_USER}
+        password = ${?DATABASE_PASSWORD}
+    }
+    mediamtx {
+        url = ${?MEDIA_MTX_URL}
+    }
+}
+В коде читать через environment.config.
+
+Этап 3: Тестирование и стабильность (2–3 недели)
+Цель: Обеспечить надёжность ключевых сценариев через тесты.
+
+3.1. Интеграционные тесты
+3.1.1. Настройка модуля integration-tests
+integration-tests/build.gradle.kts:
+
+kotlin
+plugins {
+    kotlin("jvm") version "2.0.0"
+}
+
+dependencies {
+    implementation(project(":shared"))
+    implementation(project(":platforms:server-jvm:api"))
+    implementation(project(":platforms:server-jvm:core"))
+    implementation(project(":platforms:server-jvm:infrastructure"))
+    implementation("org.junit.jupiter:junit-jupiter:5.10.0")
+    implementation("org.testcontainers:testcontainers:1.19.3")
+    implementation("org.testcontainers:postgresql:1.19.3")
+    implementation("io.ktor:ktor-client-cio:2.3.12")
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
+3.1.2. Пример теста для записи
+src/test/kotlin/RecordingIntegrationTest.kt:
+
+kotlin
+import org.junit.jupiter.api.Test
+import org.testcontainers.containers.DockerComposeContainer
+import org.testcontainers.containers.wait.strategy.Wait
+import java.io.File
+
+class RecordingIntegrationTest {
+    @Test
+    fun `test recording flow`() {
+        val compose = DockerComposeContainer(File("../docker-compose.yml"))
+            .withExposedService("postgres", 5432, Wait.forListeningPort())
+            .withExposedService("mediamtx", 8888, Wait.forHttp("/"))
+        compose.start()
+
+        // Здесь вызвать API сервера для запуска записи, проверить создание файла
+        // Использовать Testcontainers для создания временной камеры-эмулятора
+    }
+}
+Поскольку это сложно, можно начать с модульных тестов для use cases.
+
+3.2. Юнит-тесты
+Пример для DiscoverCamerasUseCase:
+
+kotlin
+class DiscoverCamerasUseCaseTest {
+    @Test
+    fun `should save discovered cameras`() = runTest {
+        val onvif = mockk<OnvifDiscover>()
+        val repo = mockk<CameraRepository>()
+        every { onvif.discoverCameras(any()) } returns listOf("http://192.168.1.100/onvif/device_service")
+        coEvery { repo.addCameras(any()) } returns Unit
+
+        val useCase = DiscoverCamerasUseCase(onvif, repo)
+        useCase()
+
+        coVerify { repo.addCameras(match { it.size == 1 }) }
+    }
+}
+3.3. Настройка CI для тестов
+В .github/workflows/build.yml добавить:
+
+yaml
+- name: Run tests
+  run: ./gradlew test integration-tests:test
+Для интеграционных тестов использовать сервисные контейнеры:
+
+yaml
+services:
+  postgres:
+    image: postgres:15
+    env:
+      POSTGRES_DB: ipcss_test
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - 5432:5432
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    ports:
+      - 8888:8888
+Этап 4: Расширенный функционал (6–8 недель)
+Цель: Добавить функции, делающие систему конкурентоспособной: адаптивный стриминг, поддержка I/O, AI-аналитика, безопасность по ГОСТ, экспорт в AXF.
+
+4.1. Адаптивный стриминг (ABR)
+Отложено до востребованности. Возможная реализация: настройка камер на несколько потоков и создание HLS-плейлиста с вариантами.
+
+4.2. Поддержка устройств ввода/вывода (I/O)
+4.2.1. Модели данных в shared
+Добавить в Database.sq:
+
+sql
+CREATE TABLE io_devices (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL, -- 'gpio', 'usb_relay'
+    platform TEXT NOT NULL -- 'raspberry', 'generic_usb'
+);
+
+CREATE TABLE input_ports (
+    id TEXT PRIMARY KEY,
+    device_id TEXT REFERENCES io_devices(id),
+    port_index INTEGER NOT NULL,
+    current_state BOOLEAN,
+    last_changed TIMESTAMP
+);
+
+CREATE TABLE output_ports (
+    id TEXT PRIMARY KEY,
+    device_id TEXT REFERENCES io_devices(id),
+    port_index INTEGER NOT NULL,
+    current_state BOOLEAN,
+    mode TEXT NOT NULL -- 'momentary', 'latched'
+);
+Use cases: GetIODevicesUseCase, GetInputStateUseCase, SetOutputStateUseCase.
+
+4.2.2. C++ обёртка для GPIO (Raspberry Pi)
+core/gpio/gpio_wrapper.h:
+
+cpp
+#ifndef GPIO_WRAPPER_H
+#define GPIO_WRAPPER_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int init_gpio();
+int read_input(int pin);
+void write_output(int pin, int value);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
+core/gpio/gpio_wrapper.cpp:
+
+cpp
+#include "gpio_wrapper.h"
+#include <wiringPi.h>
+
+extern "C" {
+    int init_gpio() {
+        return wiringPiSetup();
+    }
+    int read_input(int pin) {
+        return digitalRead(pin);
+    }
+    void write_output(int pin, int value) {
+        digitalWrite(pin, value);
+    }
+}
+Сборка аналогично ONVIF.
+
+4.2.3. C++ обёртка для USB-реле (libusb)
+Зависит от конкретной модели. Для примера можно начать с поддержки GPIO.
+
+4.2.4. Cinterop и Kotlin-классы
+Создать .def файлы и actual классы аналогично ONVIF.
+
+4.2.5. Интеграция в правила (action rules)
+Модель правила:
+
+kotlin
+data class Rule(
+    val id: String,
+    val name: String,
+    val condition: Condition,
+    val action: Action
+)
+
+sealed class Condition {
+    data class InputChanged(val deviceId: String, val portIndex: Int, val newState: Boolean) : Condition()
+    data class CameraEvent(val cameraId: String, val eventType: String) : Condition()
+}
+
+sealed class Action {
+    data class SetOutput(val deviceId: String, val portIndex: Int, val duration: Long?) : Action()
+    data class Notify(val message: String) : Action()
+}
+Движок правил: корутина, слушающая поток событий (из БД или шины). При совпадении условия выполняется действие.
+
+4.2.6. UI для настройки I/O
+В Next.js создать страницы:
+
+/io/devices – список устройств.
+
+/io/device/:id – ручное управление.
+
+/automation/rules – CRUD правил.
+
+4.3. Начальная AI-аналитика
+4.3.1. Микросервис ai-engine
+Создать platforms/ai-engine/Dockerfile:
+
+dockerfile
+FROM python:3.11-slim
+RUN pip install fastapi uvicorn onnxruntime opencv-python-headless
+COPY app.py /app.py
+WORKDIR /
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "5000"]
+app.py:
+
+python
+from fastapi import FastAPI, File, UploadFile
+import cv2
+import numpy as np
+import onnxruntime as ort
+
+app = FastAPI()
+session = ort.InferenceSession("yolov8n.onnx")  # скачать модель
+
+@app.post("/detect")
+async def detect(file: UploadFile = File(...)):
+    contents = await file.read()
+    nparr = np.frombuffer(contents, np.uint8)
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    # Предобработка, инференс...
+    return {"detections": []}
+4.3.2. Интеграция с Ktor
+Создать infrastructure/AiEngineClient.kt:
+
+kotlin
+class AiEngineClient(private val baseUrl: String) {
+    suspend fun detect(image: ByteArray): List<Detection> {
+        val client = HttpClient(CIO)
+        val response = client.post("$baseUrl/detect") {
+            contentType(ContentType.MultiPart.FormData)
+            body = MultiPartFormDataContent(
+                formData {
+                    append("file", image, Headers.build {
+                        append(HttpHeaders.ContentType, "image/jpeg")
+                    })
+                }
+            )
+        }
+        return response.body()
+    }
+}
+При получении события движения (от камеры или по расписанию) вызывать этот клиент и сохранять результат.
+
+4.4. Улучшения безопасности и соответствие ГОСТ
+4.4.1. Ролевая модель
+В таблицу users добавить поле role. Создать аннотацию или функцию в Ktor для проверки роли.
+
+kotlin
+fun Route.authorize(vararg roles: String, body: Route.() -> Unit) {
+    route("") {
+        intercept(ApplicationCallPipeline.Call) {
+            val userRole = call.attributes["userRole"] // из JWT
+            if (userRole in roles) {
+                proceed()
+            } else {
+                call.respond(HttpStatusCode.Forbidden)
+            }
+        }
+        body()
+    }
+}
+4.4.2. 2FA (TOTP)
+Использовать библиотеку java-totp. При включении 2FA генерировать секрет, показывать QR-код. При логине проверять код.
+
+4.4.3. Контрольные суммы
+После завершения записи вычислить SHA-256 и сохранить в recordings. Периодически проверять целостность.
+
+kotlin
+fun calculateSha256(file: File): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    file.inputStream().use { fis ->
+        val buffer = ByteArray(8192)
+        var read = fis.read(buffer)
+        while (read > 0) {
+            digest.update(buffer, 0, read)
+            read = fis.read(buffer)
+        }
+    }
+    return digest.digest().joinToString("") { "%02x".format(it) }
+}
+4.4.4. Аудит лог
+Таблица audit_log (id, user_id, action, timestamp, details). Логировать действия через перехватчик.
+
+4.5. Экспорт в AXF (упрощённый)
+Создать ZIP-архив с видео и XML-метаданными.
+
+kotlin
+fun exportToAxf(recordingId: String): File {
+    val recording = recordingRepository.getById(recordingId)
+    val videoFile = File(recording.filePath)
+    val xml = generateMetadataXml(recording)
+    val zipFile = File.createTempFile("export", ".zip")
+    ZipOutputStream(zipFile.outputStream()).use { zip ->
+        zip.putNextEntry(ZipEntry(videoFile.name))
+        videoFile.inputStream().copyTo(zip)
+        zip.closeEntry()
+        zip.putNextEntry(ZipEntry("metadata.xml"))
+        zip.write(xml.toByteArray())
+        zip.closeEntry()
+    }
+    return zipFile
+}
+В UI кнопка "Экспорт" вызывает соответствующий API.
+
+Этап 5: Полировка, документация, подготовка к релизу (2–3 недели)
+Цель: Подготовить проект к публичному релизу.
+
+5.1. Финальная документация
+Обновить README.md: описание архитектуры, быстрый старт.
+
+Создать docs/user_guide.md с инструкциями для пользователей.
+
+Добавить диаграммы (Mermaid) в docs/architecture/.
+
+5.2. Оптимизация производительности
+Использовать профилировщик (JProfiler, VisualVM).
+
+Настроить индексы в PostgreSQL.
+
+Добавить кэширование (Caffeine).
+
+5.3. Создание установочных пакетов
+5.3.1. Docker-образ
+В корне Dockerfile:
+
+dockerfile
+FROM openjdk:17-jdk-slim
+COPY platforms/server-jvm/api/build/libs/api-all.jar /app.jar
+COPY mediamtx.yml /mediamtx.yml
+EXPOSE 8080 8554 8888 8889
+CMD ["java", "-jar", "/app.jar"]
+5.3.2. Deb-пакет
+bash
+jpackage --name ipcss --input platforms/server-jvm/api/build/libs --main-jar api-all.jar --type deb --linux-package-name ipcss --linux-app-category video
+5.3.3. Windows-инсталлятор
+Аналогично с --type exe или Inno Setup.
+
+5.4. Заключительное тестирование
+Развернуть на Raspberry Pi 4.
+
+Протестировать с реальными камерами Hikvision, Dahua, Reolink.
+
+Задокументировать совместимость.
